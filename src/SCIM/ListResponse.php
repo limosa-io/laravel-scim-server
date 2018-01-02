@@ -3,6 +3,7 @@
 namespace ArieTimmerman\Laravel\SCIMServer\SCIM;
 
 use Illuminate\Contracts\Support\Jsonable;
+use ArieTimmerman\Laravel\SCIMServer\Helper;
 
 class ListResponse implements Jsonable{
 
@@ -36,7 +37,7 @@ class ListResponse implements Jsonable{
             "schemas" => [
                 "urn:ietf:params:scim:api:messages:2.0:ListResponse"
             ],
-            'Resources' => $this->resourceObjects,
+            'Resources' => Helper::prepareReturn($this->resourceObjects),
         ];
     }
     

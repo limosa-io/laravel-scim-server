@@ -6,13 +6,14 @@ use ArieTimmerman\Laravel\SCIMServer\Attribute\Complex;
 
 use ArieTimmerman\Laravel\SCIMServer\SCIM\Schema;
 use ArieTimmerman\Laravel\SCIMServer\Attribute\WriteOnlyAttributeMapping;
+use ArieTimmerman\Laravel\SCIMServer\Helper;
 
 return [
     
     'Users' => [
         
-        //TODO: Consider using auth.providers.users[driver=eloquent].model as the default
-        'class' => App\User::class,
+        // Set to 'null' to make use of auth.providers.users.model (App\User::class)
+        'class' => Helper::getAuthUserClass(),
         'singular' => 'User',
         'schema' => Schema::SCHEMA_USER,
         'description' => 'User Account',
@@ -28,7 +29,7 @@ return [
                 'created' => new R("created_at", function ($object) {
                     return $object->created_at->format('c');
                 }),
-                'lastModified' => new R("created_at", function ($object) {
+                'lastModified' => new R("updated_at", function ($object) {
                     return $object->updated_at->format('c');
                 }),
                 
@@ -43,7 +44,8 @@ return [
             ],
             
             "schemas" => new C([
-                "urn:ietf:params:scim:schemas:core:2.0:User"
+                "urn:ietf:params:scim:schemas:core:2.0:User",
+                "example:name:space",
             ]),
             
             'urn:ietf:params:scim:schemas:core:2.0:User' => [

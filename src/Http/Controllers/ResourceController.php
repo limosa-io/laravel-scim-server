@@ -25,11 +25,9 @@ class ResourceController extends Controller{
 		
 		foreach($array as $key=>$value) {
 			
-			//TODO: fix the check for associative array
 			if(is_array($value)) {
 				$result = $result + self::flatten($value, $prefix . $key . '.');
-			}
-			else {
+			} else {
 				$result[$prefix . $key] = $value;
 			}
 			
@@ -324,7 +322,7 @@ class ResourceController extends Controller{
     	if($class == null){
     		throw new SCIMException("Not found",404);
     	}
-    	    	
+    	
     	// The 1-based index of the first query result. A value less than 1 SHALL be interpreted as 1.
     	$startIndex = max(1,intVal($request->input('startIndex',0)));
     	 
@@ -336,6 +334,9 @@ class ResourceController extends Controller{
     	if($request->input('sortBy')){
     		$sortBy = $this->getEloquentSortAttribute($name, $request->input('sortBy'));
     	}
+    	
+    	//var_dump((new $class())->getTable());exit;
+    	// ::from( 'items as items_alias' )
     	
 		$resourceObjectsBase = $class::when($filter = $request->input('filter'), function($query) use ($filter, $name) {
 			

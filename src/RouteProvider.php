@@ -12,7 +12,7 @@ class RouteProvider {
 	
 	public static function routes(array $options = []) {
 			
-		$prefix = "scimv2";
+		$prefix = "scim/v2";
 				
 		Route::prefix($prefix)->middleware(['ArieTimmerman\Laravel\SCIMServer\Middleware\SCIMHeaders'])->group(function() use ($options){
 			self::allRoutes($options);
@@ -21,7 +21,7 @@ class RouteProvider {
 	}
 	
 	private static function allRoutes(array $options = []){
-
+	    
 		Route::get('/Me', function (){
 		    return Auth::user();
 		});
@@ -36,6 +36,7 @@ class RouteProvider {
 				
 		// TODO: Use the attributes parameters ?attributes=userName, excludedAttributes=asdg,asdg (respect "returned" settings "always")
 		// TODO: Support ETag
+		
 		Route::get('/{name}/{id}', 'ArieTimmerman\Laravel\SCIMServer\Controllers\ResourceController@show')->name('scim.resource');;
 		Route::get("/{name}", 'ArieTimmerman\Laravel\SCIMServer\Controllers\ResourceController@index');
 		

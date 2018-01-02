@@ -28,43 +28,16 @@ trait SCIMResource {
 
     }
 
-    public function toSCIMArray(){
-        
-//         $userArray = $this->toArray();
-
-        $result = [];
-        
-        
-        $mapping = config("scimserver.Users.mapping");
-        
-        foreach($mapping as $key => $value){
-
-            preg_match("/^(.*?)(\\.\\*)?$/",$key,$matches);
-
-            $key = $matches[1];
-            
-            $v = Helper::getMappedValue($this, $value);
-            
-            if($v != null){
-
-                if(isset($matches[2]) && !empty($matches[2])){
-                    $result[$key] = [];
-                    $result[$key][] = $v;
-                }else{
-                    $result[$key] = $v;
-                }
-
-                
-            }
-
-        }
-
-        return $result;
-
-    }
+    
+    //TODO: Move this method to Helper class. Allows use of this method outside Trait
+   
     
     public function toArray(){
-    	return $this->toSCIMArray();
+    	return Helper::objectToSCIMArray($this);
+    }
+    
+    public function toArray_fromParent(){
+        return parent::toArray();
     }
     
     public function toJson($options = 0){

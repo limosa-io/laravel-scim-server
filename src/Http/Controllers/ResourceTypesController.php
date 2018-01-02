@@ -1,6 +1,6 @@
 <?php
 
-namespace ArieTimmerman\Laravel\SCIMServer\Controllers;
+namespace ArieTimmerman\Laravel\SCIMServer\Http\Controllers;
 
 use ArieTimmerman\Laravel\SCIMServer\SCIM\ListResponse;
 use ArieTimmerman\Laravel\SCIMServer\SCIM\ResourceType;

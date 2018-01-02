@@ -1,6 +1,6 @@
 <?php
 
-namespace ArieTimmerman\Laravel\SCIMServer\Controllers;
+namespace ArieTimmerman\Laravel\SCIMServer\Http\Controllers;
 
 class ServiceProviderController extends Controller{
 

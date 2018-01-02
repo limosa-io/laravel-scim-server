@@ -1,6 +1,6 @@
 <?php
 
-namespace ArieTimmerman\Laravel\SCIMServer\Controllers;
+namespace ArieTimmerman\Laravel\SCIMServer\Http\Controllers;
 
 use Illuminate\Foundation\Bus\DispatchesJobs;
 use Illuminate\Routing\Controller as BaseController;

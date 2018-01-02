@@ -34,6 +34,10 @@ class ServiceProvider extends \Illuminate\Support\ServiceProvider{
 	 */
 	public function register() {
 		
+	    $this->mergeConfigFrom(
+            __DIR__ . DIRECTORY_SEPARATOR . '..' . DIRECTORY_SEPARATOR . 'config' . DIRECTORY_SEPARATOR . 'scimserver.php', 'scimserver'
+        );
+	    
 	}
 	
 }

@@ -3,6 +3,7 @@
 namespace ArieTimmerman\Laravel\SCIMServer;
 
 use ArieTimmerman\Laravel\SCIMServer\Attribute\AttributeMapping;
+use Illuminate\Contracts\Support\Arrayable;
 
 class Helper{
 	
@@ -64,11 +65,12 @@ class Helper{
      * 
      * @param unknown $object
      */
-    public static function prepareReturn($object){
+    public static function prepareReturn(Arrayable $object){
         
         $result = null;
         
-        if(count($object) > 0){
+        if( !empty($object) && is_object($object[0]) ){
+            
             if(! in_array('ArieTimmerman\Laravel\SCIMServer\Traits\SCIMResource',class_uses(get_class($object[0])))){
                 
                 $result = [];
@@ -133,12 +135,14 @@ class Helper{
             unset($userArray[$key]);
         }
         
-        if(!empty($userArray)){
+        if(!empty($userArray) && config('scimserver.Users.map_unmapped')){
             
-            $result["example:name:space"] = [];
+            $namespace = config('scimserver.Users.unmapped_namespace');
+            
+            $result[$namespace] = [];
             
             foreach($userArray as $key => $value){
-                $result["example:name:space"][$key] = $value;
+                $result[$namespace][$key] = $value;
             }
             
         }

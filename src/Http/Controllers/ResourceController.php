@@ -1,6 +1,6 @@
 <?php
 
-namespace ArieTimmerman\Laravel\SCIMServer\Controllers;
+namespace ArieTimmerman\Laravel\SCIMServer\Http\Controllers;
 
 use ArieTimmerman\Laravel\SCIMServer\SCIM\ListResponse;
 use Illuminate\Http\Request;
@@ -81,19 +81,26 @@ class ResourceController extends Controller{
     	}
     	
     	array_push($elements,...explode(".", $scimAttribute));
-    	    	 
-    	foreach ($elements as $value) {
+    	
+    	//TODO: This is not nice. Most likely incorrect.
+    	if(config("scimserver")[$name]['map_unmapped'] && $schema == config("scimserver")[$name]['unmapped_namespace']){
     	    
-    	    // Do something with ->getMapping();
-    	    
-    	    if(is_array($mapping)){
-    	        $mapping = @$mapping[$value];
-    	    }else if($mapping instanceof \ArieTimmerman\Laravel\SCIMServer\Attribute\AttributeMapping){
-    	       $mapping = $mapping->getMapping($value);   
-    	    }else{
-    	       throw new SCIMException("Unknown attribute: " . $value);
-    	    }
-    		
+    	   $mapping = new \ArieTimmerman\Laravel\SCIMServer\Attribute\AttributeMapping($scimAttribute);
+    	   
+    	}else{   	 
+        	foreach ($elements as $value) {
+        	    
+        	    // Do something with ->getMapping();
+        	    
+        	    if(is_array($mapping)){
+        	        $mapping = @$mapping[$value];
+        	    }else if($mapping instanceof \ArieTimmerman\Laravel\SCIMServer\Attribute\AttributeMapping){
+        	       $mapping = $mapping->getMapping($value);   
+        	    }else{
+        	       throw new SCIMException("Unknown attribute: " . implode(":", $elements));
+        	    }
+        		
+        	}
     	}
     	
     	return $mapping;

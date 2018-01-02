@@ -16,6 +16,8 @@ return [
         'class' => Helper::getAuthUserClass(),
         'singular' => 'User',
         'schema' => Schema::SCHEMA_USER,
+        'map_unmapped' => true,
+        'unmapped_namespace' => 'urn:ietf:params:scim:schemas:laravel:unmapped',
         'description' => 'User Account',
         
         // Map a SCIM attribute to an attribute of the object.
@@ -126,9 +128,7 @@ return [
                 'roles' => null,
                 'x509Certificates' => null
             ],
-            
-            // TODO: Auto map all unmapped serialized attributes to a custom schema
-            
+                        
         ]
     ]
 ]

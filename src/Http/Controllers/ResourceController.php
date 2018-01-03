@@ -17,6 +17,7 @@ use ArieTimmerman\Laravel\SCIMServer\SCIM\Schema;
 use ArieTimmerman\Laravel\SCIMServer\AttributeMapping;
 use Tmilos\ScimFilterParser\Ast\ValuePath;
 use Illuminate\Support\Facades\DB;
+use ArieTimmerman\Laravel\SCIMServer\ResourceType;
 
 class ResourceController extends Controller{
 
@@ -46,14 +47,16 @@ class ResourceController extends Controller{
 	 * - emails.value
 	 * - emails.0.value
 	 * - schemas.0 
+	 * 
+	 * TODO: Inject $name with ResourceType
 	 *  
 	 * @param unknown $name
 	 * @param unknown $scimAttribute
 	 * @return AttributeMapping
 	 */
-    public function getAttributeConfig($name, $scimAttribute) {
+    public function getAttributeConfig(ResourceType $resourceType, $scimAttribute) {
     	
-    	$mapping = config("scimserver")[$name]['mapping'];
+    	$mapping = $resourceType->getMapping();
     	
     	$schema = null;
     	
@@ -83,7 +86,7 @@ class ResourceController extends Controller{
     	array_push($elements,...explode(".", $scimAttribute));
     	
     	//TODO: This is not nice. Most likely incorrect.
-    	if(config("scimserver")[$name]['map_unmapped'] && $schema == config("scimserver")[$name]['unmapped_namespace']){
+    	if($resourceType->getConfiguration()['map_unmapped'] && $schema == $resourceType->getConfiguration()['unmapped_namespace']){
     	    
     	   $mapping = new \ArieTimmerman\Laravel\SCIMServer\Attribute\AttributeMapping($scimAttribute);
     	   
@@ -107,9 +110,9 @@ class ResourceController extends Controller{
     	
     }
     
-    public function getEloquentSortAttribute($name, $scimAttribute){
+    public function getEloquentSortAttribute(ResourceType $resourceType, $scimAttribute){
     	    	
-    	$mapping = $this->getAttributeConfig($name, $scimAttribute);
+    	$mapping = $this->getAttributeConfig($resourceType, $scimAttribute);
     	
     	if($mapping == null || $mapping->getSortAttribute() == null){
     		throw new \ArieTimmerman\Laravel\SCIMServer\Exceptions\SCIMException("Invalid sort property",400);	
@@ -119,9 +122,9 @@ class ResourceController extends Controller{
     	
     }
     
-    public function create(Request $request, $name){
+    public function create(Request $request, ResourceType $resourceType){
     	
-    	$class = @config("scimserver")[$name]['class'];
+    	$class = $resourceType->getClass();
     	 
     	if($class == null){
     		throw new SCIMException("Not found",404);
@@ -136,7 +139,7 @@ class ResourceController extends Controller{
     	
     	foreach(array_keys($flattened) as $scimAttribute){
     		
-    		$attributeConfig = $this->getAttributeConfig($name, $scimAttribute);
+    		$attributeConfig = $this->getAttributeConfig($resourceType, $scimAttribute);
     		
     		if($attributeConfig == null){
     			throw new SCIMException("Unknown attribute \"" . $scimAttribute . "\".",400);
@@ -148,13 +151,13 @@ class ResourceController extends Controller{
     	
     	$resourceObject->save();
     	
-    	return \response($resourceObject, 201);
+    	return \response(Helper::objectToSCIMArray($resourceObject), 201);
     	
     }
 
-    public function show(Request $request, $name, $id){
+    public function show(Request $request, ResourceType $resourceType, $id){
     	
-    	$class = @config("scimserver")[$name]['class'];
+    	$class = $resourceType->getClass();
     	
     	if($class == null){
     		throw new SCIMException("Not found",404);
@@ -166,13 +169,13 @@ class ResourceController extends Controller{
     		throw new SCIMException("Resource " . $id . " not found",404);
     	}
     	
-    	return $resourceObject;
+    	return Helper::objectToSCIMArray($resourceObject);
     	
     }
     
-    public function update(Request $request, $name=null){
+    public function update(Request $request, ResourceType $resourceType){
     	
-    	$class = @config("scimserver")[$name]['class'];
+    	$class = $resourceType->getClass();
     	 
     	if($class == null){
     		throw new SCIMException("Not found",404);
@@ -212,7 +215,7 @@ class ResourceController extends Controller{
      * @param unknown $node
      * @throws SCIMException
      */
-    protected function scimFilterToLaravelQuery($name, &$query, $node){
+    protected function scimFilterToLaravelQuery(ResourceType $resourceType, &$query, $node){
     	
     	if($node instanceof Negation){
     		$filter = $node->getFilter();
@@ -223,7 +226,7 @@ class ResourceController extends Controller{
     		 
     		$operator = strtolower($node->operator);
     		    		
-    		$attributeConfig = $this->getAttributeConfig($name, $node->attributePath->schema ? $node->attributePath->schema . ':' . implode('.', $node->attributePath->attributeNames) : implode('.', $node->attributePath->attributeNames));
+    		$attributeConfig = $this->getAttributeConfig($resourceType, $node->attributePath->schema ? $node->attributePath->schema . ':' . implode('.', $node->attributePath->attributeNames) : implode('.', $node->attributePath->attributeNames));
     		
     		// Consider calling something like $attributeConfig->doQuery($query,$attribute,$operation,$value)
     		// Consider calling something like $attributeConfig->doQuery($query,$subQuery)
@@ -275,7 +278,7 @@ class ResourceController extends Controller{
     		foreach ($node->getFactors() as $factor){
     			
     			$query->where(function($query) use ($factor){
-    				$this->scimFilterToLaravelQuery($name, $query, $factor);
+    				$this->scimFilterToLaravelQuery($resourceType, $query, $factor);
     			});
     	
     		}
@@ -285,7 +288,7 @@ class ResourceController extends Controller{
     		foreach ($node->getTerms() as $term){
     			 
     			$query->orWhere(function($query) use ($term){
-    				$this->scimFilterToLaravelQuery($name, $query, $term);
+    				$this->scimFilterToLaravelQuery($resourceType, $query, $term);
     			});
     				 
     		}
@@ -322,9 +325,9 @@ class ResourceController extends Controller{
     	
     }
     
-    public function index(Request $request, $name){
-    	
-    	$class = @config("scimserver")[$name]['class'];
+    public function index(Request $request, ResourceType $resourceType){
+        
+    	$class = $resourceType->getClass();
     	
     	if($class == null){
     		throw new SCIMException("Not found",404);
@@ -339,13 +342,13 @@ class ResourceController extends Controller{
     	$sortBy = "id";
     	
     	if($request->input('sortBy')){
-    		$sortBy = $this->getEloquentSortAttribute($name, $request->input('sortBy'));
+    		$sortBy = $this->getEloquentSortAttribute($resourceType, $request->input('sortBy'));
     	}
     	
     	//var_dump((new $class())->getTable());exit;
     	// ::from( 'items as items_alias' )
     	
-		$resourceObjectsBase = $class::when($filter = $request->input('filter'), function($query) use ($filter, $name) {
+		$resourceObjectsBase = $class::when($filter = $request->input('filter'), function($query) use ($filter, $resourceType) {
 			
 			$parser = new Parser(Mode::FILTER());
 			
@@ -353,7 +356,7 @@ class ResourceController extends Controller{
 				
 				$node = $parser->parse($filter);
 				
-				$this->scimFilterToLaravelQuery($name, $query, $node);
+				$this->scimFilterToLaravelQuery($resourceType, $query, $node);
 				
 			}catch(\Tmilos\ScimFilterParser\Error\FilterException $e){
 				throw new SCIMException($e->getMessage(),400,"invalidFilter");

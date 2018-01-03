@@ -28,12 +28,8 @@ return [
             'externalId' => null,
             
             'meta' => [
-                'created' => new R("created_at", function ($object) {
-                    return $object->created_at->format('c');
-                }),
-                'lastModified' => new R("updated_at", function ($object) {
-                    return $object->updated_at->format('c');
-                }),
+                'created' => new R("created_at"),
+                'lastModified' => new R("updated_at"),
                 
                 'location' => new R("name", function ($object) {
                     return route('scim.resource', [

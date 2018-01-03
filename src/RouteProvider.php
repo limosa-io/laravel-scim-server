@@ -14,7 +14,7 @@ class RouteProvider {
 			
 		$prefix = "scim/v2";
 				
-		Route::prefix($prefix)->middleware(['ArieTimmerman\Laravel\SCIMServer\Middleware\SCIMHeaders'])->group(function() use ($options){
+		Route::prefix($prefix)->middleware(['bindings','ArieTimmerman\Laravel\SCIMServer\Middleware\SCIMHeaders'])->group(function() use ($options){
 			self::allRoutes($options);
 		});
 		
@@ -22,8 +22,13 @@ class RouteProvider {
 	
 	private static function allRoutes(array $options = []){
 	    
+	    
+        Route::bind('resourceType', function ($name) {
+            return new ResourceType($name, config("scimserver")[$name]);
+        });
+	    
 		Route::get('/Me', function (){
-		    return Auth::user();
+		    return Helper::objectToSCIMArray(Auth::user());
 		});
 		
 		Route::get("/ServiceProviderConfig", 'ArieTimmerman\Laravel\SCIMServer\Http\Controllers\ServiceProviderController@index')->name('scim.serviceproviderconfig');
@@ -37,21 +42,21 @@ class RouteProvider {
 		// TODO: Use the attributes parameters ?attributes=userName, excludedAttributes=asdg,asdg (respect "returned" settings "always")
 		// TODO: Support ETag
 		
-		Route::get('/{name}/{id}', 'ArieTimmerman\Laravel\SCIMServer\Http\Controllers\ResourceController@show')->name('scim.resource');;
-		Route::get("/{name}", 'ArieTimmerman\Laravel\SCIMServer\Http\Controllers\ResourceController@index');
+		Route::get('/{resourceType}/{id}', 'ArieTimmerman\Laravel\SCIMServer\Http\Controllers\ResourceController@show')->name('scim.resource');;
+		Route::get("/{resourceType}", 'ArieTimmerman\Laravel\SCIMServer\Http\Controllers\ResourceController@index');
 		
-		Route::post("/{name}", 'ArieTimmerman\Laravel\SCIMServer\Http\Controllers\ResourceController@create');
+		Route::post("/{resourceType}", 'ArieTimmerman\Laravel\SCIMServer\Http\Controllers\ResourceController@create');
 		
 		//replace
-		Route::put("/{name}", function(){
+		Route::put("/{resourceType}", function(){
 		    return response(null,501);
 		});
 		
 		//modify
-		Route::patch("/{name}", 'ArieTimmerman\Laravel\SCIMServer\Http\Controllers\ResourceController@update');
+		Route::patch("/{resourceType}", 'ArieTimmerman\Laravel\SCIMServer\Http\Controllers\ResourceController@update');
 		
 		// TODO: implement DELETE
-		Route::delete("/{name}", function(){
+		Route::delete("/{resourceType}", function(){
 		    return response(null,501);
 		});
 		

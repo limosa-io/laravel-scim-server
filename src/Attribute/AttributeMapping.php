@@ -2,6 +2,7 @@
 
 namespace ArieTimmerman\Laravel\SCIMServer\Attribute;
 
+use Illuminate\Support\Carbon;
 class AttributeMapping {
 	
 	public $eloquentAttribute, $read, $write;
@@ -10,11 +11,19 @@ class AttributeMapping {
 		$this->eloquentAttribute = $eloquentAttribute;
 		
 		if($read == null){
-			$read = function(&$object) { return self::readDefault($object); };
+			$read = function(&$object) {
+			    
+			    $result = $object->{$this->eloquentAttribute};
+			    
+			    return self::eloquentAttributeToString($result); 
+			    
+			};
 		}
 		
 		if($write == null){
-			$write = function($value, &$object) { return self::writeDefault($value, $object); };
+			$write = function($value, &$object) { 
+			    $object->{$this->eloquentAttribute} = $value; 
+			};
 		}
 		
 		$this->read = $read;
@@ -34,15 +43,6 @@ class AttributeMapping {
 		return ($this->read)($object);
 	}
 	
-	protected function readDefault(&$object) {
-		return $object->{$this->eloquentAttribute};
-	}
-	
-	protected function writeDefault($value, &$object) {
-		$object->{$this->eloquentAttribute} = $value;
-		
-	}
-	
 	/**
 	 * Returns the AttributeMapping for a specific value. Uses for example for creating queries ... and sorting
 	 * @param unknown $value
@@ -50,6 +50,15 @@ class AttributeMapping {
 	 */
 	public function getMapping($value){
 	    return $this;
+	}
+	
+	public static function eloquentAttributeToString($value){
+	    
+	    if($value instanceof \Carbon\Carbon){
+	        $value = $value->format('c');
+	    }
+	    
+	    return $value;
 	}
 	
 }

@@ -89,18 +89,38 @@ class Helper{
         return $result;
     }
     
+    //TODO: Auto map eloquent attributes with scim naming to the correct attributes
     public static function objectToSCIMArray($object){
-    
+        
         $userArray = null;
         
         if(method_exists($object, "toArray_fromParent")){
             $userArray = $object->toArray_fromParent();
         }else{
+            
+            $dateAttributes = $object->getDates();
+            
+            //TODO: use something like the following. Seems to be broken somehow
+//             $setDateFormat = function() {
+//                 $this->dateFormat = 'c';
+//             };
+            
+//             $setDateFormat->call($object);
+            
             $userArray = $object->toArray();
+            
+            foreach($dateAttributes as $dateAttribute){
+                if(isset($userArray[$dateAttribute])){
+                    $userArray[$dateAttribute] = $object->getAttribute($dateAttribute)->format('c');
+                }
+                 
+            }
+            
+            
         }
     
         $result = [];
-    
+        
         $mapping = config("scimserver.Users.mapping");
     
         $uses = [];
@@ -142,7 +162,7 @@ class Helper{
             $result[$namespace] = [];
             
             foreach($userArray as $key => $value){
-                $result[$namespace][$key] = $value;
+                $result[$namespace][$key] = AttributeMapping::eloquentAttributeToString($value);
             }
             
         }

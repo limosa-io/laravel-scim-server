@@ -4,6 +4,7 @@ namespace ArieTimmerman\Laravel\SCIMServer;
 
 use Route;
 use Illuminate\Support\Facades\Auth;
+use ArieTimmerman\Laravel\SCIMServer\Exceptions\SCIMException;
 
 /**
  * Helper class for the URL shortener
@@ -24,7 +25,14 @@ class RouteProvider {
 	    
 	    
         Route::bind('resourceType', function ($name) {
-            return new ResourceType($name, config("scimserver")[$name]);
+            
+            $config = @config("scimserver")[$name];
+            
+            if($config == null){
+                throw new SCIMException("Not found",404);
+            }
+            
+            return new ResourceType($name, $config);
         });
 	    
 		Route::get('/Me', function (){
@@ -48,9 +56,7 @@ class RouteProvider {
 		Route::post("/{resourceType}", 'ArieTimmerman\Laravel\SCIMServer\Http\Controllers\ResourceController@create');
 		
 		//replace
-		Route::put("/{resourceType}", function(){
-		    return response(null,501);
-		});
+		Route::put("/{resourceType}", 'ArieTimmerman\Laravel\SCIMServer\Http\Controllers\ResourceController@replace');
 		
 		//modify
 		Route::patch("/{resourceType}", 'ArieTimmerman\Laravel\SCIMServer\Http\Controllers\ResourceController@update');

@@ -31,13 +31,9 @@ php artisan vendor:publish --provider="ArieTimmerman\Laravel\SCIMServer\ServiceP
 
 # TODO
 
-* Remove the need for any configuration
-* Describe how to map attributes
-* Create examples
 * Support for PATCH and PUT requests
 * Better support for Create requests
 * Filtering with arrays of complex attributes
-* Create database schemas for optional use for new SCIM 2.0 servers. This removes the need for mapping attributes.
 * Deal with the limitations of SCIM, including
 	* Error handling. Very limited. What if two fields are wrong?
 	* Yet another schema. Please user JSON Schema.

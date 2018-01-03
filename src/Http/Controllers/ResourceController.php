@@ -21,13 +21,14 @@ use ArieTimmerman\Laravel\SCIMServer\ResourceType;
 
 class ResourceController extends Controller{
 
-	public static function flatten($array, $prefix = '') {
+	public static function flatten($array, $prefix = '', $iteration = 1) {
 		$result = array();
 		
 		foreach($array as $key=>$value) {
 			
 			if(is_array($value)) {
-				$result = $result + self::flatten($value, $prefix . $key . '.');
+			    //TODO: Ugly code
+				$result = $result + self::flatten($value, $prefix . $key . ($iteration == 1?':':'.'), 2);
 			} else {
 				$result[$prefix . $key] = $value;
 			}
@@ -122,13 +123,16 @@ class ResourceController extends Controller{
     	
     }
     
+    /**
+     * Create a new scim resource
+     * @param Request $request
+     * @param ResourceType $resourceType
+     * @throws SCIMException
+     * @return \Symfony\Component\HttpFoundation\Response|\Illuminate\Contracts\Routing\ResponseFactory
+     */
     public function create(Request $request, ResourceType $resourceType){
     	
     	$class = $resourceType->getClass();
-    	 
-    	if($class == null){
-    		throw new SCIMException("Not found",404);
-    	}
     	
     	$input = $request->input();
     	unset($input['schemas']);
@@ -136,7 +140,7 @@ class ResourceController extends Controller{
     	$flattened = self::flatten($input);
     	
     	$resourceObject = new $class();
-    	
+    	    	
     	foreach(array_keys($flattened) as $scimAttribute){
     		
     		$attributeConfig = $this->getAttributeConfig($resourceType, $scimAttribute);
@@ -144,7 +148,7 @@ class ResourceController extends Controller{
     		if($attributeConfig == null){
     			throw new SCIMException("Unknown attribute \"" . $scimAttribute . "\".",400);
     		}else{
-    			$attributeConfig->write($request->input($scimAttribute),$resourceObject);
+    			$attributeConfig->write($flattened[$scimAttribute],$resourceObject);
     		}
     		
     	}
@@ -159,10 +163,6 @@ class ResourceController extends Controller{
     	
     	$class = $resourceType->getClass();
     	
-    	if($class == null){
-    		throw new SCIMException("Not found",404);
-    	}
-    	
     	$resourceObject = $class::where("id",$id)->first();
     	
     	if($resourceObject == null){
@@ -173,13 +173,40 @@ class ResourceController extends Controller{
     	
     }
     
+    public function replace(Request $request, ResourceType $resourceType){
+        
+        $class = $resourceType->getClass();
+         
+        $resourceObject = $class::where("id",$id)->first();
+        
+        $input = $request->input();
+        unset($input['schemas']);
+        
+        $flattened = self::flatten($input);
+                 
+        foreach(array_keys($flattened) as $scimAttribute){
+        
+            $attributeConfig = $this->getAttributeConfig($resourceType, $scimAttribute);
+        
+            if($attributeConfig == null){
+                throw new SCIMException("Unknown attribute \"" . $scimAttribute . "\".",400);
+            }else{
+                $attributeConfig->write($flattened[$scimAttribute],$resourceObject);
+            }
+        
+        }
+        
+        // TODO: empty all attributes that have not been provided (except password???)
+         
+        $resourceObject->save();
+        
+        return Helper::objectToSCIMArray($resourceObject);
+        
+    }
+    
     public function update(Request $request, ResourceType $resourceType){
     	
     	$class = $resourceType->getClass();
-    	 
-    	if($class == null){
-    		throw new SCIMException("Not found",404);
-    	}
     	
     	$input = $request->input();
     	unset($input['schemas']);
@@ -328,10 +355,6 @@ class ResourceController extends Controller{
     public function index(Request $request, ResourceType $resourceType){
         
     	$class = $resourceType->getClass();
-    	
-    	if($class == null){
-    		throw new SCIMException("Not found",404);
-    	}
     	
     	// The 1-based index of the first query result. A value less than 1 SHALL be interpreted as 1.
     	$startIndex = max(1,intVal($request->input('startIndex',0)));

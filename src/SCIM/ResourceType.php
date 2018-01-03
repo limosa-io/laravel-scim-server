@@ -31,7 +31,7 @@ class ResourceType implements Jsonable {
 				"id" => $this->id,
 				"name" => $this->name,
 				
-				//Not really correct
+				//Not really correct. Get route by tag and generate url
 				"endpoint" => "/" . $this->plurar,
 				"description" => $this->description,
 				"schema" => $this->schema,

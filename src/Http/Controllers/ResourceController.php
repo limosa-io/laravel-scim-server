@@ -140,7 +140,9 @@ class ResourceController extends Controller{
     	$flattened = self::flatten($input);
     	
     	$resourceObject = new $class();
-    	    	
+    	
+    	
+    	
     	foreach(array_keys($flattened) as $scimAttribute){
     		
     		$attributeConfig = $this->getAttributeConfig($resourceType, $scimAttribute);
@@ -155,7 +157,7 @@ class ResourceController extends Controller{
     	
     	$resourceObject->save();
     	
-    	return \response(Helper::objectToSCIMArray($resourceObject), 201);
+    	return \response(Helper::objectToSCIMArray($resourceObject, $resourceType), 201);
     	
     }
 
@@ -169,11 +171,11 @@ class ResourceController extends Controller{
     		throw new SCIMException("Resource " . $id . " not found",404);
     	}
     	
-    	return Helper::objectToSCIMArray($resourceObject);
+    	return Helper::objectToSCIMArray($resourceObject, $resourceType);
     	
     }
     
-    public function replace(Request $request, ResourceType $resourceType){
+    public function replace(Request $request, ResourceType $resourceType, $id){
         
         $class = $resourceType->getClass();
          
@@ -183,24 +185,43 @@ class ResourceController extends Controller{
         unset($input['schemas']);
         
         $flattened = self::flatten($input);
+        
+        $uses = [];
                  
         foreach(array_keys($flattened) as $scimAttribute){
         
             $attributeConfig = $this->getAttributeConfig($resourceType, $scimAttribute);
-        
+            
             if($attributeConfig == null){
                 throw new SCIMException("Unknown attribute \"" . $scimAttribute . "\".",400);
             }else{
                 $attributeConfig->write($flattened[$scimAttribute],$resourceObject);
+                
+                $uses[] = $attributeConfig;
             }
         
         }
         
-        // TODO: empty all attributes that have not been provided (except password???)
-         
+        $allAttributeConfigs = $resourceType->getAllAttributeConfigs();
+                
+        foreach($uses as $use){
+            foreach($allAttributeConfigs as $key=>$option){
+                if($use->id == $option->id){
+                    unset($allAttributeConfigs[$key]);
+                }
+            }
+        }
+        
+        foreach($allAttributeConfigs as $attributeConfig){
+            // Do not write write-only attribtues (such as passwords)
+            if($attributeConfig->isReadSupported() && $attributeConfig->isWriteSupported()){
+                $attributeConfig->write(null,$resourceObject);
+            }
+        }
+        
         $resourceObject->save();
         
-        return Helper::objectToSCIMArray($resourceObject);
+        return Helper::objectToSCIMArray($resourceObject, $resourceType);
         
     }
     
@@ -393,7 +414,7 @@ class ResourceController extends Controller{
 		$attributes = [];
 		$excludedAttributes = [];
         
-        return new ListResponse($resourceObjects, $startIndex, $totalResults, $attributes, $excludedAttributes);
+        return new ListResponse($resourceObjects, $startIndex, $totalResults, $attributes, $excludedAttributes, $resourceType);
 
     }
 

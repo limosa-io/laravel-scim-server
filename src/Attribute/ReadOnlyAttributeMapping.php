@@ -10,4 +10,8 @@ class ReadOnlyAttributeMapping extends AttributeMapping {
 		//throw new SCIMException("Write of \"" . json_encode($this->eloquentAttribute) . "\" is not supported",302);
 	}
 	
+	public function isWriteSupported(){
+	    return false;
+	}
+	
 }

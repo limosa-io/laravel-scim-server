@@ -29,4 +29,36 @@ class ResourceType{
         return $this->configuration['class'];
     }
     
+    public static function user(){
+        return new ResourceType('Users', config('scimserver.Users'));
+    }
+    
+    
+    public function getAllAttributeConfigs($mapping = -1){
+        
+        $result = [];
+        
+        if($mapping == -1){
+            $mapping = $this->getMapping();
+        }
+        
+        foreach($mapping as $key=>$value){
+            
+            if($value instanceof AttributeMapping && $value != null){
+                $result[] = $value;
+            }elseif(is_array($value)){
+                
+                $extra = $this->getAllAttributeConfigs($value);
+                
+                if(!empty($extra)){
+                    $result = array_merge($result, $extra);
+                }
+            }
+            
+        }
+        
+        return $result;
+        
+    }
+    
 }

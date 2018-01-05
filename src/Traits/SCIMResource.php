@@ -31,10 +31,9 @@ trait SCIMResource {
     
     //TODO: Move this method to Helper class. Allows use of this method outside Trait
    
-    
-    public function toArray(){
-    	return Helper::objectToSCIMArray($this);
-    }
+//     public function toArray(){
+//     	return Helper::objectToSCIMArray($this);
+//     }
     
     public function toArray_fromParent(){
         return parent::toArray();

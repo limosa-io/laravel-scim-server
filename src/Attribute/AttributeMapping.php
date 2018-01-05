@@ -7,8 +7,12 @@ class AttributeMapping {
 	
 	public $eloquentAttribute, $read, $write;
 	
+	public $id = null;
+	
 	function __construct($eloquentAttribute, $read = null, $write = null) {
 		$this->eloquentAttribute = $eloquentAttribute;
+		
+		$this->id = sha1(json_encode($eloquentAttribute));
 		
 		if($read == null){
 			$read = function(&$object) {
@@ -59,6 +63,14 @@ class AttributeMapping {
 	    }
 	    
 	    return $value;
+	}
+	
+	public function isReadSupported(){
+	    return true;
+	}
+	
+	public function isWriteSupported(){
+	    return true;
 	}
 	
 }

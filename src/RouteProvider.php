@@ -23,7 +23,6 @@ class RouteProvider {
 	
 	private static function allRoutes(array $options = []){
 	    
-	    
         Route::bind('resourceType', function ($name) {
             
             $config = @config("scimserver")[$name];
@@ -36,7 +35,7 @@ class RouteProvider {
         });
 	    
 		Route::get('/Me', function (){
-		    return Helper::objectToSCIMArray(Auth::user());
+		    return Helper::objectToSCIMArray(Auth::user(), ResourceType::user());
 		});
 		
 		Route::get("/ServiceProviderConfig", 'ArieTimmerman\Laravel\SCIMServer\Http\Controllers\ServiceProviderController@index')->name('scim.serviceproviderconfig');
@@ -50,16 +49,16 @@ class RouteProvider {
 		// TODO: Use the attributes parameters ?attributes=userName, excludedAttributes=asdg,asdg (respect "returned" settings "always")
 		// TODO: Support ETag
 		
-		Route::get('/{resourceType}/{id}', 'ArieTimmerman\Laravel\SCIMServer\Http\Controllers\ResourceController@show')->name('scim.resource');;
+		Route::get('/{resourceType}/{id}', 'ArieTimmerman\Laravel\SCIMServer\Http\Controllers\ResourceController@show')->name('scim.resource');
 		Route::get("/{resourceType}", 'ArieTimmerman\Laravel\SCIMServer\Http\Controllers\ResourceController@index');
 		
 		Route::post("/{resourceType}", 'ArieTimmerman\Laravel\SCIMServer\Http\Controllers\ResourceController@create');
 		
 		//replace
-		Route::put("/{resourceType}", 'ArieTimmerman\Laravel\SCIMServer\Http\Controllers\ResourceController@replace');
+		Route::put("/{resourceType}/{id}", 'ArieTimmerman\Laravel\SCIMServer\Http\Controllers\ResourceController@replace');
 		
 		//modify
-		Route::patch("/{resourceType}", 'ArieTimmerman\Laravel\SCIMServer\Http\Controllers\ResourceController@update');
+		Route::patch("/{resourceType}/{id}", 'ArieTimmerman\Laravel\SCIMServer\Http\Controllers\ResourceController@update');
 		
 		// TODO: implement DELETE
 		Route::delete("/{resourceType}", function(){

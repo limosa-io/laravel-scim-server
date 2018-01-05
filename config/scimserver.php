@@ -46,6 +46,10 @@ return [
                 "example:name:space",
             ]),
             
+            'example:name:space' => [
+                'cityPrefix' => new A('cityPrefix')    
+            ],
+            
             'urn:ietf:params:scim:schemas:core:2.0:User' => [
                 
                 'userName' => new A("name"),

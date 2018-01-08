@@ -18,11 +18,15 @@ class ResourceType{
     }
     
     public function getMapping(){
-        return $this->configuration['mapping'];
+        return AttributeMapping::object($this->configuration['mapping'])->setDefaultSchema($this->configuration['schema']);
     }
     
     public function getName(){
         return $this->name;
+    }
+    
+    public function getSchema(){
+        return $this->configuration['schema'];
     }
     
     public function getClass(){

@@ -7,51 +7,6 @@ use Illuminate\Contracts\Support\Arrayable;
 class Helper
 {
 
-    public static function getMappedValue(&$user, $valueMapping, &$uses = [])
-    {
-        $v = $valueMapping;
-        
-        if ($v instanceof AttributeMapping) {
-            
-            $v = $valueMapping->read($user);
-            
-            if (is_string($valueMapping->eloquentAttribute)) {
-                $uses[] = $valueMapping->eloquentAttribute;
-            }
-        }
-        
-        if (is_scalar($v)) {
-            
-            $v = $v;
-        } else 
-            if (is_array($v)) {
-                
-                $vNew = [];
-                
-                foreach ($v as $j => $l) {
-                    
-                    $result = Helper::getMappedValue($user, $l, $uses);
-                    
-                    //TODO: Optionally, include null values
-                    if ($result != null) {
-                        $vNew[$j] = $result;
-                    }
-                }
-                
-                $v = $vNew;
-            } else 
-                if ($v instanceof AttributeMapping) {
-                    $v = Helper::getMappedValue($user, $v, $uses);
-                }
-        
-        return $v;
-    }
-
-    public static function isAssoc($array)
-    {
-        return (array_values($array) !== $array);
-    }
-    
     // var_dump(class_uses(config('auth.providers.users.model')));exit;
     public static function getAuthUserClass()
     {
@@ -94,13 +49,6 @@ class Helper
             $userArray = $object->toArray_fromParent();
         } else {
             
-            // TODO: use something like the following. Seems to be broken somehow
-            // $setDateFormat = function() {
-            // $this->dateFormat = 'c';
-            // };
-            
-            // $setDateFormat->call($object);
-            
             $userArray = $object->toArray();
             
             if (method_exists($object, 'getDates')) {
@@ -112,6 +60,7 @@ class Helper
                     }
                 }
             }
+            
         }
         
         $result = [];
@@ -120,38 +69,14 @@ class Helper
             
             $mapping = $resourceType->getMapping();
             
-            $uses = [];
+            $uses = $mapping->getEloquentAttributes();
             
-            foreach ($mapping as $key => $value) {
-                
-                preg_match("/^(.*?)(\\.\\*)?$/", $key, $matches);
-                
-                $key = $matches[1];
-                
-                if ($value instanceof AttributeMapping && is_string($value->eloquentAttribute)) {
-                    unset($userArray[$value->eloquentAttribute]);
-                }
-                
-                $v = Helper::getMappedValue($object, $value, $uses);
-                
-                if ($v !== null) {
-                    
-                    if (isset($matches[2]) && ! empty($matches[2])) {
-                        $result[$key] = [];
-                        $result[$key][] = $v;
-                    } else {
-                        $result[$key] = $v;
-                    }
-                    
-                }
-                
-            }
-            //exit;
-            
+            $result = $mapping->read($object);
+                        
             foreach ($uses as $key) {
                 unset($userArray[$key]);
             }
-            
+                        
             if (! empty($userArray) && $resourceType->getConfiguration()['map_unmapped']) {
                 
                 $namespace = $resourceType->getConfiguration()['unmapped_namespace'];
@@ -169,4 +94,126 @@ class Helper
         
         return $result;
     }
+
+    /**
+     * See https://tools.ietf.org/html/rfc7644#section-3.4.2.2
+     * @param unknown $query
+     * @param unknown $node
+     * @throws SCIMException
+     */
+    public static function scimFilterToLaravelQuery(ResourceType $resourceType, &$query, $node){
+         
+        if($node instanceof Negation){
+            $filter = $node->getFilter();
+    
+            throw new SCIMException("Negation filters not supported",400,"invalidFilter");
+             
+        }else if($node instanceof ComparisonExpression){
+             
+            $operator = strtolower($node->operator);
+    
+            $attributeConfig = $this->getAttributeConfig($resourceType, $node->attributePath->schema ? $node->attributePath->schema . ':' . implode('.', $node->attributePath->attributeNames) : implode('.', $node->attributePath->attributeNames));
+    
+            // Consider calling something like $attributeConfig->doQuery($query,$attribute,$operation,$value)
+            // Consider calling something like $attributeConfig->doQuery($query,$subQuery)
+    
+            switch($operator){
+                 
+                case "eq":
+                    $query->where($attributeConfig->eloquentAttribute,$node->compareValue);
+                    break;
+                case "ne":
+                    $query->where($attributeConfig->eloquentAttribute,'<>',$node->compareValue);
+                    break;
+                case "co":
+                    //TODO: escape % characters etc, require min length
+                    $query->where($attributeConfig->eloquentAttribute,'like','%' . addcslashes($node->compareValue, '%_') . '%');
+                    break;
+                case "sw":
+                    //TODO: escape % characters etc, require min length
+                    $query->where($attributeConfig->eloquentAttribute,'like',addcslashes($node->compareValue, '%_') . '%');
+                    break;
+                case "ew":
+                    //TODO: escape % characters etc, require min length
+                    $query->where($attributeConfig->eloquentAttribute,'like','%' . addcslashes($node->compareValue, '%_'));
+                    break;
+                case "pr":
+                    //TODO: Check for existence for complex attributes
+                    if(method_exists($query, 'whereNotNull')){
+                        $query->whereNotNull($attributeConfig->eloquentAttribute);
+                    }else{
+                        $query->where($attributeConfig->eloquentAttribute,'!=',null);
+                    }
+    
+                    break;
+                case "gt":
+                    $query->where($attributeConfig->eloquentAttribute,'>',$node->compareValue);
+                    break;
+                case "ge":
+                    $query->where($attributeConfig->eloquentAttribute,'>=',$node->compareValue);
+                    break;
+                case "lt":
+                    $query->where($attributeConfig->eloquentAttribute,'<',$node->compareValue);
+                    break;
+                case "le":
+                    $query->where($attributeConfig->eloquentAttribute,'<=',$node->compareValue);
+                    break;
+                default:
+                    die("Not supported!!");
+                    break;
+                     
+            }
+             
+        }else if($node instanceof Conjunction){
+             
+            foreach ($node->getFactors() as $factor){
+                 
+                $query->where(function($query) use ($factor){
+                    $this->scimFilterToLaravelQuery($resourceType, $query, $factor);
+                });
+                     
+            }
+             
+        }else if($node instanceof Disjunction){
+             
+            foreach ($node->getTerms() as $term){
+    
+                $query->orWhere(function($query) use ($term){
+                    $this->scimFilterToLaravelQuery($resourceType, $query, $term);
+                });
+                    	
+            }
+             
+        }else if($node instanceof ValuePath){
+            	
+            // ->filer
+            $getAttributePath = function() {
+                return $this->attributePath;
+            };
+            	
+            $getFilter = function() {
+                return $this->filter;
+            };
+            	
+            //     	    var_dump($getAttributePath->call($node));
+            //     	    var_dump($getFilter->call($node));
+            	
+            // $mode->getTable()
+            	
+            $query->whereExists(function($query){
+                $query->select(DB::raw(1))
+                ->from('users AS users2')
+                ->whereRaw('users.id = users2.id');
+            });
+                	
+                	
+                //$node->
+    
+        }else if($node instanceof Factor){
+            var_dump($node);
+            die("Not ok hier!\n");
+        }
+         
+    }
+    
 }

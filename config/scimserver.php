@@ -1,12 +1,10 @@
 <?php
 use ArieTimmerman\Laravel\SCIMServer\Attribute\AttributeMapping as A;
 use ArieTimmerman\Laravel\SCIMServer\Attribute\ConstantAttributeMapping as C;
-use ArieTimmerman\Laravel\SCIMServer\Attribute\ReadOnlyAttributeMapping as R;
-use ArieTimmerman\Laravel\SCIMServer\Attribute\Complex;
 
 use ArieTimmerman\Laravel\SCIMServer\SCIM\Schema;
-use ArieTimmerman\Laravel\SCIMServer\Attribute\WriteOnlyAttributeMapping;
 use ArieTimmerman\Laravel\SCIMServer\Helper;
+use ArieTimmerman\Laravel\SCIMServer\Attribute\AttributeMapping;
 
 return [
     
@@ -23,39 +21,39 @@ return [
         // Map a SCIM attribute to an attribute of the object.
         'mapping' => [
             
-            'id' => new R("id"),
+            'id' => AttributeMapping::eloquent("id")->disableWrite(),
             
             'externalId' => null,
             
             'meta' => [
-                'created' => new R("created_at"),
-                'lastModified' => new R("updated_at"),
+                'created' => AttributeMapping::eloquent("created_at")->disableWrite(),
+                'lastModified' => AttributeMapping::eloquent("updated_at")->disableWrite(),
                 
-                'location' => new R("name", function ($object) {
+                'location' => (new AttributeMapping())->setRead(function ($object) {
                     return route('scim.resource', [
                         'name' => 'Users',
                         'id' => $object->id
                     ]);
                 }),
                 
-                'resourceType' => new C("User")
+                'resourceType' => AttributeMapping::constant("User")
             ],
             
-            "schemas" => new C([
-                "urn:ietf:params:scim:schemas:core:2.0:User",
-                "example:name:space",
+            'schemas' => AttributeMapping::constant([
+                'urn:ietf:params:scim:schemas:core:2.0:User',
+                'example:name:space',
             ]),
             
             'example:name:space' => [
-                'cityPrefix' => new A('cityPrefix')    
+                'cityPrefix' => AttributeMapping::eloquent('cityPrefix')    
             ],
             
             'urn:ietf:params:scim:schemas:core:2.0:User' => [
                 
-                'userName' => new A("name"),
+                'userName' => AttributeMapping::eloquent("name"),
                 
                 'name' => [
-                    'formatted' => new A("name"),
+                    'formatted' => AttributeMapping::eloquent("name"),
                     'familyName' => null,
                     'givenName' => null,
                     'middleName' => null,
@@ -74,17 +72,15 @@ return [
                 'timezone' => null,
                 'active' => null,
                 
-                'password' => new WriteOnlyAttributeMapping('password'),
+                'password' => AttributeMapping::eloquent('password')->disableRead(),
                 
                 // Multi-Valued Attributes
-                'emails' => new Complex('email',function($user){
-                    return [[
-                        "value" => new A("email"),
+                'emails' => [[
+                        "value" => AttributeMapping::eloquent("email"),
                         "display" => null,
-                        "type" => new C("work"),
-                        "primary" => true
-                    ]];
-                }),
+                        "type" => AttributeMapping::constant("work"),
+                        "primary" => AttributeMapping::constant(true)
+                ]],
                 
                 'phoneNumbers' => [[
                     "value" => null,

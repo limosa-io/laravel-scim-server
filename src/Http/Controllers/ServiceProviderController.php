@@ -12,7 +12,7 @@ class ServiceProviderController extends Controller{
             "schemas" => ["urn:ietf:params:scim:schemas:core:2.0:ServiceProviderConfig"],
             "documentationUri" => "http://example.com/help/scim.html",
             "patch" => [
-                "supported" => false,
+                "supported" => true,
             ],
             "bulk" => [
                 "supported" => false,

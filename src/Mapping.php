@@ -41,7 +41,7 @@ class Mapping {
             throw new SCIMException("Unknown attribute!");   
         }
         
-        return AttributeMapping::ensureAttributeMappingObject($result);
+        return AttributeMapping::ensureAttributeMappingObject($result, $this);
         
     }
     

@@ -190,15 +190,9 @@ class ResourceController extends Controller{
     	
     	unset($input['schemas']);
     	
-    	// "path":"name.familyName"
-    	// "path":"addresses[type eq \"work\"]",
-    	// members[value eq \"2819c223-7f76-453a-919d-413861904646\"]"
-    	
     	//TODO: Also support urn:ietf:params:scim:api:messages:2.0:PatchOp:Operations
     	foreach( $input['Operations'] as $operation){
     	    
-    	    
-    	        	    
             switch(strtolower($operation['op'])){
                 
                 case "add":
@@ -221,14 +215,23 @@ class ResourceController extends Controller{
                     
                     // TODO: here is path required
                     
-                    foreach($operations['value'] as $key => $value){
-                        $attributeConfig->remove($value, $resourceObject);
+                    if(isset($operation['path'])){
+                    
+                        $attributeConfig = $this->getAttributeConfig($resourceType, $operation['path']);
+                        $attributeConfig->remove($resourceObject);
+                    
+                    }else{
+                        
+                        //TODO: If "path" is unspecified, the operation fails with HTTP status code 400 and a "scimType" error code of "noTarget".
+                    
+                        throw new SCIMException("Path is required");
                     }
+                    
                     
                     break;
                     
                 case "replace":
-                
+                    
                     if(isset($operation['path'])){
                         
                         $attributeConfig = $this->getAttributeConfig($resourceType, $operation['path']);
@@ -254,27 +257,6 @@ class ResourceController extends Controller{
             return Helper::objectToSCIMArray($resourceObject, $resourceType);
             
     	}
-    	
-    	/*
-    	    {
-		     "schemas":
-		       ["urn:ietf:params:scim:api:messages:2.0:PatchOp"],
-		     "Operations":[{
-		       "op":"add", // remove, replace
-		       "value":{
-		         "emails":[
-		           {
-		             "value":"babs@jensen.org",
-		             "type":"home"
-		           }
-		         ],
-		         "nickname":"Babs"
-		     }]
-		   }
-		       
-    	 */
-    	
-    	//$class->test = "asdg";
     	
     }
     

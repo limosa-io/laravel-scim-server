@@ -4,15 +4,16 @@ namespace ArieTimmerman\Laravel\SCIMServer\Attribute;
 
 use Illuminate\Support\Carbon;
 use ArieTimmerman\Laravel\SCIMServer\Exceptions\SCIMException;
-use Tmilos\ScimFilterParser\Ast\Node;
+
 class AttributeMapping {
 	
-	public $read;
-	public $write;
+	public $read, $write;
 	
 	public $id = null;
 	public $parent = null;
 	public $filter = null;
+	
+	public $key = null;
 	
 	private $readEnabled = true;
 	private $writeEnabled = true;
@@ -21,7 +22,7 @@ class AttributeMapping {
 	
 	private $mappingAssocArray = null;
 	
-	private $eloquentAttributes = [];
+	public $eloquentAttributes = [];
 	
 	private $defaultSchema = null, $schema = null;
 	
@@ -30,8 +31,8 @@ class AttributeMapping {
 	}
 	
 	public static function arrayOfObjects($mapping, $parent = null) : AttributeMapping{
-	    return (new AttributeMapping())->setMappingAssocArray($mapping)->setRead(
-	       function (&$object) use ($mapping){
+	    return (new Collection())->setStaticCollection($mapping)->setRead(
+	       function (&$object) use ($mapping, $parent){
 	           
 	           $result = [];
 	           
@@ -46,22 +47,17 @@ class AttributeMapping {
 	           return empty($result) ? null : $result;
 	           
 	       }
-	    );;
-	}
-	
-	public static function constantCollection($collection){
-	    
-	    //TODO: implement write with filter support!
-	    
+	    );
 	}
 	
 	public static function object($mapping, $parent = null) : AttributeMapping{
 	    
-	    return (new AttributeMapping())->setMappingAssocArray($mapping)->setRead(function(&$object) use ($mapping) {
-	        
+	    return (new AttributeMapping())->setMappingAssocArray($mapping)->setRead(function(&$object) use ($mapping, $parent) {
+	        	        
 		    $result = [];
 		    
 		    foreach($mapping as $key=>$value){
+		        
                 $result[$key] = self::ensureAttributeMappingObject($value)->setParent($parent)->read($object);
                 
                 if(empty($result[$key])){
@@ -86,20 +82,12 @@ class AttributeMapping {
 	public static function eloquent($eloquentAttribute, $parent = null) : AttributeMapping{
 	    
 	    return (new AttributeMapping())->setParent($parent)->setRead(function(&$object) use ($eloquentAttribute)  {
-			    
+	        	        
 			    $result = $object->{$eloquentAttribute};
 			    
 			    return self::eloquentAttributeToString($result); 
 			    
-			})->setWrite(function($value, &$object) {
-			    
-			    //do something with the parent's filter, if present ...
-			    
-			    // load first parent that has filter (read??)
-			    // 
-			    
-			    // Update emails set email=test@test.nl where emails.type=work
-			    
+			})->setWrite(function($value, &$object) use ($eloquentAttribute) {
 			    $object->{$eloquentAttribute} = $value; 
 			})->setSortAttribute($eloquentAttribute)->setEloquentAttributes([$eloquentAttribute]);
 	}
@@ -181,8 +169,42 @@ class AttributeMapping {
 	    return $this;
 	}
 	
+	public function setKey($key){
+	    $this->key = $key;
+	    return $this;
+	}
+	
+	public function getKey(){
+	    return $this->key;
+	}
+	
+	public function getFullKey(){
+	    
+	    $parent = $this->parent;
+	    
+	    $fullKey = [];
+	    
+	    while($parent != null){
+	        $parentKey = $parent->getKey();
+	        
+	        $fullKey[] = $parentKey;
+	        
+	        $parent = $parent->parent;
+	    }
+	    
+	    $fullKey[]  = $this->getKey();
+	    
+	    //ugly hack
+	    $fullKey = array_filter($fullKey, function($value){ return !empty($value); });
+	    
+	    return implode(".", $fullKey);
+	}
+	
 	public function setFilter($filter){
+	    
 	    $this->filter = $filter;
+	    
+	    return $this;
 	}
 	
 	//TODO: remove first argument. Introduce other sorting mechanism
@@ -193,7 +215,7 @@ class AttributeMapping {
 	    };
 	    
 	    $this->write = function($value, &$object){
-	        die("not implemente writed!!");
+	        die("not implemente write for " . $this->getFullKey().  "!!");
 	    };
 		
 	}
@@ -210,11 +232,8 @@ class AttributeMapping {
 	
 	public function withFilter($filter){
 	    
-	    if($filter == null){
-	        return $this;
-	    }else{
-	        throw new SCIMException("filter is not supported!");
-	    }
+        return $this->setFilter($filter);
+	  
 	    
 // 	    return new AttributeMapping($this->eloquentAttribute,$this->read,$this->write,$this,$filter);
 	    
@@ -252,39 +271,16 @@ class AttributeMapping {
 	    
 	    $current = $this->read($object);
 	    
-	    if($this->filter != null){
-	        
-	        throw new SCIMException("filter not supported!");
-	        
-	        $collection = null;
-	        
-	        if(is_array($read)){
-	            $collection = collect($current);
-	        }else{
-	            $collection = collect( [$current] );
-	        }
-	        
-	        $result = $collection->where("test", '==', 'test');
-	     
-	        // $result->getMapping($attributePath).replace()
-	        
-	        // TODO: remove $result ..., add new
-	        // $result->remove();
-	        // 
-	        
-	    }
-	    
-	    if(is_array($current)){
-	        $current = collect($current);
-	    }
-	    
+	    //TODO: Really implement replace ...???
 	    
 	    return $this->write($value, $object);
 	}
 	
-	public function remove($value, &$object,$filter = null) {
-	    //TODO: consider filter
+	public function remove(&$object) {
+	    
+	    //TODO: implement remove for multi valued attributes 
 	    return $this->write(null, $object);
+	    
 	}
 	
 	public function write($value, &$object) {
@@ -312,18 +308,18 @@ class AttributeMapping {
 	    return $this->writeEnabled;
 	}
 	
-	public static function ensureAttributeMappingObject($attributeMapping){
+	public static function ensureAttributeMappingObject($attributeMapping, $parent = null) : AttributeMapping{
 	    
 	   $result = null;
 	   
 	   if($attributeMapping == null){
-            $result = self::noMapping();
+            $result = self::noMapping($parent);
         }else if (is_array($attributeMapping) && !empty($attributeMapping) && isset($attributeMapping[0]) ){
-            $result = self::arrayOfObjects($attributeMapping);
+            $result = self::arrayOfObjects($attributeMapping, $parent);
         }else if(is_array($attributeMapping)){
-            $result = self::object($attributeMapping);
+            $result = self::object($attributeMapping, $parent);
         }else if ($attributeMapping instanceof AttributeMapping){
-            $result = $attributeMapping;
+            $result = $attributeMapping->setParent($parent);
         }else{
             throw new SCIMException("not ok!");
         }
@@ -342,7 +338,7 @@ class AttributeMapping {
 	    if($key == null) return $this;
 	     
 	    if($this->mappingAssocArray != null && array_key_exists($key,$this->mappingAssocArray)){
-	        return self::ensureAttributeMappingObject($this->mappingAssocArray[$key])->setParent(null);
+	        return self::ensureAttributeMappingObject($this->mappingAssocArray[$key])->setParent($this)->setKey($key);
 	    }else{
 	        throw new SCIMException("No mapping!");
 	    }

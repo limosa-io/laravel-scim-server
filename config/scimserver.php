@@ -78,6 +78,11 @@ return [
                 'emails' => [[
                         "value" => AttributeMapping::eloquent("email"),
                         "display" => null,
+                        "type" => AttributeMapping::constant("other"),
+                        "primary" => AttributeMapping::constant(true)
+                ],[
+                        "value" => AttributeMapping::eloquent("email"),
+                        "display" => null,
                         "type" => AttributeMapping::constant("work"),
                         "primary" => AttributeMapping::constant(true)
                 ]],

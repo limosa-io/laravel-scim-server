@@ -39,7 +39,7 @@ class SchemaController extends Controller{
 		});
 		 
 		if($result == null){
-			throw new SCIMException("Resource not found",404);
+			throw (new SCIMException(sprintf('Resource "%s" not found',$id)))->setCode(404);
 		}
 		 
 		return $result;

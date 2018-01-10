@@ -6,17 +6,28 @@ use Exception;
 
 class SCIMException extends Exception{
 	
-	protected $scimType = null;
+	protected $scimType = "invalidValue";
+	protected $httpCode = 404;
 	
 	//TODO: What if more than two parameters are provided?
-	function __construct($message, $code = 404, $scimType = "invalidValue"){
-		parent::__construct($message,$code);
-		
-		$this->scimType = $scimType;
+	function __construct($message){
+		parent::__construct($message);
+	}
+	
+	public function setScimType($scimType) : SCIMException{
+	    $this->scimType = $scimType;
+	    
+	    return $this;
+	}
+	
+	public function setCode($code) : SCIMException{
+	    $this->httpCode = $code;
+	    
+	    return $this;
 	}
 	
 	public function render($request){
-		return response(new \ArieTimmerman\Laravel\SCIMServer\SCIM\Error($this->getMessage(),$this->getCode(),$this->scimType),$this->getCode());
+		return response(new \ArieTimmerman\Laravel\SCIMServer\SCIM\Error($this->getMessage(),$this->httpCode,$this->scimType),$this->httpCode);
 	}
 	
 }

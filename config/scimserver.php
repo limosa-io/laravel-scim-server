@@ -1,7 +1,4 @@
 <?php
-use ArieTimmerman\Laravel\SCIMServer\Attribute\AttributeMapping as A;
-use ArieTimmerman\Laravel\SCIMServer\Attribute\ConstantAttributeMapping as C;
-
 use ArieTimmerman\Laravel\SCIMServer\SCIM\Schema;
 use ArieTimmerman\Laravel\SCIMServer\Helper;
 use ArieTimmerman\Laravel\SCIMServer\Attribute\AttributeMapping;
@@ -34,7 +31,7 @@ return [
                         'name' => 'Users',
                         'id' => $object->id
                     ]);
-                }),
+                })->disableWrite(),
                 
                 'resourceType' => AttributeMapping::constant("User")
             ],
@@ -42,7 +39,7 @@ return [
             'schemas' => AttributeMapping::constant([
                 'urn:ietf:params:scim:schemas:core:2.0:User',
                 'example:name:space',
-            ]),
+            ])->ignoreWrite(),
             
             'example:name:space' => [
                 'cityPrefix' => AttributeMapping::eloquent('cityPrefix')    
@@ -78,13 +75,13 @@ return [
                 'emails' => [[
                         "value" => AttributeMapping::eloquent("email"),
                         "display" => null,
-                        "type" => AttributeMapping::constant("other"),
-                        "primary" => AttributeMapping::constant(true)
+                        "type" => AttributeMapping::constant("other")->ignoreWrite(),
+                        "primary" => AttributeMapping::constant(true)->ignoreWrite()
                 ],[
                         "value" => AttributeMapping::eloquent("email"),
                         "display" => null,
-                        "type" => AttributeMapping::constant("work"),
-                        "primary" => AttributeMapping::constant(true)
+                        "type" => AttributeMapping::constant("work")->ignoreWrite(),
+                        "primary" => AttributeMapping::constant(true)->ignoreWrite()
                 ]],
                 
                 'phoneNumbers' => [[

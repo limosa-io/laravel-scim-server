@@ -144,9 +144,22 @@ class AttributeMapping {
 	    return $this;
 	}
 	
+	public function ignoreWrite(){
+	    $this->write = function($value, &$object){
+	        //ignore
+	    };
+	    
+	    return $this;
+	}
+	
 	public function disableWrite(){
-        $this->write = function($value, &$object){ /* TODO: throw exception?? */ };
+	    
+        $this->write = function($value, &$object){ 
+            throw (new SCIMException(sprintf('Write to "%s" is not supported',$this->getFullKey())))->setCode(500)->setScimType('mutability');
+        };
+        
         $this->writeEnabled = false;
+        
 	    return $this;
 	}
 	
@@ -321,7 +334,7 @@ class AttributeMapping {
         }else if ($attributeMapping instanceof AttributeMapping){
             $result = $attributeMapping->setParent($parent);
         }else{
-            throw new SCIMException("not ok!");
+            throw (new SCIMException(sprintf('Found unknown attribute "%s" in "%s"',$attributeMapping,$this->getFullKey())))->setCode(500);
         }
         
         return $result;
@@ -340,7 +353,7 @@ class AttributeMapping {
 	    if($this->mappingAssocArray != null && array_key_exists($key,$this->mappingAssocArray)){
 	        return self::ensureAttributeMappingObject($this->mappingAssocArray[$key])->setParent($this)->setKey($key);
 	    }else{
-	        throw new SCIMException("No mapping!");
+	        throw new SCIMException(sprintf('No mapping for %s',$key));
 	    }
 	     
 	}
@@ -354,7 +367,7 @@ class AttributeMapping {
 	    $schema = $attributePath->schema;
 	    	    
 	    if(!empty($schema) && !empty($this->getSchema()) && $this->getSchema() != $schema){
-	        new SCIMException("Schema conflict!");
+	        throw (new SCIMException(sprintf('Trying to get attribute for schema "%s". But schema is already "%s"',$attributePath->schema,$this->getSchema())))->setCode(500)->setScimType('noTarget');
 	    }
 	    
 	    $elements = [];
@@ -367,6 +380,7 @@ class AttributeMapping {
 	        $elements[] = $a;
 	    }
 	    
+	    /** @var AttributeMapping */
 	    $node = $this;
 	    
         foreach($elements as $element){
@@ -400,6 +414,58 @@ class AttributeMapping {
 	    }
 	
 	    return $result;
+	}
+	
+	public function applyWhereCondition(&$query,$operator,$value){
+	    
+	    //only filter on OWN eloquent attributes
+	    if(empty($this->eloquentAttributes)) throw new SCIMException("Can't sort on . " + $this->getFullKey());
+	    
+	    $attribute = $this->eloquentAttributes[0];
+	    
+	    switch($operator){
+	         
+	        case "eq":
+	            $query->where($attribute,$value);
+	            break;
+	        case "ne":
+	            $query->where($attribute,'<>',$value);
+	            break;
+	        case "co":
+	            //TODO: escape % characters etc, require min length
+	            $query->where($attribute,'like','%' . addcslashes($value, '%_') . '%');
+	            break;
+	        case "sw":
+	            //TODO: escape % characters etc, require min length
+	            $query->where($attribute,'like',addcslashes($value, '%_') . '%');
+	            break;
+	        case "ew":
+	            //TODO: escape % characters etc, require min length
+	            $query->where($attribute,'like','%' . addcslashes($value, '%_'));
+	            break;
+	        case "pr":
+	            //TODO: Check for existence for complex attributes
+	            $query->whereNotNull($attribute);
+	    
+	            break;
+	        case "gt":
+	            $query->where($attribute,'>',$value);
+	            break;
+	        case "ge":
+	            $query->where($attribute,'>=',$value);
+	            break;
+	        case "lt":
+	            $query->where($attribute,'<',$value);
+	            break;
+	        case "le":
+	            $query->where($attribute,'<=',$value);
+	            break;
+	        default:
+	            die("Not supported!!");
+	            break;
+	            
+	    }
+	    
 	}
 	
 }

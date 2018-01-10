@@ -13,10 +13,18 @@ class RouteProvider {
 	
 	public static function routes(array $options = []) {
 			
-		$prefix = "scim/v2";
-				
-		Route::prefix($prefix)->middleware(['bindings','ArieTimmerman\Laravel\SCIMServer\Middleware\SCIMHeaders'])->group(function() use ($options){
-			self::allRoutes($options);
+	    $prefix = 'scim';
+		
+		Route::prefix($prefix)->group(function() use ($options, $prefix){
+			
+		    Route::prefix('v2')->middleware(['bindings','ArieTimmerman\Laravel\SCIMServer\Middleware\SCIMHeaders'])->group(function() use ($options){
+		        self::allRoutes($options);
+		    });
+		    
+		    Route::get('/v1',function() use ($prefix){
+		      throw (new SCIMException('Only SCIM v2 is supported. Accessible under ' . url($prefix . '/v2')))->setCode(501)->setScimType('invalidVers');
+		    });
+		    
 		});
 		
 	}
@@ -28,7 +36,7 @@ class RouteProvider {
             $config = @config("scimserver")[$name];
             
             if($config == null){
-                throw new SCIMException("Not found",404);
+                throw (new SCIMException(sprintf('No resource "%s" found.',$name)))->setCode(404);
             }
             
             return new ResourceType($name, $config);
@@ -50,7 +58,7 @@ class RouteProvider {
 		// TODO: Support ETag
 		
 		Route::get('/{resourceType}/{id}', 'ArieTimmerman\Laravel\SCIMServer\Http\Controllers\ResourceController@show')->name('scim.resource');
-		Route::get("/{resourceType}", 'ArieTimmerman\Laravel\SCIMServer\Http\Controllers\ResourceController@index');
+		Route::get("/{resourceType}", 'ArieTimmerman\Laravel\SCIMServer\Http\Controllers\ResourceController@index')->name('scim.resources');
 		
 		Route::post("/{resourceType}", 'ArieTimmerman\Laravel\SCIMServer\Http\Controllers\ResourceController@create');
 		

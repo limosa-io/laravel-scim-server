@@ -3,6 +3,10 @@ namespace ArieTimmerman\Laravel\SCIMServer;
 
 use ArieTimmerman\Laravel\SCIMServer\Attribute\AttributeMapping;
 use Illuminate\Contracts\Support\Arrayable;
+use Tmilos\ScimFilterParser\Ast\ComparisonExpression;
+use Tmilos\ScimFilterParser\Ast\Negation;
+use Tmilos\ScimFilterParser\Ast\Conjunction;
+use Tmilos\ScimFilterParser\Ast\Disjunction;
 
 class Helper
 {
@@ -21,7 +25,7 @@ class Helper
     {
         $result = null;
         
-        if (! empty($object) && is_object($object[0])) {
+        if (! empty($object) && isset($object[0]) && is_object($object[0])) {
             
             if (! in_array('ArieTimmerman\Laravel\SCIMServer\Traits\SCIMResource', class_uses(get_class($object[0])))) {
                 
@@ -72,7 +76,7 @@ class Helper
             $uses = $mapping->getEloquentAttributes();
             
             $result = $mapping->read($object);
-                        
+                 
             foreach ($uses as $key) {
                 unset($userArray[$key]);
             }
@@ -103,73 +107,28 @@ class Helper
      */
     public static function scimFilterToLaravelQuery(ResourceType $resourceType, &$query, $node){
          
+        //var_dump($node);exit;
+        
         if($node instanceof Negation){
             $filter = $node->getFilter();
     
-            throw new SCIMException("Negation filters not supported",400,"invalidFilter");
+            throw (new SCIMException('Negation filters not supported'))->setCode(400)->setScimType('invalidFilter');
              
         }else if($node instanceof ComparisonExpression){
              
             $operator = strtolower($node->operator);
     
-            $attributeConfig = $this->getAttributeConfig($resourceType, $node->attributePath->schema ? $node->attributePath->schema . ':' . implode('.', $node->attributePath->attributeNames) : implode('.', $node->attributePath->attributeNames));
-    
-            // Consider calling something like $attributeConfig->doQuery($query,$attribute,$operation,$value)
-            // Consider calling something like $attributeConfig->doQuery($query,$subQuery)
-    
-            switch($operator){
-                 
-                case "eq":
-                    $query->where($attributeConfig->eloquentAttribute,$node->compareValue);
-                    break;
-                case "ne":
-                    $query->where($attributeConfig->eloquentAttribute,'<>',$node->compareValue);
-                    break;
-                case "co":
-                    //TODO: escape % characters etc, require min length
-                    $query->where($attributeConfig->eloquentAttribute,'like','%' . addcslashes($node->compareValue, '%_') . '%');
-                    break;
-                case "sw":
-                    //TODO: escape % characters etc, require min length
-                    $query->where($attributeConfig->eloquentAttribute,'like',addcslashes($node->compareValue, '%_') . '%');
-                    break;
-                case "ew":
-                    //TODO: escape % characters etc, require min length
-                    $query->where($attributeConfig->eloquentAttribute,'like','%' . addcslashes($node->compareValue, '%_'));
-                    break;
-                case "pr":
-                    //TODO: Check for existence for complex attributes
-                    if(method_exists($query, 'whereNotNull')){
-                        $query->whereNotNull($attributeConfig->eloquentAttribute);
-                    }else{
-                        $query->where($attributeConfig->eloquentAttribute,'!=',null);
-                    }
-    
-                    break;
-                case "gt":
-                    $query->where($attributeConfig->eloquentAttribute,'>',$node->compareValue);
-                    break;
-                case "ge":
-                    $query->where($attributeConfig->eloquentAttribute,'>=',$node->compareValue);
-                    break;
-                case "lt":
-                    $query->where($attributeConfig->eloquentAttribute,'<',$node->compareValue);
-                    break;
-                case "le":
-                    $query->where($attributeConfig->eloquentAttribute,'<=',$node->compareValue);
-                    break;
-                default:
-                    die("Not supported!!");
-                    break;
-                     
-            }
+            $attributeConfig = $resourceType->getMapping()->getSubNodeWithPath($node);
+            
+            $attributeConfig->applyWhereCondition($query, $operator, $node->compareValue);
              
         }else if($node instanceof Conjunction){
              
+            
             foreach ($node->getFactors() as $factor){
                  
-                $query->where(function($query) use ($factor){
-                    $this->scimFilterToLaravelQuery($resourceType, $query, $factor);
+                $query->where(function($query) use ($factor,$resourceType){
+                    Helper::scimFilterToLaravelQuery($resourceType, $query, $factor);
                 });
                      
             }
@@ -178,13 +137,14 @@ class Helper
              
             foreach ($node->getTerms() as $term){
     
-                $query->orWhere(function($query) use ($term){
-                    $this->scimFilterToLaravelQuery($resourceType, $query, $term);
+                $query->orWhere(function($query) use ($term, $resourceType){
+                    Helper::scimFilterToLaravelQuery($resourceType, $query, $term);
                 });
                     	
             }
-             
+            
         }else if($node instanceof ValuePath){
+            
             	
             // ->filer
             $getAttributePath = function() {
@@ -194,12 +154,7 @@ class Helper
             $getFilter = function() {
                 return $this->filter;
             };
-            	
-            //     	    var_dump($getAttributePath->call($node));
-            //     	    var_dump($getFilter->call($node));
-            	
-            // $mode->getTable()
-            	
+                        	
             $query->whereExists(function($query){
                 $query->select(DB::raw(1))
                 ->from('users AS users2')

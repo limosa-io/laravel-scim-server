@@ -31,12 +31,10 @@ class ResourceType implements Jsonable {
 				"id" => $this->id,
 				"name" => $this->name,
 				
-				//Not really correct. Get route by tag and generate url
-				"endpoint" => "/" . $this->plurar,
+				"endpoint" => route('scim.resources',['resourceType'=>$this->plurar]),
 				"description" => $this->description,
 				"schema" => $this->schema,
 				
-				//TODO: Add some kind of validation ???
 				"schemaExtensions" => $this->schemaExtensions,
 				
 				"meta" => [ 

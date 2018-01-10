@@ -14,20 +14,29 @@ class Collection extends AttributeMapping {
         return $this;
     }
     
-    //TODO: Implement
-    public function add($value, $object){
-        // insert new mail if possible
+    public function add($value, &$object){
+        throw (new SCIMException('Add is not implemented for ' . $this->getFullKey()))->setCode(501);
     }
     
-    //TODO: Implement
-    public function remove($value, $object){
-        // clean all matching the filter
+    public function remove(&$object){
+        throw (new SCIMException('Remove is not implemented for ' . $this->getFullKey()))->setCode(501);
     }
     
-    //TODO: Implement
-    public function replace($value, $object){
-        // clean all matching the filter
-        // insert new
+    public function replace($value, &$object){
+        throw (new SCIMException('Remove is not implemented for ' . $this->getFullKey()))->setCode(501);
+    }
+    
+    public function getEloquentAttributes(){
+         
+        $result = $this->eloquentAttributes;
+         
+        
+        foreach($this->collection as $value){
+            $result = array_merge($result,AttributeMapping::ensureAttributeMappingObject($value)->getEloquentAttributes()); 
+        }
+    
+         
+        return $result;
     }
     
     public function getSubNode($key){
@@ -99,19 +108,15 @@ class Collection extends AttributeMapping {
                 $result = $collection->where($attribute,'<>',$compareValue);
                 break;
             case "co":
-                //TODO: escape % characters etc, require min length
-                throw new SCIMException('co not supported');
+                throw (new SCIMException(sprintf('"co" is not supported for attribute "%s"',$this->getFullKey())))->setCode(501);
                 break;
             case "sw":
-                //TODO: escape % characters etc, require min length
-                throw new SCIMException('sw not supported');
+                throw (new SCIMException(sprintf('"sw" is not supported for attribute "%s"',$this->getFullKey())))->setCode(501);
                 break;
             case "ew":
-                //TODO: escape % characters etc, require min length
-                throw new SCIMException('ew not supported');
+                throw (new SCIMException(sprintf('"ew" is not supported for attribute "%s"',$this->getFullKey())))->setCode(501);
                 break;
             case "pr":
-                //TODO: Check for existence for complex attributes
                 $result = $collection->where($attribute,'!=',null);
                 break;
             case "gt":
@@ -185,46 +190,9 @@ class Collection extends AttributeMapping {
         };
     }
     
-    public function withFilteraa($filter){
-         
-        if($filter == null){
-            
-            return $this;
-            
-        }else{
-            
-            //collect($this->collection)
-            
-            
-        }
-        
-         
-        // 	    return new AttributeMapping($this->eloquentAttribute,$this->read,$this->write,$this,$filter);
-         
-        // return an AttributeConfig for which the read and write operations will apply to the corect things
-         
-        // 	    $read = $this->read();
-         
-        // 	    if(is_array($read)){
-         
-        // 	        // and
-        // 	           // take overlap of
-        //     	           // collect($read)->where('test', 'test','test');
-        // 	               // collect($read)->where('2', '2','2');
-    
-        // 	        // or
-        //     	        // take union of
-        //         	        // collect($read)->where('test', 'test','test');
-        //         	        // collect($read)->where('2', '2','2');
-         
-        // 	        // TODO: populate where with 'scimFilterToLaravelQuery'
-         
-        // 	    }else{
-        // 	        // ???
-        // 	    }
-         
-        //return new AttributeMapping($this->eloquentAttribute,$this->read,)
-    	  
+    public function applyWhereCondition(&$query,$operator,$value){
+        throw (new SCIMException(sprintf('Filter is not supported for attribute "%s"',$this->getFullKey())))->setCode(501);
     }
+    
     
 }

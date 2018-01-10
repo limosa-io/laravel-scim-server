@@ -68,7 +68,7 @@ class ResourceController extends Controller{
     	$mapping = $this->getAttributeConfig($resourceType, $scimAttribute);
     	
     	if($mapping == null || $mapping->getSortAttribute() == null){
-    		throw new \ArieTimmerman\Laravel\SCIMServer\Exceptions\SCIMException("Invalid sort property",400);	
+    		throw (new SCIMException("Invalid sort property"))->setCode(400)->setScimType('invalidFilter');	
     	}
     	
     	return $mapping->getSortAttribute();
@@ -87,6 +87,9 @@ class ResourceController extends Controller{
     	$class = $resourceType->getClass();
     	
     	$input = $request->input();
+    	
+    	//FIXME: Remove the need for unseeting schema. Deal with multivalued (non-complex) attributes, respecting ignore write. 
+    	//Idea: Fix self::flatten, do not flat no associative array values 
     	unset($input['schemas']);
     	
     	$flattened = self::flatten($input);
@@ -94,17 +97,18 @@ class ResourceController extends Controller{
     	$resourceObject = new $class();
     	
     	foreach(array_keys($flattened) as $scimAttribute){
-    		
+    		    	    
     		$attributeConfig = $this->getAttributeConfig($resourceType, $scimAttribute);
     		
     		if($attributeConfig == null){
-    			throw new SCIMException("Unknown attribute \"" . $scimAttribute . "\".",400);
+    			throw (new SCIMException(sprintf('Unknown attribute "%s"',$scimAttribute)))->setCode(400);
     		}else{
     			$attributeConfig->write($flattened[$scimAttribute],$resourceObject);
     		}
     		
     	}
-    	
+        
+    	//TODO: What if errors popup here
     	$resourceObject->save();
     	
     	return \response(Helper::objectToSCIMArray($resourceObject, $resourceType), 201);
@@ -118,7 +122,7 @@ class ResourceController extends Controller{
     	$resourceObject = $class::where("id",$id)->first();
     	
     	if($resourceObject == null){
-    		throw new SCIMException("Resource " . $id . " not found",404);
+    		throw (new SCIMException(sprintf('Resource "%s" not found',$id)))->setCode(404);
     	}
     	
     	return Helper::objectToSCIMArray($resourceObject, $resourceType);
@@ -185,7 +189,7 @@ class ResourceController extends Controller{
     	$input = $request->input();
     	
     	if($input['schemas'] !== ["urn:ietf:params:scim:api:messages:2.0:PatchOp"]){
-    	    throw new SCIMException('invalid schema');
+    	    throw (new SCIMException(sprintf('Invalid schema "%s". MUST be "urn:ietf:params:scim:api:messages:2.0:PatchOp"',json_encode($input['schemas']))))->setCode(404);
     	}
     	
     	unset($input['schemas']);
@@ -212,19 +216,14 @@ class ResourceController extends Controller{
                     break;
                 
                 case "remove":
-                    
-                    // TODO: here is path required
-                    
+                                        
                     if(isset($operation['path'])){
                     
                         $attributeConfig = $this->getAttributeConfig($resourceType, $operation['path']);
                         $attributeConfig->remove($resourceObject);
                     
                     }else{
-                        
-                        //TODO: If "path" is unspecified, the operation fails with HTTP status code 400 and a "scimType" error code of "noTarget".
-                    
-                        throw new SCIMException("Path is required");
+                        throw new SCIMException('You MUST provide a "Path"');
                     }
                     
                     
@@ -247,7 +246,8 @@ class ResourceController extends Controller{
                     break;
                     
                 default:
-                    throw new SCIMException("not supported");
+                    throw new SCIMException(sprintf('Operation "%s" is not supported',$operation['op']));
+                    
                  
                     
             }
@@ -290,7 +290,7 @@ class ResourceController extends Controller{
 				Helper::scimFilterToLaravelQuery($resourceType, $query, $node);
 				
 			}catch(\Tmilos\ScimFilterParser\Error\FilterException $e){
-				throw new SCIMException($e->getMessage(),400,"invalidFilter");
+				throw (new SCIMException($e->getMessage()))->setCode(400)->setScimType('invalidFilter');
 			}
 			
 		} );

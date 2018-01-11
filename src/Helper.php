@@ -7,6 +7,9 @@ use Tmilos\ScimFilterParser\Ast\ComparisonExpression;
 use Tmilos\ScimFilterParser\Ast\Negation;
 use Tmilos\ScimFilterParser\Ast\Conjunction;
 use Tmilos\ScimFilterParser\Ast\Disjunction;
+use Tmilos\ScimFilterParser\Parser;
+use Tmilos\ScimFilterParser\Mode;
+
 
 class Helper
 {
@@ -98,6 +101,27 @@ class Helper
         
         return $result;
     }
+    
+    public static function getResourceObjectVersion($object){
+        $version = null;
+        
+        if(method_exists($object, "getSCIMVersion")){
+            $version = $object->getSCIMVersion();
+        }else{
+            $version = sha1($object->getKey() . $object->updated_at . $object->created_at);
+        }
+        
+        return $version;
+    }
+    
+    /**
+     * 
+     * @param unknown $object
+     * @param ResourceType $resourceType
+     */
+    public static function objectToSCIMResponse($object, ResourceType $resourceType = null){
+        return response(self::objectToSCIMArray($object,$resourceType))->setEtag('W/' . self::getResourceObjectVersion($object));
+    }
 
     /**
      * See https://tools.ietf.org/html/rfc7644#section-3.4.2.2
@@ -170,5 +194,65 @@ class Helper
         }
          
     }
+    
+    /**
+     *
+     * $scimAttribute could be
+     * - urn:ietf:params:scim:schemas:core:2.0:User.userName
+     * - userName
+     * - urn:ietf:params:scim:schemas:core:2.0:User.userName.name.formatted
+     * - urn:ietf:params:scim:schemas:core:2.0:User.emails.value
+     * - emails.value
+     * - emails.0.value
+     * - schemas.0
+     *
+     * @param unknown $name
+     * @param unknown $scimAttribute
+     * @return AttributeMapping
+     */
+    public static function getAttributeConfig(ResourceType $resourceType, $scimAttribute) {
+         
+        $parser = new Parser(Mode::PATH());
+    
+        $scimAttribute = preg_replace('/\.[0-9]+$/', '', $scimAttribute);
+        $scimAttribute = preg_replace('/\.[0-9]+\./', '.', $scimAttribute);
+    
+        $path = $parser->parse($scimAttribute);
+    
+        return $resourceType->getMapping()->getSubNodeWithPath($path);
+         
+    }
+    
+    public static function getEloquentSortAttribute(ResourceType $resourceType, $scimAttribute){
+    
+        $mapping = self::getAttributeConfig($resourceType, $scimAttribute);
+         
+        if($mapping == null || $mapping->getSortAttribute() == null){
+            throw (new SCIMException("Invalid sort property"))->setCode(400)->setScimType('invalidFilter');
+        }
+         
+        return $mapping->getSortAttribute();
+         
+    }
+    
+    // TODO: What if keys are 0,1 etc
+    public static function flatten($array, $prefix = '', $iteration = 1) {
+        $result = array();
+    
+        foreach($array as $key=>$value) {
+            	
+            if(is_array($value)) {
+                //TODO: Ugly code
+                $result = $result + self::flatten($value, $prefix . $key . ($iteration == 1?':':'.'), 2);
+            } else {
+                $result[$prefix . $key] = $value;
+            }
+            	
+        }
+    
+        return $result;
+    }
+    
+
     
 }

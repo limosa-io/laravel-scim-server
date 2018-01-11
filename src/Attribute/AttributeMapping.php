@@ -141,15 +141,20 @@ class AttributeMapping {
 	public function disableRead(){
 	    $this->read = function(&$object){ /* TODO: throw exception?? */ };
 	    $this->readEnabled = false;
+	    
+	    //TODO: Also disable sort
+	    
 	    return $this;
 	}
 	
 	public function ignoreWrite(){
+	    
 	    $this->write = function($value, &$object){
 	        //ignore
 	    };
 	    
 	    return $this;
+	    
 	}
 	
 	public function disableWrite(){

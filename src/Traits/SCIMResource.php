@@ -8,11 +8,6 @@ use ArieTimmerman\Laravel\SCIMServer\Helper;
 trait SCIMResource {
 	
 	public function __call($function, $args = []){
-		
-		//scimGetEloquentSortAttribute($scimAttribute);
-		//scimGetAttributeValue($scimAttribute)
-		//scimWriteAttributeValue($scimAttribute, $scimValue)
-		
 		return parent::__call($function, $args);
 	}
 	
@@ -27,18 +22,17 @@ trait SCIMResource {
         return $json;
 
     }
-
     
-    //TODO: Move this method to Helper class. Allows use of this method outside Trait
-   
-//     public function toArray(){
-//     	return Helper::objectToSCIMArray($this);
-//     }
+    public function getSCIMVersion(){
+        //implement optionally
+    }
     
+    //TODO: is this needed?
     public function toArray_fromParent(){
         return parent::toArray();
     }
     
+    //TODO: is this needed?
     public function toJson($options = 0){
     	return $this->toSCIMJson($options);
     }

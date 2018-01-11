@@ -21,7 +21,7 @@ class ServiceProviderController extends Controller{
                 "supported" => true,
             ],
             "changePassword" => [
-                "supported" => false,
+                "supported" => true,
             ],
             "sort" => [
                 "supported" => true,

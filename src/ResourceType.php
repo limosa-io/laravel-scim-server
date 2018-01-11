@@ -37,7 +37,6 @@ class ResourceType{
         return new ResourceType('Users', config('scimserver.Users'));
     }
     
-    
     public function getAllAttributeConfigs($mapping = -1){
         
         $result = [];

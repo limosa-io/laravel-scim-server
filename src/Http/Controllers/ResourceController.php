@@ -13,68 +13,6 @@ use ArieTimmerman\Laravel\SCIMServer\ResourceType;
 
 class ResourceController extends Controller{
     
-    // TODO: What if keys are 0,1 etc
-	public static function flatten($array, $prefix = '', $iteration = 1) {
-		$result = array();
-		
-		foreach($array as $key=>$value) {
-			
-			if(is_array($value)) {
-			    //TODO: Ugly code
-				$result = $result + self::flatten($value, $prefix . $key . ($iteration == 1?':':'.'), 2);
-			} else {
-				$result[$prefix . $key] = $value;
-			}
-			
-		}
-		
-		return $result;
-	}
-	
-	
-    
-	/**
-	 * 
-	 * $scimAttribute could be
-	 * - urn:ietf:params:scim:schemas:core:2.0:User.userName
-	 * - userName
-	 * - urn:ietf:params:scim:schemas:core:2.0:User.userName.name.formatted
-	 * - urn:ietf:params:scim:schemas:core:2.0:User.emails.value
-	 * - emails.value
-	 * - emails.0.value
-	 * - schemas.0 
-	 * 
-	 * TODO: Inject $name with ResourceType
-	 *  
-	 * @param unknown $name
-	 * @param unknown $scimAttribute
-	 * @return AttributeMapping
-	 */
-    public function getAttributeConfig(ResourceType $resourceType, $scimAttribute) {
-    	
-        $parser = new Parser(Mode::PATH());
-        
-        $scimAttribute = preg_replace('/\.[0-9]+$/', '', $scimAttribute);
-        $scimAttribute = preg_replace('/\.[0-9]+\./', '.', $scimAttribute);
-        
-        $path = $parser->parse($scimAttribute);
-        
-        return $resourceType->getMapping()->getSubNodeWithPath($path);
-    	
-    }
-    
-    public function getEloquentSortAttribute(ResourceType $resourceType, $scimAttribute){
-    	    	
-    	$mapping = $this->getAttributeConfig($resourceType, $scimAttribute);
-    	
-    	if($mapping == null || $mapping->getSortAttribute() == null){
-    		throw (new SCIMException("Invalid sort property"))->setCode(400)->setScimType('invalidFilter');	
-    	}
-    	
-    	return $mapping->getSortAttribute();
-    	
-    }
-    
     /**
      * Create a new scim resource
      * @param Request $request
@@ -92,13 +30,13 @@ class ResourceController extends Controller{
     	//Idea: Fix self::flatten, do not flat no associative array values 
     	unset($input['schemas']);
     	
-    	$flattened = self::flatten($input);
+    	$flattened = Helper::flatten($input);
     	
     	$resourceObject = new $class();
     	
     	foreach(array_keys($flattened) as $scimAttribute){
     		    	    
-    		$attributeConfig = $this->getAttributeConfig($resourceType, $scimAttribute);
+    		$attributeConfig = Helper::getAttributeConfig($resourceType, $scimAttribute);
     		
     		if($attributeConfig == null){
     			throw (new SCIMException(sprintf('Unknown attribute "%s"',$scimAttribute)))->setCode(400);
@@ -111,7 +49,7 @@ class ResourceController extends Controller{
     	//TODO: What if errors popup here
     	$resourceObject->save();
     	
-    	return \response(Helper::objectToSCIMArray($resourceObject, $resourceType), 201);
+    	return Helper::objectToSCIMResponse($resourceObject, $resourceType)->setStatusCode(201);
     	
     }
 
@@ -119,32 +57,50 @@ class ResourceController extends Controller{
     	
     	$class = $resourceType->getClass();
     	
-    	$resourceObject = $class::where("id",$id)->first();
+    	$resourceObject = $class::find($id);
     	
     	if($resourceObject == null){
     		throw (new SCIMException(sprintf('Resource "%s" not found',$id)))->setCode(404);
     	}
     	
-    	return Helper::objectToSCIMArray($resourceObject, $resourceType);
+    	//TODO: Allow returning ETag
+    	return Helper::objectToSCIMResponse($resourceObject, $resourceType);
     	
+    }
+    
+    public function delete(Request $request, ResourceType $resourceType, $id){
+        
+        $class = $resourceType->getClass();
+        
+        $resourceObject = $class::find($id);
+         
+        if($resourceObject == null){
+            throw (new SCIMException(sprintf('Resource "%s" not found',$id)))->setCode(404);
+        }
+        
+        $resourceObject->delete();
+        
+        return response(null,204);
+        
     }
     
     public function replace(Request $request, ResourceType $resourceType, $id){
         
         $class = $resourceType->getClass();
          
-        $resourceObject = $class::where("id",$id)->first();
+        // TODO: implement "If-Match: W/"12345"
+        $resourceObject = $class::find($id);
         
         $input = $request->input();
         unset($input['schemas']);
         
-        $flattened = self::flatten($input);
+        $flattened = Helper::flatten($input);
         
         $uses = [];
                  
         foreach(array_keys($flattened) as $scimAttribute){
         
-            $attributeConfig = $this->getAttributeConfig($resourceType, $scimAttribute);
+            $attributeConfig = Helper::getAttributeConfig($resourceType, $scimAttribute);
             
             if($attributeConfig == null){
                 throw new SCIMException("Unknown attribute \"" . $scimAttribute . "\".",400);
@@ -175,7 +131,7 @@ class ResourceController extends Controller{
         
         $resourceObject->save();
         
-        return Helper::objectToSCIMArray($resourceObject, $resourceType);
+        return Helper::objectToSCIMResponse($resourceObject, $resourceType);
         
     }
     
@@ -184,7 +140,7 @@ class ResourceController extends Controller{
     	
     	$class = $resourceType->getClass();
     	
-    	$resourceObject = $class::where("id",$id)->first();
+    	$resourceObject = $class::find($id);
     	
     	$input = $request->input();
     	
@@ -203,12 +159,12 @@ class ResourceController extends Controller{
                     
                     if(isset($operation['path'])){
                         
-                        $attributeConfig = $this->getAttributeConfig($resourceType, $operation['path']);
+                        $attributeConfig = Helper::getAttributeConfig($resourceType, $operation['path']);
                         $attributeConfig->add($operation['value'], $resourceObject);
                         
                     }else{
                         foreach($operation['value'] as $key => $value){
-                            $attributeConfig = $this->getAttributeConfig($resourceType, $key);
+                            $attributeConfig = Helper::getAttributeConfig($resourceType, $key);
                             $attributeConfig->add($value, $resourceObject);
                         }
                     }
@@ -219,7 +175,7 @@ class ResourceController extends Controller{
                                         
                     if(isset($operation['path'])){
                     
-                        $attributeConfig = $this->getAttributeConfig($resourceType, $operation['path']);
+                        $attributeConfig = Helper::getAttributeConfig($resourceType, $operation['path']);
                         $attributeConfig->remove($resourceObject);
                     
                     }else{
@@ -233,12 +189,12 @@ class ResourceController extends Controller{
                     
                     if(isset($operation['path'])){
                         
-                        $attributeConfig = $this->getAttributeConfig($resourceType, $operation['path']);
+                        $attributeConfig = Helper::getAttributeConfig($resourceType, $operation['path']);
                         $attributeConfig->replace($operation['value'], $resourceObject);
                         
                     }else{
                         foreach($operation['value'] as $key => $value){
-                            $attributeConfig = $this->getAttributeConfig($resourceType, $key);
+                            $attributeConfig = Helper::getAttributeConfig($resourceType, $key);
                             $attributeConfig->replace($value, $resourceObject);
                         }
                     }
@@ -254,7 +210,7 @@ class ResourceController extends Controller{
             
             $resourceObject->save();
             
-            return Helper::objectToSCIMArray($resourceObject, $resourceType);
+            return Helper::objectToSCIMResponse($resourceObject, $resourceType);
             
     	}
     	
@@ -270,15 +226,12 @@ class ResourceController extends Controller{
     	// Non-negative integer. Specifies the desired maximum number of query results per page, e.g., 10. A negative value SHALL be interpreted as "0". A value of "0" indicates that no resource results are to be returned except for "totalResults". 
     	$count = max(0,intVal($request->input('count',10)));
     	
-    	$sortBy = "id";
+    	$sortBy = null;
     	
     	if($request->input('sortBy')){
-    		$sortBy = $this->getEloquentSortAttribute($resourceType, $request->input('sortBy'));
+    		$sortBy = Helper::getEloquentSortAttribute($resourceType, $request->input('sortBy'));
     	}
-    	
-    	//var_dump((new $class())->getTable());exit;
-    	// ::from( 'items as items_alias' )
-    	
+    	    	
 		$resourceObjectsBase = $class::when($filter = $request->input('filter'), function($query) use ($filter, $resourceType) {
 			
 			$parser = new Parser(Mode::FILTER());
@@ -295,7 +248,13 @@ class ResourceController extends Controller{
 			
 		} );
 		
-		$resourceObjects = $resourceObjectsBase->skip($startIndex - 1)->take($count)->orderBy($sortBy, 'desc')->get();
+		$resourceObjects = $resourceObjectsBase->skip($startIndex - 1)->take($count);
+		
+		if($sortBy != null){
+		  $resourceObjects = $resourceObjects->orderBy($sortBy, 'desc');
+		}
+		
+		$resourceObjects = $resourceObjects->get();
 		
 		$totalResults = $resourceObjectsBase->count();
 		$attributes = [];

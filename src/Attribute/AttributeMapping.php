@@ -4,6 +4,7 @@ namespace ArieTimmerman\Laravel\SCIMServer\Attribute;
 
 use Illuminate\Support\Carbon;
 use ArieTimmerman\Laravel\SCIMServer\Exceptions\SCIMException;
+use ArieTimmerman\Laravel\SCIMServer\SCIM\Schema;
 
 class AttributeMapping {
 	
@@ -139,10 +140,8 @@ class AttributeMapping {
 	}
 	
 	public function disableRead(){
-	    $this->read = function(&$object){ /* TODO: throw exception?? */ };
+	    $this->read = function(&$object){ throw new SCIMException('Read is not supported'); };
 	    $this->readEnabled = false;
-	    
-	    //TODO: Also disable sort
 	    
 	    return $this;
 	}
@@ -225,15 +224,19 @@ class AttributeMapping {
 	    return $this;
 	}
 	
-	//TODO: remove first argument. Introduce other sorting mechanism
 	function __construct() {
 		
 	    $this->read = function($object){
-	        die("not implemented!!");
+	        throw new SCIMException(sprintf('Read is not implemented for "%s"',$this->getFullKey()));
 	    };
 	    
 	    $this->write = function($value, &$object){
-	        die("not implemente write for " . $this->getFullKey().  "!!");
+	        
+	        //$this->getSubNode($key)
+	        
+	        // TODO: Consider calln, or flatten anyway ...
+	        
+	        throw new SCIMException(sprintf('Write is not implemented for "%s"',$this->getFullKey()));
 	    };
 		
 	}
@@ -245,6 +248,11 @@ class AttributeMapping {
 	}
 	
 	public function getSortAttribute(){
+	    
+	    if(!$this->readEnabled){
+	        throw new SCIMException(sprintf('Can\'t sort on unreadable attribute "%s"',$this->getFullKey()) );
+	    }
+	    
 	    return $this->sortAttribute;
 	}
 	
@@ -358,7 +366,7 @@ class AttributeMapping {
 	    if($this->mappingAssocArray != null && array_key_exists($key,$this->mappingAssocArray)){
 	        return self::ensureAttributeMappingObject($this->mappingAssocArray[$key])->setParent($this)->setKey($key);
 	    }else{
-	        throw new SCIMException(sprintf('No mapping for %s',$key));
+	        throw new SCIMException(sprintf('No mapping for "%s" in "%s"',$key,$this->getFullKey()));
 	    }
 	     
 	}
@@ -377,7 +385,9 @@ class AttributeMapping {
 	    
 	    $elements = [];
 	    
-	    if(empty($this->getSchema())){
+	    if(empty($attributePath->attributeNames) && !empty($schema)){
+	        $elements[] = $schema;
+	    }else if(empty($this->getSchema()) && !in_array($attributePath->attributeNames[0],Schema::ATTRIBUTES_CORE) ){
 	        $elements[] = $schema ?? $this->getDefaultSchema();
 	    }
 	    
@@ -387,6 +397,7 @@ class AttributeMapping {
 	    
 	    /** @var AttributeMapping */
 	    $node = $this;
+	    
 	    
         foreach($elements as $element){
             $node = $node->getSubNode($element);
@@ -424,7 +435,7 @@ class AttributeMapping {
 	public function applyWhereCondition(&$query,$operator,$value){
 	    
 	    //only filter on OWN eloquent attributes
-	    if(empty($this->eloquentAttributes)) throw new SCIMException("Can't sort on . " + $this->getFullKey());
+	    if(empty($this->eloquentAttributes)) throw new SCIMException("Can't filter on . " + $this->getFullKey());
 	    
 	    $attribute = $this->eloquentAttributes[0];
 	    
@@ -437,21 +448,16 @@ class AttributeMapping {
 	            $query->where($attribute,'<>',$value);
 	            break;
 	        case "co":
-	            //TODO: escape % characters etc, require min length
 	            $query->where($attribute,'like','%' . addcslashes($value, '%_') . '%');
 	            break;
 	        case "sw":
-	            //TODO: escape % characters etc, require min length
 	            $query->where($attribute,'like',addcslashes($value, '%_') . '%');
 	            break;
 	        case "ew":
-	            //TODO: escape % characters etc, require min length
 	            $query->where($attribute,'like','%' . addcslashes($value, '%_'));
 	            break;
 	        case "pr":
-	            //TODO: Check for existence for complex attributes
-	            $query->whereNotNull($attribute);
-	    
+	            $query->whereNotNull($attribute);	    
 	            break;
 	        case "gt":
 	            $query->where($attribute,'>',$value);

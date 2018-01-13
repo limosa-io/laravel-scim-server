@@ -33,8 +33,7 @@ php artisan vendor:publish --provider="ArieTimmerman\Laravel\SCIMServer\ServiceP
 
 # TODO
 
-* Better support for Create requests
-* Filtering with arrays of complex attributes
+* How to do validation?
 * emit events for all SCIM actions, with resulting laravel models
 * Deal with the limitations of SCIM, including
 	* Error handling. Very limited. What if two fields are wrong?

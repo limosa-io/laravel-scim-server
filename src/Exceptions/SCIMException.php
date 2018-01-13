@@ -9,7 +9,6 @@ class SCIMException extends Exception{
 	protected $scimType = "invalidValue";
 	protected $httpCode = 404;
 	
-	//TODO: What if more than two parameters are provided?
 	function __construct($message){
 		parent::__construct($message);
 	}

@@ -2,15 +2,13 @@
 
 namespace ArieTimmerman\Laravel\SCIMServer\Http\Controllers;
 
+use Illuminate\Support\Carbon;
 class ServiceProviderController extends Controller{
 
     public function index(){
-        
-        // TODO: The SCIM 2.0 specs provide very limited functionality in showing the capabilities of a server.
-        
+                
         return [
             "schemas" => ["urn:ietf:params:scim:schemas:core:2.0:ServiceProviderConfig"],
-            "documentationUri" => "http://example.com/help/scim.html",
             "patch" => [
                 "supported" => true,
             ],
@@ -19,6 +17,7 @@ class ServiceProviderController extends Controller{
             ],
             "filter" => [
                 "supported" => true,
+                "maxResults" => 100
             ],
             "changePassword" => [
                 "supported" => true,
@@ -27,9 +26,9 @@ class ServiceProviderController extends Controller{
                 "supported" => true,
             ],
             "etag" => [
-                "supported" => false,
+                "supported" => true,
             ],
-            "authenticationSchemes" => [
+            "authenticationSchemes" => [ // "oauth", "oauth2", "oauthbearertoken", "httpbasic", and "httpdigest"
                 [
                     "name" => "OAuth Bearer Token",
                     "description" =>
@@ -52,10 +51,9 @@ class ServiceProviderController extends Controller{
                 "location" => route('scim.serviceproviderconfig'),
                 "resourceType" => "ServiceProviderConfig",
             		
-            	//TODO: Format time stamps
-                "created" => filectime(__FILE__),
-                "lastModified" => filemtime(__FILE__),
-                "version" => "W\/\"3694e05e9dff594\"",
+                "created" => Carbon::createFromTimestampUTC(filectime(__FILE__))->format('c'),
+                "lastModified" => Carbon::createFromTimestampUTC(filemtime(__FILE__))->format('c'),
+                "version" => sprintf('W/"%s"',sha1(filemtime(__FILE__))),
             ],
         ];
 

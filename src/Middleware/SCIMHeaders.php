@@ -15,6 +15,8 @@ class SCIMHeaders{
         }
         
         $response = $next($request);
+        
+        //TODO: Consider adding debug mode, to validate response agains schema.
 
         return $response->header('Content-Type', 'application/scim+json');
     }

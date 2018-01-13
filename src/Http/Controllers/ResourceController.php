@@ -28,14 +28,15 @@ class ResourceController extends Controller{
     	
     	//FIXME: Remove the need for unseeting schema. Deal with multivalued (non-complex) attributes, respecting ignore write. 
     	//Idea: Fix self::flatten, do not flat no associative array values 
-    	unset($input['schemas']);
+    	//or better: do not flatten at ALL!
+    	//unset($input['schemas']);
     	
-    	$flattened = Helper::flatten($input);
+    	$flattened = $input; //Helper::flatten($input);
     	
     	$resourceObject = new $class();
     	
     	foreach(array_keys($flattened) as $scimAttribute){
-    		    	    
+    	    
     		$attributeConfig = Helper::getAttributeConfig($resourceType, $scimAttribute);
     		
     		if($attributeConfig == null){
@@ -53,43 +54,21 @@ class ResourceController extends Controller{
     	
     }
 
-    public function show(Request $request, ResourceType $resourceType, $id){
+    public function show(Request $request, ResourceType $resourceType, $resourceObject){
     	
-    	$class = $resourceType->getClass();
-    	
-    	$resourceObject = $class::find($id);
-    	
-    	if($resourceObject == null){
-    		throw (new SCIMException(sprintf('Resource "%s" not found',$id)))->setCode(404);
-    	}
-    	
-    	//TODO: Allow returning ETag
     	return Helper::objectToSCIMResponse($resourceObject, $resourceType);
     	
     }
     
-    public function delete(Request $request, ResourceType $resourceType, $id){
-        
-        $class = $resourceType->getClass();
-        
-        $resourceObject = $class::find($id);
-         
-        if($resourceObject == null){
-            throw (new SCIMException(sprintf('Resource "%s" not found',$id)))->setCode(404);
-        }
-        
+    public function delete(Request $request, ResourceType $resourceType, $resourceObject){
+                
         $resourceObject->delete();
         
         return response(null,204);
         
     }
     
-    public function replace(Request $request, ResourceType $resourceType, $id){
-        
-        $class = $resourceType->getClass();
-         
-        // TODO: implement "If-Match: W/"12345"
-        $resourceObject = $class::find($id);
+    public function replace(Request $request, ResourceType $resourceType, $resourceObject){
         
         $input = $request->input();
         unset($input['schemas']);
@@ -135,13 +114,8 @@ class ResourceController extends Controller{
         
     }
     
-    //TODO: Auto inject $resourceObject
-    public function update(Request $request, ResourceType $resourceType, $id){
-    	
-    	$class = $resourceType->getClass();
-    	
-    	$resourceObject = $class::find($id);
-    	
+    public function update(Request $request, ResourceType $resourceType, $resourceObject){
+    	    	
     	$input = $request->input();
     	
     	if($input['schemas'] !== ["urn:ietf:params:scim:api:messages:2.0:PatchOp"]){
@@ -150,7 +124,11 @@ class ResourceController extends Controller{
     	
     	unset($input['schemas']);
     	
-    	//TODO: Also support urn:ietf:params:scim:api:messages:2.0:PatchOp:Operations
+    	if(isset($input['urn:ietf:params:scim:api:messages:2.0:PatchOp:Operations'])){
+    	    $input['Operations'] = $input['urn:ietf:params:scim:api:messages:2.0:PatchOp:Operations'];
+    	    unset($input['urn:ietf:params:scim:api:messages:2.0:PatchOp:Operations']);
+    	}
+    	
     	foreach( $input['Operations'] as $operation){
     	    
             switch(strtolower($operation['op'])){

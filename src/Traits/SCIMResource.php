@@ -26,16 +26,5 @@ trait SCIMResource {
     public function getSCIMVersion(){
         //implement optionally
     }
-    
-    //TODO: is this needed?
-    public function toArray_fromParent(){
-        return parent::toArray();
-    }
-    
-    //TODO: is this needed?
-    public function toJson($options = 0){
-    	return $this->toSCIMJson($options);
-    }
-
 
 }

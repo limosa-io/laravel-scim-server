@@ -9,7 +9,8 @@ use Tmilos\ScimFilterParser\Ast\Conjunction;
 use Tmilos\ScimFilterParser\Ast\Disjunction;
 use Tmilos\ScimFilterParser\Parser;
 use Tmilos\ScimFilterParser\Mode;
-
+use Tmilos\ScimFilterParser\Ast\Path;
+use Tmilos\ScimFilterParser\Ast\AttributePath;
 
 class Helper
 {
@@ -50,24 +51,18 @@ class Helper
     // TODO: Auto map eloquent attributes with scim naming to the correct attributes
     public static function objectToSCIMArray($object, ResourceType $resourceType = null)
     {
-        $userArray = null;
         
-        if (method_exists($object, "toArray_fromParent")) {
-            $userArray = $object->toArray_fromParent();
-        } else {
+        $userArray = $object->toArray();
+        
+        // If the getDates-method exists, ensure proper formatting of date attributes
+        if (method_exists($object, 'getDates')) {
             
-            $userArray = $object->toArray();
-            
-            if (method_exists($object, 'getDates')) {
-                
-                $dateAttributes = $object->getDates();
-                foreach ($dateAttributes as $dateAttribute) {
-                    if (isset($userArray[$dateAttribute])) {
-                        $userArray[$dateAttribute] = $object->getAttribute($dateAttribute)->format('c');
-                    }
+            $dateAttributes = $object->getDates();
+            foreach ($dateAttributes as $dateAttribute) {
+                if (isset($userArray[$dateAttribute])) {
+                    $userArray[$dateAttribute] = $object->getAttribute($dateAttribute)->format('c');
                 }
             }
-            
         }
         
         $result = [];
@@ -102,6 +97,7 @@ class Helper
         return $result;
     }
     
+    
     public static function getResourceObjectVersion($object){
         $version = null;
         
@@ -111,7 +107,8 @@ class Helper
             $version = sha1($object->getKey() . $object->updated_at . $object->created_at);
         }
         
-        return $version;
+        // Entity tags uniquely representing the requested resources. They are a string of ASCII characters placed between double quotes
+        return sprintf('W/"%s"',$version);
     }
     
     /**
@@ -120,7 +117,7 @@ class Helper
      * @param ResourceType $resourceType
      */
     public static function objectToSCIMResponse($object, ResourceType $resourceType = null){
-        return response(self::objectToSCIMArray($object,$resourceType))->setEtag('W/' . self::getResourceObjectVersion($object));
+        return response(self::objectToSCIMArray($object,$resourceType))->setEtag(self::getResourceObjectVersion($object));
     }
 
     /**
@@ -218,6 +215,15 @@ class Helper
         $scimAttribute = preg_replace('/\.[0-9]+\./', '.', $scimAttribute);
     
         $path = $parser->parse($scimAttribute);
+        
+        //TODO: FIX this. If $scimAttribute is a schema-indication, it should be considered as a schema
+        if($scimAttribute == 'urn:ietf:params:scim:schemas:core:2.0:User'){            
+            
+            $attributePath = new AttributePath();
+            $attributePath->schema = 'urn:ietf:params:scim:schemas:core:2.0:User';
+            
+            $path = Path::fromAttributePath($attributePath);
+        }
     
         return $resourceType->getMapping()->getSubNodeWithPath($path);
          

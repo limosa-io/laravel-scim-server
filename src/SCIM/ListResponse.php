@@ -28,7 +28,7 @@ class ListResponse implements Jsonable{
     public function toSCIMArray() {
         
         return [
-            'totalResults' => $this->totalResults, // (total without pagination)
+            'totalResults' => $this->totalResults,
             "itemsPerPage" => count($this->resourceObjects),
             "startIndex" => $this->startIndex,            
             "schemas" => [

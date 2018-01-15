@@ -14,6 +14,16 @@ class Collection extends AttributeMapping {
         return $this;
     }
     
+//     public function write($value, &$object){
+        
+        //TODO: implement this ...
+        //do the following only in case of add ???
+//         foreach($value as $key=>$v){
+//             $this->getSubNode($key)->write($v, $object);
+//         }
+        
+//     }
+    
     public function add($value, &$object){
         throw (new SCIMException('Add is not implemented for ' . $this->getFullKey()))->setCode(501);
     }

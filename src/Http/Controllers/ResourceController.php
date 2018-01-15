@@ -26,12 +26,7 @@ class ResourceController extends Controller{
     	
     	$input = $request->input();
     	
-    	//FIXME: Remove the need for unseeting schema. Deal with multivalued (non-complex) attributes, respecting ignore write. 
-    	//Idea: Fix self::flatten, do not flat no associative array values 
-    	//or better: do not flatten at ALL!
-    	//unset($input['schemas']);
-    	
-    	$flattened = $input; //Helper::flatten($input);
+    	$flattened = Helper::flatten($input);
     	
     	$resourceObject = new $class();
     	

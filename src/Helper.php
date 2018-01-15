@@ -241,13 +241,18 @@ class Helper
          
     }
     
-    // TODO: What if keys are 0,1 etc
+    // TODO: What if keys are 0,1 etc. Also find a way to set the seperator...
     public static function flatten($array, $prefix = '', $iteration = 1) {
         $result = array();
     
         foreach($array as $key=>$value) {
-            	
-            if(is_array($value)) {
+            
+            if(is_numeric($key)) {
+                if(!isset($result[$prefix])){
+                    $result[$prefix] = [];
+                }
+                $result[$prefix][$key] = $value;
+            }else if(is_array($value)) {
                 //TODO: Ugly code
                 $result = $result + self::flatten($value, $prefix . $key . ($iteration == 1?':':'.'), 2);
             } else {
@@ -257,6 +262,8 @@ class Helper
         }
     
         return $result;
+        
+        
     }
     
 

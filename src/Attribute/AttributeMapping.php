@@ -28,7 +28,7 @@ class AttributeMapping {
 	private $defaultSchema = null, $schema = null;
 	
 	public static function noMapping($parent = null) : AttributeMapping{
-	    return (new AttributeMapping())->disableWrite()->disableRead()->setParent($parent);
+	    return (new AttributeMapping())->disableWrite()->ignoreRead()->setParent($parent);
 	}
 	
 	public static function arrayOfObjects($mapping, $parent = null) : AttributeMapping{
@@ -140,10 +140,26 @@ class AttributeMapping {
 	}
 	
 	public function disableRead(){
-	    $this->read = function(&$object){ throw new SCIMException('Read is not supported'); };
+	    $parent = $this;
+	    
+	    $this->read = function(&$object) use ($parent){ 
+	       // throw new SCIMException('Read is not supported for ' . $parent->getFullKey());
+	       return null; //"disabled!!";
+	    };
+	    
 	    $this->readEnabled = false;
 	    
 	    return $this;
+	}
+	
+	public function ignoreRead(){
+	   
+	    $this->read = function(&$object){
+	        return null;
+	    };
+	     
+	    return $this;
+	    
 	}
 	
 	public function ignoreWrite(){

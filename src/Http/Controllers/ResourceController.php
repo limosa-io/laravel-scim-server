@@ -21,11 +21,10 @@ class ResourceController extends Controller{
      * @return \Symfony\Component\HttpFoundation\Response|\Illuminate\Contracts\Routing\ResponseFactory
      */
     public function create(Request $request, ResourceType $resourceType){
-    	
-    	$class = $resourceType->getClass();
     	    	
     	$flattened = Helper::flatten($request->input(), $input['schemas']);
-    	    	
+    	
+    	$class = $resourceType->getClass();
     	$resourceObject = new $class();
     	
     	$allAttributeConfigs = [];
@@ -44,7 +43,6 @@ class ResourceController extends Controller{
     	foreach($allAttributeConfigs as &$attributeConfig){
     	    $attributeConfig->writeAfter($flattened[$attributeConfig->getFullKey()],$resourceObject);
     	}
-    	
     	
     	return Helper::objectToSCIMResponse($resourceObject, $resourceType)->setStatusCode(201);
     	

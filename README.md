@@ -7,23 +7,8 @@ Add SCIM 2.0 Server capabilities with ease.
 
 ~~~
 
-# Usage
+# Optional
 
-In your User model, add the following.
-
-~~~.php
-
-use ArieTimmerman\Laravel\SCIMServer\Traits\SCIMResource;
-
-class User extends Authenticatable
-{
-    use SCIMResource;
-    
-    // [...]
-
-}
-
-~~~
 
 Publish the config file.
 

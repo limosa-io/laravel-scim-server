@@ -277,7 +277,6 @@ class Helper
         
     }
     
-    // TODO: What if keys are 0,1 etc. Also find a way to set the seperator...
     public static function flatten($array, $schemas, $parts = []) {
         
         $result = [];

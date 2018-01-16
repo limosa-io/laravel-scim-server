@@ -224,7 +224,7 @@ class Helper
             
             $path = Path::fromAttributePath($attributePath);
         }
-    
+        
         return $resourceType->getMapping()->getSubNodeWithPath($path);
          
     }
@@ -241,28 +241,63 @@ class Helper
          
     }
     
+    public static function getFlattenKey($parts, $schemas) {
+        
+        $result = "";
+        
+        $partsCopy = $parts;
+        
+        $first = array_first($partsCopy);
+        
+        if($first != null){
+            
+            if(in_array($first,$schemas)){
+                $result .= $first . ":";
+                array_shift($partsCopy);
+            }
+            
+            $result .= implode(".", $partsCopy);
+            
+        }else{
+            die("waat!");
+            //TODO: should never happen
+        }
+        
+        return $result;
+        
+    }
+    
     // TODO: What if keys are 0,1 etc. Also find a way to set the seperator...
-    public static function flatten($array, $prefix = '', $iteration = 1) {
-        $result = array();
+    public static function flatten($array, $schemas, $parts = []) {
+        
+        $result = [];
     
         foreach($array as $key=>$value) {
             
             if(is_numeric($key)) {
-                if(!isset($result[$prefix])){
-                    $result[$prefix] = [];
+                
+                $final = self::getFlattenKey($parts, $schemas);
+                
+                if(!isset($result[$final])){
+                    $result[$final] = [];
                 }
-                $result[$prefix][$key] = $value;
+                
+                $result[$final][$key] = $value;
+                
             }else if(is_array($value)) {
-                //TODO: Ugly code
-                $result = $result + self::flatten($value, $prefix . $key . ($iteration == 1?':':'.'), 2);
+                
+                $result = $result + self::flatten($value, $schemas, array_merge($parts,[$key]));
+                
             } else {
-                $result[$prefix . $key] = $value;
+                $partsCopy  = $parts;
+                $partsCopy[] = $key;
+                
+                $result[self::getFlattenKey($partsCopy, $schemas)] = $value;
             }
             	
         }
     
         return $result;
-        
         
     }
     

@@ -14,18 +14,22 @@ class Collection extends AttributeMapping {
         return $this;
     }
     
-//     public function write($value, &$object){
-        
-        //TODO: implement this ...
-        //do the following only in case of add ???
-//         foreach($value as $key=>$v){
-//             $this->getSubNode($key)->write($v, $object);
-//         }
-        
-//     }
-    
     public function add($value, &$object){
-        throw (new SCIMException('Add is not implemented for ' . $this->getFullKey()))->setCode(501);
+        
+        //only for creation requests 
+        if($object->id == null){
+            
+            foreach($value as $key=>$v){
+                $this->getSubNode($key)->add($v, $object);
+            }
+            
+        }else{
+            
+            throw (new SCIMException('Add is not implemented for updates of ' . $this->getFullKey()))->setCode(501);
+            
+        }
+        
+        
     }
     
     public function remove(&$object){
@@ -39,17 +43,15 @@ class Collection extends AttributeMapping {
     public function getEloquentAttributes(){
          
         $result = $this->eloquentAttributes;
-         
         
         foreach($this->collection as $value){
             $result = array_merge($result,AttributeMapping::ensureAttributeMappingObject($value)->getEloquentAttributes()); 
         }
-    
-         
+        
         return $result;
     }
     
-    public function getSubNode($key){
+    public function getSubNode($key, $schema = null){
         
         if($key == null) return $this;
         
@@ -57,7 +59,7 @@ class Collection extends AttributeMapping {
             
             $parent = $this;
             
-            return (new CollectionValue())->setParent($this)->setWrite(function($value, &$object) use ($key, $parent){
+            return (new CollectionValue())->setParent($this)->setAdd(function($value, &$object) use ($key, $parent){
                 
                 $collection = Collection::filterCollection($parent->filter, collect($parent->collection), $object);
                 
@@ -65,7 +67,7 @@ class Collection extends AttributeMapping {
                 
                 foreach($collection as $o){
                     
-                    $o[$key]->write($value, $object);
+                    $o[$key]->add($value, $object);
                     
                     
                 }
@@ -82,7 +84,7 @@ class Collection extends AttributeMapping {
                 
                 return $result;
                 
-            });
+            })->setSchema($schema);
             
         }
         

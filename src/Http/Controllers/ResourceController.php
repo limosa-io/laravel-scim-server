@@ -26,24 +26,32 @@ class ResourceController extends Controller{
     	
     	$input = $request->input();
     	
-    	$flattened = Helper::flatten($input);
-    	
+    	$flattened = Helper::flatten($input, $input['schemas']);
+    	    	
     	$resourceObject = new $class();
+    	
+    	$allAttributeConfigs = [];
     	
     	foreach(array_keys($flattened) as $scimAttribute){
     	    
     		$attributeConfig = Helper::getAttributeConfig($resourceType, $scimAttribute);
-    		
+    		    		
     		if($attributeConfig == null){
     			throw (new SCIMException(sprintf('Unknown attribute "%s"',$scimAttribute)))->setCode(400);
     		}else{
-    			$attributeConfig->write($flattened[$scimAttribute],$resourceObject);
+    			$attributeConfig->add($flattened[$scimAttribute],$resourceObject);
+    			$allAttributeConfigs[] = $attributeConfig;
     		}
     		
     	}
-        
+    	
     	//TODO: What if errors popup here
     	$resourceObject->save();
+    	
+    	foreach($allAttributeConfigs as &$attributeConfig){
+    	    $attributeConfig->writeAfter($flattened[$attributeConfig->getFullKey()],$resourceObject);
+    	}
+    	
     	
     	return Helper::objectToSCIMResponse($resourceObject, $resourceType)->setStatusCode(201);
     	
@@ -79,7 +87,7 @@ class ResourceController extends Controller{
             if($attributeConfig == null){
                 throw new SCIMException("Unknown attribute \"" . $scimAttribute . "\".",400);
             }else{
-                $attributeConfig->write($flattened[$scimAttribute],$resourceObject);
+                $attributeConfig->add($flattened[$scimAttribute],$resourceObject);
                 
                 $uses[] = $attributeConfig;
             }
@@ -99,11 +107,13 @@ class ResourceController extends Controller{
         foreach($allAttributeConfigs as $attributeConfig){
             // Do not write write-only attribtues (such as passwords)
             if($attributeConfig->isReadSupported() && $attributeConfig->isWriteSupported()){
-                $attributeConfig->write(null,$resourceObject);
+                $attributeConfig->add(null,$resourceObject);
             }
         }
         
         $resourceObject->save();
+        
+        //TODO: process 'delayed writes' ...
         
         return Helper::objectToSCIMResponse($resourceObject, $resourceType);
         

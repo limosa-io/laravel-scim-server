@@ -5,10 +5,11 @@ namespace ArieTimmerman\Laravel\SCIMServer\Attribute;
 use Illuminate\Support\Carbon;
 use ArieTimmerman\Laravel\SCIMServer\Exceptions\SCIMException;
 use ArieTimmerman\Laravel\SCIMServer\SCIM\Schema;
+use ArieTimmerman\Laravel\SCIMServer\Helper;
 
 class AttributeMapping {
 	
-	public $read, $write;
+	public $read, $add, $replace, $remove, $writeAfter;
 	
 	public $id = null;
 	public $parent = null;
@@ -88,7 +89,7 @@ class AttributeMapping {
 			    
 			    return self::eloquentAttributeToString($result); 
 			    
-			})->setWrite(function($value, &$object) use ($eloquentAttribute) {
+			})->setAdd(function($value, &$object) use ($eloquentAttribute) {
 			    $object->{$eloquentAttribute} = $value; 
 			})->setSortAttribute($eloquentAttribute)->setEloquentAttributes([$eloquentAttribute]);
 	}
@@ -164,9 +165,13 @@ class AttributeMapping {
 	
 	public function ignoreWrite(){
 	    
-	    $this->write = function($value, &$object){
+	    $ignore = function($value, &$object){
 	        //ignore
 	    };
+	    
+	    $this->add = $ignore;
+	    $this->replace = $ignore;
+	    $this->remove = $ignore;
 	    
 	    return $this;
 	    
@@ -174,9 +179,13 @@ class AttributeMapping {
 	
 	public function disableWrite(){
 	    
-        $this->write = function($value, &$object){ 
+        $disable = function($value, &$object){ 
             throw (new SCIMException(sprintf('Write to "%s" is not supported',$this->getFullKey())))->setCode(500)->setScimType('mutability');
         };
+        
+        $this->add = $disable;
+        $this->replace = $disable;
+        $this->remove = $disable;
         
         $this->writeEnabled = false;
         
@@ -190,10 +199,16 @@ class AttributeMapping {
 	    return $this;
 	}
 	
-	public function setWrite($write){
+	public function setAdd($write){
 	     
-	    $this->write = $write;
+	    $this->add = $write;
 	     
+	    return $this;
+	}
+	
+	public function setWriteAfter($write){
+	    $this->writeAfter = $writeAfter;
+	    
 	    return $this;
 	}
 	
@@ -225,12 +240,14 @@ class AttributeMapping {
 	        $parent = $parent->parent;
 	    }
 	    
+	    $fullKey = array_reverse($fullKey);
+	    
 	    $fullKey[]  = $this->getKey();
 	    
 	    //ugly hack
 	    $fullKey = array_filter($fullKey, function($value){ return !empty($value); });
 	    
-	    return implode(".", $fullKey);
+	    return Helper::getFlattenKey($fullKey, [$this->getSchema() ?? $this->getDefaultSchema()]);
 	}
 	
 	public function setFilter($filter){
@@ -246,13 +263,20 @@ class AttributeMapping {
 	        throw new SCIMException(sprintf('Read is not implemented for "%s"',$this->getFullKey()));
 	    };
 	    
-	    $this->write = function($value, &$object){
+	    $this->writeAfter = function($value, &$object){
 	        
-	        //$this->getSubNode($key)
-	        
-	        // TODO: Consider calln, or flatten anyway ...
-	        
+	    };
+	    
+	    $this->add = function($value, &$object){
 	        throw new SCIMException(sprintf('Write is not implemented for "%s"',$this->getFullKey()));
+	    };
+	    
+	    $this->replace = function($value, &$object){
+	        throw new SCIMException(sprintf('Replace is not implemented for "%s"',$this->getFullKey()));
+	    };
+	    
+	    $this->remove = function($value, &$object){
+	        throw new SCIMException(sprintf('Remove is not implemented for "%s"',$this->getFullKey()));
 	    };
 		
 	}
@@ -275,58 +299,33 @@ class AttributeMapping {
 	public function withFilter($filter){
 	    
         return $this->setFilter($filter);
-	  
-	    
-// 	    return new AttributeMapping($this->eloquentAttribute,$this->read,$this->write,$this,$filter);
-	    
-	    // return an AttributeConfig for which the read and write operations will apply to the corect things
-	    
-// 	    $read = $this->read();
-	    
-// 	    if(is_array($read)){
-	        
-// 	        // and
-// 	           // take overlap of
-//     	           // collect($read)->where('test', 'test','test');
-// 	               // collect($read)->where('2', '2','2');
-	           
-// 	        // or 
-//     	        // take union of
-//         	        // collect($read)->where('test', 'test','test');
-//         	        // collect($read)->where('2', '2','2');	        
-	        
-// 	        // TODO: populate where with 'scimFilterToLaravelQuery'
-	        
-// 	    }else{
-// 	        // ???
-// 	    }
-	    
-	    //return new AttributeMapping($this->eloquentAttribute,$this->read,)
 	    
 	}
 	
 	public function add($value, &$object) {
-	    return $this->write($value, $object);
+	    return ($this->add)($value, $object);
 	}
 	
 	public function replace($value, &$object) {
 	    
 	    $current = $this->read($object);
 	    
-	    //TODO: Really implement replace ...???
+	    //TODO: Really implement replace ...???	    
+	    return ($this->replace)($value, $object);
 	    
-	    return $this->write($value, $object);
 	}
 	
 	public function remove(&$object) {
 	    
 	    //TODO: implement remove for multi valued attributes 
-	    return $this->write(null, $object);
+	    return ($this->remove)($value, $object);
 	    
 	}
 	
-	public function write($value, &$object) {
-		return ($this->write)($value, $object);
+	public function writeAfter($value, &$object) {
+	    
+        return ($this->writeAfter)($value, $object);
+	    
 	}
 	
 	public function read(&$object) {
@@ -375,12 +374,12 @@ class AttributeMapping {
 	 * @param unknown $value
 	 * @return \ArieTimmerman\Laravel\SCIMServer\Attribute\AttributeMapping
 	 */
-	public function getSubNode($key){
+	public function getSubNode($key, $schema = null){
 	     
-	    if($key == null) return $this;
-	     
+	    if($key == null) return $this;	    
+	    
 	    if($this->mappingAssocArray != null && array_key_exists($key,$this->mappingAssocArray)){
-	        return self::ensureAttributeMappingObject($this->mappingAssocArray[$key])->setParent($this)->setKey($key);
+	        return self::ensureAttributeMappingObject($this->mappingAssocArray[$key])->setParent($this)->setKey($key)->setSchema($schema);
 	    }else{
 	        throw new SCIMException(sprintf('No mapping for "%s" in "%s"',$key,$this->getFullKey()));
 	    }
@@ -414,9 +413,8 @@ class AttributeMapping {
 	    /** @var AttributeMapping */
 	    $node = $this;
 	    
-	    
         foreach($elements as $element){
-            $node = $node->getSubNode($element);
+            $node = $node->getSubNode($element, $schema);
         }
         
         return $node;	    
@@ -440,7 +438,7 @@ class AttributeMapping {
 	        $getFilter = function() {
 	            return $this->filter;
 	        };
-	
+	        
 	        return $this->getNode( @$getAttributePath->call($getValuePath->call($path)) )->withFilter( @$getFilter->call($getValuePath->call($path)) )->getNode( $getAttributePath->call($path) );
 	
 	    }

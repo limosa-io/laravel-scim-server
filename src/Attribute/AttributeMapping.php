@@ -232,15 +232,10 @@ class AttributeMapping {
 	    
 	    $fullKey = [];
 	    
-	    while($parent != null){
-	        $parentKey = $parent->getKey();
-	        
-	        $fullKey[] = $parentKey;
-	        
+	    while($parent != null){	        
+	        array_unshift($fullKey, $parent->getKey());
 	        $parent = $parent->parent;
 	    }
-	    
-	    $fullKey = array_reverse($fullKey);
 	    
 	    $fullKey[]  = $this->getKey();
 	    
@@ -276,7 +271,8 @@ class AttributeMapping {
 	    };
 	    
 	    $this->remove = function($value, &$object){
-	        throw new SCIMException(sprintf('Remove is not implemented for "%s"',$this->getFullKey()));
+	        $this->add(null,$object);
+	        //throw new SCIMException(sprintf('Remove is not implemented for "%s"',$this->getFullKey()));
 	    };
 		
 	}

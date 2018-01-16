@@ -23,25 +23,18 @@ class ResourceController extends Controller{
     public function create(Request $request, ResourceType $resourceType){
     	
     	$class = $resourceType->getClass();
-    	
-    	$input = $request->input();
-    	
-    	$flattened = Helper::flatten($input, $input['schemas']);
+    	    	
+    	$flattened = Helper::flatten($request->input(), $input['schemas']);
     	    	
     	$resourceObject = new $class();
     	
     	$allAttributeConfigs = [];
     	
-    	foreach(array_keys($flattened) as $scimAttribute){
+    	foreach($flattened as $scimAttribute=>$value){
     	    
-    		$attributeConfig = Helper::getAttributeConfig($resourceType, $scimAttribute);
-    		    		
-    		if($attributeConfig == null){
-    			throw (new SCIMException(sprintf('Unknown attribute "%s"',$scimAttribute)))->setCode(400);
-    		}else{
-    			$attributeConfig->add($flattened[$scimAttribute],$resourceObject);
-    			$allAttributeConfigs[] = $attributeConfig;
-    		}
+    		$attributeConfig = Helper::getAttributeConfigOrFail($resourceType, $scimAttribute);
+			$attributeConfig->add($value,$resourceObject);
+			$allAttributeConfigs[] = $attributeConfig;
     		
     	}
     	
@@ -56,7 +49,7 @@ class ResourceController extends Controller{
     	return Helper::objectToSCIMResponse($resourceObject, $resourceType)->setStatusCode(201);
     	
     }
-
+    
     public function show(Request $request, ResourceType $resourceType, $resourceObject){
     	
     	return Helper::objectToSCIMResponse($resourceObject, $resourceType);
@@ -72,33 +65,28 @@ class ResourceController extends Controller{
     }
     
     public function replace(Request $request, ResourceType $resourceType, $resourceObject){
-        
-        $input = $request->input();
-        unset($input['schemas']);
-        
-        $flattened = Helper::flatten($input);
-        
-        $uses = [];
-                 
-        foreach(array_keys($flattened) as $scimAttribute){
-        
-            $attributeConfig = Helper::getAttributeConfig($resourceType, $scimAttribute);
-            
-            if($attributeConfig == null){
-                throw new SCIMException("Unknown attribute \"" . $scimAttribute . "\".",400);
-            }else{
-                $attributeConfig->add($flattened[$scimAttribute],$resourceObject);
                 
-                $uses[] = $attributeConfig;
-            }
+        $flattened = Helper::flatten($request->input(),$resourceType->getSchema());
+        
+        //Keep an array of written values
+        $uses = [];
+        
+        //Write all values
+        foreach($flattened as $scimAttribute=>$value){
+        
+            $attributeConfig = Helper::getAttributeConfigOrFail($resourceType, $scimAttribute);
+            $attributeConfig->add($value,$resourceObject);
+            
+            $uses[] = $attributeConfig;
         
         }
         
+        //Find values that have not been written in order to empty these.
         $allAttributeConfigs = $resourceType->getAllAttributeConfigs();
                 
         foreach($uses as $use){
             foreach($allAttributeConfigs as $key=>$option){
-                if($use->id == $option->id){
+                if($use->getFullKey() == $option->getFullKey()){
                     unset($allAttributeConfigs[$key]);
                 }
             }
@@ -107,13 +95,11 @@ class ResourceController extends Controller{
         foreach($allAttributeConfigs as $attributeConfig){
             // Do not write write-only attribtues (such as passwords)
             if($attributeConfig->isReadSupported() && $attributeConfig->isWriteSupported()){
-                $attributeConfig->add(null,$resourceObject);
+                $attributeConfig->remove($resourceObject);
             }
         }
         
         $resourceObject->save();
-        
-        //TODO: process 'delayed writes' ...
         
         return Helper::objectToSCIMResponse($resourceObject, $resourceType);
         
@@ -126,9 +112,7 @@ class ResourceController extends Controller{
     	if($input['schemas'] !== ["urn:ietf:params:scim:api:messages:2.0:PatchOp"]){
     	    throw (new SCIMException(sprintf('Invalid schema "%s". MUST be "urn:ietf:params:scim:api:messages:2.0:PatchOp"',json_encode($input['schemas']))))->setCode(404);
     	}
-    	
-    	unset($input['schemas']);
-    	
+    	    	
     	if(isset($input['urn:ietf:params:scim:api:messages:2.0:PatchOp:Operations'])){
     	    $input['Operations'] = $input['urn:ietf:params:scim:api:messages:2.0:PatchOp:Operations'];
     	    unset($input['urn:ietf:params:scim:api:messages:2.0:PatchOp:Operations']);
@@ -142,12 +126,12 @@ class ResourceController extends Controller{
                     
                     if(isset($operation['path'])){
                         
-                        $attributeConfig = Helper::getAttributeConfig($resourceType, $operation['path']);
+                        $attributeConfig = Helper::getAttributeConfigOrFail($resourceType, $operation['path']);
                         $attributeConfig->add($operation['value'], $resourceObject);
                         
                     }else{
                         foreach($operation['value'] as $key => $value){
-                            $attributeConfig = Helper::getAttributeConfig($resourceType, $key);
+                            $attributeConfig = Helper::getAttributeConfigOrFail($resourceType, $key);
                             $attributeConfig->add($value, $resourceObject);
                         }
                     }
@@ -158,7 +142,7 @@ class ResourceController extends Controller{
                                         
                     if(isset($operation['path'])){
                     
-                        $attributeConfig = Helper::getAttributeConfig($resourceType, $operation['path']);
+                        $attributeConfig = Helper::getAttributeConfigOrFail($resourceType, $operation['path']);
                         $attributeConfig->remove($resourceObject);
                     
                     }else{
@@ -172,12 +156,12 @@ class ResourceController extends Controller{
                     
                     if(isset($operation['path'])){
                         
-                        $attributeConfig = Helper::getAttributeConfig($resourceType, $operation['path']);
+                        $attributeConfig = Helper::getAttributeConfigOrFail($resourceType, $operation['path']);
                         $attributeConfig->replace($operation['value'], $resourceObject);
                         
                     }else{
                         foreach($operation['value'] as $key => $value){
-                            $attributeConfig = Helper::getAttributeConfig($resourceType, $key);
+                            $attributeConfig = Helper::getAttributeConfigOrFail($resourceType, $key);
                             $attributeConfig->replace($value, $resourceObject);
                         }
                     }

@@ -229,6 +229,16 @@ class Helper
          
     }
     
+    public static function getAttributeConfigOrFail(ResourceType $resourceType, $scimAttribute) {
+        $result = self::getAttributeConfig($resourceType, $scimAttribute);
+        
+        if($result == null){
+            throw (new SCIMException(sprintf('Unknown attribute "%s"',$scimAttribute)))->setCode(400);
+        }
+        
+        return $result;
+    }
+    
     public static function getEloquentSortAttribute(ResourceType $resourceType, $scimAttribute){
     
         $mapping = self::getAttributeConfig($resourceType, $scimAttribute);

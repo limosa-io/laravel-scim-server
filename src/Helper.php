@@ -11,6 +11,8 @@ use Tmilos\ScimFilterParser\Parser;
 use Tmilos\ScimFilterParser\Mode;
 use Tmilos\ScimFilterParser\Ast\Path;
 use Tmilos\ScimFilterParser\Ast\AttributePath;
+use ArieTimmerman\Laravel\SCIMServer\Exceptions\SCIMException;
+use Illuminate\Database\Eloquent\Model;
 
 class Helper
 {
@@ -116,7 +118,7 @@ class Helper
      * @param unknown $object
      * @param ResourceType $resourceType
      */
-    public static function objectToSCIMResponse($object, ResourceType $resourceType = null){
+    public static function objectToSCIMResponse(Model $object, ResourceType $resourceType = null){
         return response(self::objectToSCIMArray($object,$resourceType))->setEtag(self::getResourceObjectVersion($object));
     }
 
@@ -213,7 +215,7 @@ class Helper
     
         $scimAttribute = preg_replace('/\.[0-9]+$/', '', $scimAttribute);
         $scimAttribute = preg_replace('/\.[0-9]+\./', '.', $scimAttribute);
-    
+        
         $path = $parser->parse($scimAttribute);
         
         //TODO: FIX this. If $scimAttribute is a schema-indication, it should be considered as a schema
@@ -260,7 +262,7 @@ class Helper
         $first = array_first($partsCopy);
         
         if($first != null){
-            
+
             if(in_array($first,$schemas)){
                 $result .= $first . ":";
                 array_shift($partsCopy);
@@ -269,15 +271,17 @@ class Helper
             $result .= implode(".", $partsCopy);
             
         }else{
-            die("waat!");
-            //TODO: should never happen
+           throw (new SCIMException("unknown error. " . json_encode($partsCopy) ));
         }
         
         return $result;
         
     }
     
-    public static function flatten($array, $schemas, $parts = []) {
+    /**
+     * 
+     */
+    public static function flatten($array, array $schemas, $parts = []) {
         
         $result = [];
     

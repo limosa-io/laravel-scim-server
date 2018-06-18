@@ -27,6 +27,16 @@ class AttributeMapping {
 	public $eloquentAttributes = [];
 	
 	private $defaultSchema = null, $schema = null;
+
+	/**
+	 * Can be always, never, default, request
+	 */
+	private $returned = 'always';
+
+	public const RETURNED_ALWAYS = 'always';
+	public const RETURNED_NEVER = 'never';
+	public const RETURNED_DEFAULT = 'default';
+	public const RETURNED_REQUEST = 'request';
 	
 	public static function noMapping($parent = null) : AttributeMapping{
 	    return (new AttributeMapping())->disableWrite()->ignoreRead()->setParent($parent);
@@ -87,6 +97,21 @@ class AttributeMapping {
 	        	        
 			    $result = $object->{$eloquentAttribute};
 			    
+			    return self::eloquentAttributeToString($result); 
+			    
+			})->setAdd(function($value, &$object) use ($eloquentAttribute) {
+			    $object->{$eloquentAttribute} = $value; 
+			})->setReplace(function($value, &$object) use ($eloquentAttribute) {
+			    $object->{$eloquentAttribute} = $value; 
+			})->setSortAttribute($eloquentAttribute)->setEloquentAttributes([$eloquentAttribute]);
+	}
+
+	public static function eloquentCollection($eloquentAttribute, $parent = null) : AttributeMapping{
+	    
+	    return (new AttributeMapping())->setParent($parent)->setRead(function(&$object) use ($eloquentAttribute)  {
+	        	        
+				$result = $object->{$eloquentAttribute};
+							    
 			    return self::eloquentAttributeToString($result); 
 			    
 			})->setAdd(function($value, &$object) use ($eloquentAttribute) {
@@ -205,7 +230,21 @@ class AttributeMapping {
 	     
 	    return $this;
 	}
+
+	public function setReturned($returned){
+	     
+	    $this->returned = $returned;
+	     
+	    return $this;
+	}
 	
+	public function setReplace($replace){
+	     
+	    $this->replace = $replace;
+	     
+	    return $this;
+	}
+
 	public function setWriteAfter($write){
 	    $this->writeAfter = $writeAfter;
 	    
@@ -314,7 +353,7 @@ class AttributeMapping {
 	public function remove(&$object) {
 	    
 	    //TODO: implement remove for multi valued attributes 
-	    return ($this->remove)($value, $object);
+	    return ($this->remove)(null, $object);
 	    
 	}
 	
@@ -386,9 +425,9 @@ class AttributeMapping {
 	    
 	    if($attributePath == null){
 	        return $this;
-	    }
+		}
 	    
-	    $schema = $attributePath->schema;
+		$schema = $attributePath->schema;
 	    	    
 	    if(!empty($schema) && !empty($this->getSchema()) && $this->getSchema() != $schema){
 	        throw (new SCIMException(sprintf('Trying to get attribute for schema "%s". But schema is already "%s"',$attributePath->schema,$this->getSchema())))->setCode(500)->setScimType('noTarget');
@@ -410,7 +449,11 @@ class AttributeMapping {
 	    $node = $this;
 	    
         foreach($elements as $element){
-            $node = $node->getSubNode($element, $schema);
+			try{
+				$node = $node->getSubNode($element, $schema);
+			}catch(\Exception $e){
+				throw $e;
+			}
         }
         
         return $node;	    

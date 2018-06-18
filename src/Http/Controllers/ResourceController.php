@@ -10,9 +10,79 @@ use Tmilos\ScimFilterParser\Parser;
 use Tmilos\ScimFilterParser\Mode;
 use ArieTimmerman\Laravel\SCIMServer\AttributeMapping;
 use ArieTimmerman\Laravel\SCIMServer\ResourceType;
+use Validator;
+use Illuminate\Database\Eloquent\Model;
+use ArieTimmerman\Laravel\SCIMServer\Events\Delete;
+use ArieTimmerman\Laravel\SCIMServer\Events\Get;
+use ArieTimmerman\Laravel\SCIMServer\Events\Create;
+use ArieTimmerman\Laravel\SCIMServer\Events\Replace;
+use ArieTimmerman\Laravel\SCIMServer\Events\Patch;
+use ArieTimmerman\Laravel\SCIMServer\SCIM\Schema;
 
 class ResourceController extends Controller{
     
+
+    protected static function replaceKeys(array $input) {
+
+        $return = array();
+        foreach ($input as $key => $value) {
+            if (strpos($key, '_') > 0)
+                $key = str_replace('___','.',$key);
+    
+            if (is_array($value))
+                $value = self::replaceKeys($value); 
+    
+            $return[$key] = $value;
+        }
+        return $return;
+    }
+
+    protected function validateScim(ResourceType $resourceType, $flattened){
+
+        $forValidation = [];
+        $validations = $resourceType->getValidations();
+        $simpleValidations = [];
+
+        foreach($flattened as $key => $value){
+            $forValidation[preg_replace('/([^*])\.([^*])/','${1}___${2}',$key)] = $value;
+        }
+        
+        foreach($validations as $key => $value){
+            $simpleValidations[preg_replace('/([^*])\.([^*])/','${1}___${2}',$key)] = $value;
+
+        }
+        
+        $validator = Validator::make($forValidation, $simpleValidations);
+
+        if ($validator->fails()) {
+
+            // $errors = [];
+
+            $e = $validator->errors();
+
+
+            $e = self::replaceKeys($e->toArray());
+
+            // foreach($e['messages']->all() as $key=>$value){
+            //     $errors[$key] = str_replace('___',':',$key);
+            // }
+
+            // var_dump($errors);exit;
+
+            throw (new SCIMException('Invalid data!'))->setCode(400)->setScimType('invalidSyntax')->setErrors( $e );
+        }
+
+        $valid = $validator->valid();
+        
+        foreach($valid as $key => $value){
+            $flattened[str_replace(['___'],['.'],$key)] = $value;
+        }
+
+        return $flattened;
+
+
+    }
+
     /**
      * Create a new scim resource
      * @param Request $request
@@ -21,10 +91,19 @@ class ResourceController extends Controller{
      * @return \Symfony\Component\HttpFoundation\Response|\Illuminate\Contracts\Routing\ResponseFactory
      */
     public function create(Request $request, ResourceType $resourceType){
-    	    	
-    	$flattened = Helper::flatten($request->input(), $input['schemas']);
-    	
-    	$class = $resourceType->getClass();
+                
+        $input = $request->input();
+
+        $flattened = Helper::flatten($input, $input['schemas'] );
+        $flattened = $this->validateScim($resourceType, $flattened);
+
+        // foreach($valid as $key => $value){
+        //     $flattened[str_replace(['2_0'],['2.0'],$key)] = $value;
+        // }
+
+        $class = $resourceType->getClass();
+        
+        /** @var Model */
     	$resourceObject = new $class();
     	
     	$allAttributeConfigs = [];
@@ -38,25 +117,31 @@ class ResourceController extends Controller{
     	}
     	
     	//TODO: What if errors popup here
-    	$resourceObject->save();
-    	
+        $resourceObject->save();
+        
     	foreach($allAttributeConfigs as &$attributeConfig){
     	    $attributeConfig->writeAfter($flattened[$attributeConfig->getFullKey()],$resourceObject);
-    	}
+        }
+        
+        event(new Create($resourceObject));
     	
     	return Helper::objectToSCIMResponse($resourceObject, $resourceType)->setStatusCode(201);
     	
     }
     
-    public function show(Request $request, ResourceType $resourceType, $resourceObject){
-    	
+    public function show(Request $request, ResourceType $resourceType, Model $resourceObject){
+        
+        event(new Get($resourceObject));
+
     	return Helper::objectToSCIMResponse($resourceObject, $resourceType);
     	
     }
     
-    public function delete(Request $request, ResourceType $resourceType, $resourceObject){
+    public function delete(Request $request, ResourceType $resourceType, Model $resourceObject){
                 
         $resourceObject->delete();
+
+        event(new Delete($resourceObject));
         
         return response(null,204);
         
@@ -64,8 +149,13 @@ class ResourceController extends Controller{
     
     public function replace(Request $request, ResourceType $resourceType, $resourceObject){
                 
+        // $schemas =  $request->input('schemas');
+        // var_dump($schemas);exit;
+
+        // $resourceType->getSchema()
         $flattened = Helper::flatten($request->input(),$resourceType->getSchema());
-        
+        $flattened = $this->validateScim($resourceType, $flattened);
+
         //Keep an array of written values
         $uses = [];
         
@@ -73,7 +163,10 @@ class ResourceController extends Controller{
         foreach($flattened as $scimAttribute=>$value){
         
             $attributeConfig = Helper::getAttributeConfigOrFail($resourceType, $scimAttribute);
-            $attributeConfig->add($value,$resourceObject);
+
+            if($attributeConfig->isWriteSupported() ){
+                $attributeConfig->replace($value,$resourceObject);
+            }
             
             $uses[] = $attributeConfig;
         
@@ -93,19 +186,23 @@ class ResourceController extends Controller{
         foreach($allAttributeConfigs as $attributeConfig){
             // Do not write write-only attribtues (such as passwords)
             if($attributeConfig->isReadSupported() && $attributeConfig->isWriteSupported()){
-                $attributeConfig->remove($resourceObject);
+            //   $attributeConfig->remove($resourceObject);
             }
         }
-        
+
         $resourceObject->save();
+
+        event(new Replace($resourceObject));
         
         return Helper::objectToSCIMResponse($resourceObject, $resourceType);
         
     }
     
-    public function update(Request $request, ResourceType $resourceType, $resourceObject){
-    	    	
-    	$input = $request->input();
+    public function update(Request $request, ResourceType $resourceType, Model $resourceObject){
+                
+        //TODO: implement validations
+
+        $input = $request->input();
     	
     	if($input['schemas'] !== ["urn:ietf:params:scim:api:messages:2.0:PatchOp"]){
     	    throw (new SCIMException(sprintf('Invalid schema "%s". MUST be "urn:ietf:params:scim:api:messages:2.0:PatchOp"',json_encode($input['schemas']))))->setCode(404);
@@ -114,7 +211,9 @@ class ResourceController extends Controller{
     	if(isset($input['urn:ietf:params:scim:api:messages:2.0:PatchOp:Operations'])){
     	    $input['Operations'] = $input['urn:ietf:params:scim:api:messages:2.0:PatchOp:Operations'];
     	    unset($input['urn:ietf:params:scim:api:messages:2.0:PatchOp:Operations']);
-    	}
+        }
+        
+        $oldObject = Helper::objectToSCIMArray($resourceObject, $resourceType);
     	
     	foreach( $input['Operations'] as $operation){
     	    
@@ -169,11 +268,18 @@ class ResourceController extends Controller{
                 default:
                     throw new SCIMException(sprintf('Operation "%s" is not supported',$operation['op']));
                     
-                 
-                    
             }
+
+            $dirty = $resourceObject->getDirty();
+
+            // TODO: prevent something from getten written before ...
+            $newObject = Helper::flatten(Helper::objectToSCIMArray($resourceObject, $resourceType), $resourceType->getSchema());
+
+            $this->validateScim($resourceType, $newObject);
             
             $resourceObject->save();
+
+            event(new Patch($resourceObject));
             
             return Helper::objectToSCIMResponse($resourceObject, $resourceType);
             
@@ -213,7 +319,9 @@ class ResourceController extends Controller{
 			
 		} );
 		
-		$resourceObjects = $resourceObjectsBase->skip($startIndex - 1)->take($count);
+        $resourceObjects = $resourceObjectsBase->skip($startIndex - 1)->take($count);
+
+        $resourceObjects = $resourceObjects->with($resourceType->getWithRelations());
 		
 		if($sortBy != null){
 		  $resourceObjects = $resourceObjects->orderBy($sortBy, 'desc');

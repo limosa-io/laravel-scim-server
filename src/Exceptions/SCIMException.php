@@ -8,6 +8,8 @@ class SCIMException extends Exception{
 	
 	protected $scimType = "invalidValue";
 	protected $httpCode = 404;
+
+	protected $errors = [];
 	
 	function __construct($message){
 		parent::__construct($message);
@@ -24,9 +26,15 @@ class SCIMException extends Exception{
 	    
 	    return $this;
 	}
+
+	public function setErrors($errors){
+        $this->errors = $errors;
+
+        return $this;
+    }
 	
 	public function render($request){
-		return response(new \ArieTimmerman\Laravel\SCIMServer\SCIM\Error($this->getMessage(),$this->httpCode,$this->scimType),$this->httpCode);
+		return response( (new \ArieTimmerman\Laravel\SCIMServer\SCIM\Error($this->getMessage(),$this->httpCode,$this->scimType))->setErrors($this->errors)  ,$this->httpCode) ;
 	}
 	
 }

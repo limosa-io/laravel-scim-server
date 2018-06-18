@@ -16,7 +16,7 @@ class ServiceProvider extends \Illuminate\Support\ServiceProvider{
 				
 		$this->loadMigrationsFrom(__DIR__ . DIRECTORY_SEPARATOR . '..' . DIRECTORY_SEPARATOR . 'database' . DIRECTORY_SEPARATOR . 'migrations');
 		
-		$this->loadRoutesFrom(__DIR__.'/../routes/routes.php');
+		// $this->loadRoutesFrom(__DIR__.'/../routes/routes.php');
 
 		$router->middleware('SCIMHeaders', 'ArieTimmerman\Laravel\SCIMServer\Middleware\SCIMHeaders');
 		

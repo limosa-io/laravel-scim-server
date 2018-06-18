@@ -31,6 +31,14 @@ class ResourceType{
     public function getClass(){
         return $this->configuration['class'];
     }
+
+    public function getValidations(){
+        return $this->configuration['validations'];
+    }
+
+    public function getWithRelations(){
+        return $this->configuration['withRelations'];
+    }
     
     public static function user(){
         return new ResourceType('Users', config('scimserver.Users'));

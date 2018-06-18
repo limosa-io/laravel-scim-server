@@ -17,7 +17,9 @@ class SchemaController extends Controller{
 		$schemas = [];
 	
 		foreach($config as $key => $value){
-			$schema = (new SchemaBuilderV2())->get($value['schema']);
+
+			// TODO: FIX THIS. Schema is now an array but should be a string
+			$schema = (new SchemaBuilderV2())->get($value['schema'][0]);
 			
 			if($schema == null){
 				throw new SCIMException("Schema not found");	

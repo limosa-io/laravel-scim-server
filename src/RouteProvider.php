@@ -4,6 +4,7 @@ namespace ArieTimmerman\Laravel\SCIMServer;
 use Route;
 use Illuminate\Support\Facades\Auth;
 use ArieTimmerman\Laravel\SCIMServer\Exceptions\SCIMException;
+use Illuminate\Http\Request;
 
 /**
  * Helper class for the URL shortener
@@ -35,6 +36,36 @@ class RouteProvider
                 Route::fallback($routeWrongVersion);
             });
             
+        });
+    }
+
+    public static function meRoutes(array $options = [])
+    {
+
+        
+        Route::get('/scim/v2/Me', function (Request $request) {
+
+            $resourceType = ResourceType::user();
+            $class = $resourceType->getClass();
+            $subject = $request->user();
+
+            return Helper::objectToSCIMArray( $class::find($subject->getUserId()) , $resourceType);
+        });
+
+        Route::put('/scim/v2/Me', function(Request $request){
+
+            $resourceType = ResourceType::user();
+            $class = $resourceType->getClass();
+            $subject = $request->user();
+
+            return resolve(\ArieTimmerman\Laravel\SCIMServer\Http\Controllers\ResourceController)->replace( $request, $class::find($subject->getUserId()), ResourceType::user());
+        });
+
+        //TODO: Require Captcha!
+        Route::post('/scim/v2/Me', function(Request $request){
+            
+            return resolve('\ArieTimmerman\Laravel\SCIMServer\Http\Controllers\ResourceController')->create($request, ResourceType::user());
+
         });
     }
 
@@ -84,31 +115,27 @@ class RouteProvider
 
         });
         
-        Route::get('/Me', function () {
-            return Helper::objectToSCIMArray(Auth::user(), ResourceType::user());
-        });
+        Route::get("/ServiceProviderConfig", '\ArieTimmerman\Laravel\SCIMServer\Http\Controllers\ServiceProviderController@index')->name('scim.serviceproviderconfig');
         
-        Route::get("/ServiceProviderConfig", 'ArieTimmerman\Laravel\SCIMServer\Http\Controllers\ServiceProviderController@index')->name('scim.serviceproviderconfig');
+        Route::get("/Schemas", '\ArieTimmerman\Laravel\SCIMServer\Http\Controllers\SchemaController@index');
+        Route::get("/Schemas/{id}", '\ArieTimmerman\Laravel\SCIMServer\Http\Controllers\SchemaController@show')->name('scim.schemas');
         
-        Route::get("/Schemas", 'ArieTimmerman\Laravel\SCIMServer\Http\Controllers\SchemaController@index');
-        Route::get("/Schemas/{id}", 'ArieTimmerman\Laravel\SCIMServer\Http\Controllers\SchemaController@show')->name('scim.schemas');
-        
-        Route::get("/ResourceTypes", 'ArieTimmerman\Laravel\SCIMServer\Http\Controllers\ResourceTypesController@index');
-        Route::get("/ResourceTypes/{id}", 'ArieTimmerman\Laravel\SCIMServer\Http\Controllers\ResourceTypesController@show')->name('scim.resourcetype');
+        Route::get("/ResourceTypes", '\ArieTimmerman\Laravel\SCIMServer\Http\Controllers\ResourceTypesController@index');
+        Route::get("/ResourceTypes/{id}", '\ArieTimmerman\Laravel\SCIMServer\Http\Controllers\ResourceTypesController@show')->name('scim.resourcetype');
         
         Route::post('.search',function () {
             return response(null, 501);
         });
         
         // TODO: Use the attributes parameters ?attributes=userName, excludedAttributes=asdg,asdg (respect "returned" settings "always")        
-        Route::get('/{resourceType}/{resourceObject}', 'ArieTimmerman\Laravel\SCIMServer\Http\Controllers\ResourceController@show')->name('scim.resource');
-        Route::get("/{resourceType}", 'ArieTimmerman\Laravel\SCIMServer\Http\Controllers\ResourceController@index')->name('scim.resources');
+        Route::get('/{resourceType}/{resourceObject}', '\ArieTimmerman\Laravel\SCIMServer\Http\Controllers\ResourceController@show')->name('scim.resource');
+        Route::get("/{resourceType}", '\ArieTimmerman\Laravel\SCIMServer\Http\Controllers\ResourceController@index')->name('scim.resources');
         
-        Route::post("/{resourceType}", 'ArieTimmerman\Laravel\SCIMServer\Http\Controllers\ResourceController@create');
+        Route::post("/{resourceType}", '\ArieTimmerman\Laravel\SCIMServer\Http\Controllers\ResourceController@create');
         
-        Route::put("/{resourceType}/{resourceObject}", 'ArieTimmerman\Laravel\SCIMServer\Http\Controllers\ResourceController@replace');
-        Route::patch("/{resourceType}/{resourceObject}", 'ArieTimmerman\Laravel\SCIMServer\Http\Controllers\ResourceController@update');
-        Route::delete("/{resourceType}/{resourceObject}", 'ArieTimmerman\Laravel\SCIMServer\Http\Controllers\ResourceController@delete');
+        Route::put("/{resourceType}/{resourceObject}", '\ArieTimmerman\Laravel\SCIMServer\Http\Controllers\ResourceController@replace');
+        Route::patch("/{resourceType}/{resourceObject}", '\ArieTimmerman\Laravel\SCIMServer\Http\Controllers\ResourceController@update');
+        Route::delete("/{resourceType}/{resourceObject}", '\ArieTimmerman\Laravel\SCIMServer\Http\Controllers\ResourceController@delete');
         
         Route::fallback(function () {
             return response(null, 501);

@@ -27,3 +27,8 @@ TODO for the next releases.
 	* ServiceDefinition is very, very limited
 	* Instead of /ResourceObjects and /Schemas, a raml/openapi definition would perhaps be better
 
+
+# Hoe registratie?
+
+POST naar /Me. Create event opvangen. Als active=false dan een e-mail uitsturen met een access_token als id_token_hint
+

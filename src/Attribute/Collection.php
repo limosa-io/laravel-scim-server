@@ -25,19 +25,48 @@ class Collection extends AttributeMapping {
             
         }else{
             
-            throw (new SCIMException('Add is not implemented for updates of ' . $this->getFullKey()))->setCode(501);
+            foreach($value as $key=>$v){
+                // var_dump($value);
+                // echo $this->getFullKey() . " - " .  $key . "\n";
+
+                if($this->getSubNode($key) != null){
+                    $this->getSubNode($key)->add($v, $object);
+                }else{
+                    //TODO: log ignore
+                }
+                
+            }
+            
+            // throw (new SCIMException('Add is not implemented for updates of ' . $this->getFullKey()))->setCode(501);
             
         }
-        
         
     }
     
     public function remove(&$object){
-        throw (new SCIMException('Remove is not implemented for ' . $this->getFullKey()))->setCode(501);
+        // throw (new SCIMException('Remove is not implemented for ' . $this->getFullKey()))->setCode(501);
+
+        foreach($this->collection as $c){
+            foreach($c as $k=>$v){
+                $mapping = AttributeMapping::ensureAttributeMappingObject($v);
+
+                if($mapping->isWriteSupported()){
+                    $mapping->remove($object);
+                }
+            }
+        }
+
+
     }
     
     public function replace($value, &$object){
-        throw (new SCIMException('Remove is not implemented for ' . $this->getFullKey()))->setCode(501);
+
+        $this->remove($object);
+
+        $this->add($value, $object);
+
+        // var_dump(json_encode($object));exit;
+        // throw (new SCIMException('Replace is not implemented for ' . $this->getFullKey()))->setCode(501);
     }
     
     public function getEloquentAttributes(){

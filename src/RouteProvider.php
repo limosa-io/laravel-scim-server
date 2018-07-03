@@ -12,11 +12,12 @@ use Illuminate\Http\Request;
 class RouteProvider
 {
 
+    protected static $prefix = 'scim';
+
     public static function routes(array $options = [])
     {
-        $prefix = 'scim';
         
-        Route::prefix($prefix)->group(function () use($options, $prefix) {
+        Route::prefix(self::$prefix)->group(function () use($options) {
             
             Route::prefix('v2')->middleware([
                 'bindings',
@@ -26,8 +27,8 @@ class RouteProvider
                 self::allRoutes($options);
             });
             
-            $routeWrongVersion = function () use($prefix) {
-                throw (new SCIMException('Only SCIM v2 is supported. Accessible under ' . url($prefix . '/v2')))->setCode(501)
+            $routeWrongVersion = function () {
+                throw (new SCIMException('Only SCIM v2 is supported. Accessible under ' . url(self::$prefix . '/v2')))->setCode(501)
                     ->setScimType('invalidVers');
             };
             
@@ -42,31 +43,22 @@ class RouteProvider
     public static function meRoutes(array $options = [])
     {
 
+        Route::get('/scim/v2/Me', '\ArieTimmerman\Laravel\SCIMServer\Http\Controllers\MeController@getMe');
+        Route::put('/scim/v2/Me', '\ArieTimmerman\Laravel\SCIMServer\Http\Controllers\MeController@replaceMe');
+        Route::post('/scim/v2/Me', '\ArieTimmerman\Laravel\SCIMServer\Http\Controllers\MeController@createMe');
+
+    }
+
+    public static function publicRoutes(array $options = []){
+
+        Route::get("/scim/v2/ServiceProviderConfig", '\ArieTimmerman\Laravel\SCIMServer\Http\Controllers\ServiceProviderController@index')->name('scim.serviceproviderconfig');
         
-        Route::get('/scim/v2/Me', function (Request $request) {
+        Route::get("/scim/v2/Schemas", '\ArieTimmerman\Laravel\SCIMServer\Http\Controllers\SchemaController@index');
+        Route::get("/scim/v2/Schemas/{id}", '\ArieTimmerman\Laravel\SCIMServer\Http\Controllers\SchemaController@show')->name('scim.schemas');
+        
+        Route::get("/scim/v2/ResourceTypes", '\ArieTimmerman\Laravel\SCIMServer\Http\Controllers\ResourceTypesController@index');
+        Route::get("/scim/v2/ResourceTypes/{id}", '\ArieTimmerman\Laravel\SCIMServer\Http\Controllers\ResourceTypesController@show')->name('scim.resourcetype');
 
-            $resourceType = ResourceType::user();
-            $class = $resourceType->getClass();
-            $subject = $request->user();
-
-            return Helper::objectToSCIMArray( $class::find($subject->getUserId()) , $resourceType);
-        });
-
-        Route::put('/scim/v2/Me', function(Request $request){
-
-            $resourceType = ResourceType::user();
-            $class = $resourceType->getClass();
-            $subject = $request->user();
-
-            return resolve(\ArieTimmerman\Laravel\SCIMServer\Http\Controllers\ResourceController)->replace( $request, $class::find($subject->getUserId()), ResourceType::user());
-        });
-
-        //TODO: Require Captcha!
-        Route::post('/scim/v2/Me', function(Request $request){
-            
-            return resolve('\ArieTimmerman\Laravel\SCIMServer\Http\Controllers\ResourceController')->create($request, ResourceType::user());
-
-        });
     }
 
     private static function allRoutes(array $options = [])
@@ -115,13 +107,7 @@ class RouteProvider
 
         });
         
-        Route::get("/ServiceProviderConfig", '\ArieTimmerman\Laravel\SCIMServer\Http\Controllers\ServiceProviderController@index')->name('scim.serviceproviderconfig');
         
-        Route::get("/Schemas", '\ArieTimmerman\Laravel\SCIMServer\Http\Controllers\SchemaController@index');
-        Route::get("/Schemas/{id}", '\ArieTimmerman\Laravel\SCIMServer\Http\Controllers\SchemaController@show')->name('scim.schemas');
-        
-        Route::get("/ResourceTypes", '\ArieTimmerman\Laravel\SCIMServer\Http\Controllers\ResourceTypesController@index');
-        Route::get("/ResourceTypes/{id}", '\ArieTimmerman\Laravel\SCIMServer\Http\Controllers\ResourceTypesController@show')->name('scim.resourcetype');
         
         Route::post('.search',function () {
             return response(null, 501);

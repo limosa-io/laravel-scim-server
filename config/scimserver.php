@@ -13,13 +13,17 @@ return [
         
         // Set to 'null' to make use of auth.providers.users.model (App\User::class)
         'class' => Helper::getAuthUserClass(),
+        
         'validations' => [
+
             'urn:ietf:params:scim:schemas:core:2.0:User:userName' => 'required',
             'urn:ietf:params:scim:schemas:core:2.0:User:password' => 'nullable',
             'urn:ietf:params:scim:schemas:core:2.0:User:active' => 'boolean',
             'urn:ietf:params:scim:schemas:core:2.0:User:emails' => 'required|array',
             'urn:ietf:params:scim:schemas:core:2.0:User:emails.*.value' => 'required|email'
+
         ],
+
         'singular' => 'User',
         'schema' => [Schema::SCHEMA_USER],
 
@@ -80,7 +84,6 @@ return [
                 'preferredLanguage' => null, // Section 5.3.5 of [RFC7231]
                 'locale' => null, // see RFC5646
                 'timezone' => null, // see RFC6557
-                'timezone' => null,
                 'active' => null,
                 
                 'password' => AttributeMapping::eloquent('password')->disableRead(),

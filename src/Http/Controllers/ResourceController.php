@@ -18,9 +18,16 @@ use ArieTimmerman\Laravel\SCIMServer\Events\Create;
 use ArieTimmerman\Laravel\SCIMServer\Events\Replace;
 use ArieTimmerman\Laravel\SCIMServer\Events\Patch;
 use ArieTimmerman\Laravel\SCIMServer\SCIM\Schema;
+use ArieTimmerman\Laravel\SCIMServer\PolicyDecisionPoint;
+use Illuminate\Database\QueryException;
 
 class ResourceController extends Controller{
-    
+
+    protected function isAllowed(PolicyDecisionPoint $pdp, Request $request, $operation, array $attributes, ResourceType $resourceType, ?Model $resourceObject){
+
+        return $pdp->isAllowed($request, PolicyDecisionPoint::OPERATION_POST, $flattened, $resourceType, null);
+
+    }
 
     protected static function replaceKeys(array $input) {
 
@@ -49,25 +56,16 @@ class ResourceController extends Controller{
         
         foreach($validations as $key => $value){
             $simpleValidations[preg_replace('/([^*])\.([^*])/','${1}___${2}',$key)] = $value;
-
         }
-        
+
         $validator = Validator::make($forValidation, $simpleValidations);
 
         if ($validator->fails()) {
-
-            // $errors = [];
 
             $e = $validator->errors();
 
 
             $e = self::replaceKeys($e->toArray());
-
-            // foreach($e['messages']->all() as $key=>$value){
-            //     $errors[$key] = str_replace('___',':',$key);
-            // }
-
-            // var_dump($errors);exit;
 
             throw (new SCIMException('Invalid data!'))->setCode(400)->setScimType('invalidSyntax')->setErrors( $e );
         }
@@ -90,16 +88,18 @@ class ResourceController extends Controller{
      * @throws SCIMException
      * @return \Symfony\Component\HttpFoundation\Response|\Illuminate\Contracts\Routing\ResponseFactory
      */
-    public function create(Request $request, ResourceType $resourceType){
+    public function create(Request $request, PolicyDecisionPoint $pdp, ResourceType $resourceType){
                 
         $input = $request->input();
 
         $flattened = Helper::flatten($input, $input['schemas'] );
         $flattened = $this->validateScim($resourceType, $flattened);
 
-        // foreach($valid as $key => $value){
-        //     $flattened[str_replace(['2_0'],['2.0'],$key)] = $value;
-        // }
+        if(!$this->isAllowed($pdp, $request, PolicyDecisionPoint::OPERATION_POST, $flattened, $resourceType, null)){
+
+            throw new SCIMException('This is not allowed');
+
+        }
 
         $class = $resourceType->getClass();
         
@@ -116,8 +116,11 @@ class ResourceController extends Controller{
     		
     	}
     	
-    	//TODO: What if errors popup here
-        $resourceObject->save();
+        try{
+            $resourceObject->save();
+        }catch(QueryException $exception){
+            throw new SCIMException('Could not save this');
+        }
         
     	foreach($allAttributeConfigs as &$attributeConfig){
     	    $attributeConfig->writeAfter($flattened[$attributeConfig->getFullKey()],$resourceObject);
@@ -129,7 +132,7 @@ class ResourceController extends Controller{
     	
     }
     
-    public function show(Request $request, ResourceType $resourceType, Model $resourceObject){
+    public function show(Request $request, PolicyDecisionPoint $pdp, ResourceType $resourceType, Model $resourceObject){
         
         event(new Get($resourceObject));
 
@@ -137,7 +140,7 @@ class ResourceController extends Controller{
     	
     }
     
-    public function delete(Request $request, ResourceType $resourceType, Model $resourceObject){
+    public function delete(Request $request, PolicyDecisionPoint $pdp, ResourceType $resourceType, Model $resourceObject){
                 
         $resourceObject->delete();
 
@@ -147,7 +150,7 @@ class ResourceController extends Controller{
         
     }
     
-    public function replace(Request $request, ResourceType $resourceType, $resourceObject){
+    public function replace(Request $request, PolicyDecisionPoint $pdp, ResourceType $resourceType, $resourceObject){
                 
         // $schemas =  $request->input('schemas');
         // var_dump($schemas);exit;
@@ -198,7 +201,7 @@ class ResourceController extends Controller{
         
     }
     
-    public function update(Request $request, ResourceType $resourceType, Model $resourceObject){
+    public function update(Request $request, PolicyDecisionPoint $pdp, ResourceType $resourceType, Model $resourceObject){
                 
         //TODO: implement validations
 
@@ -287,8 +290,8 @@ class ResourceController extends Controller{
     	
     }
     
-    public function index(Request $request, ResourceType $resourceType){
-        
+    public function index(Request $request, PolicyDecisionPoint $pdp, ResourceType $resourceType){
+                
     	$class = $resourceType->getClass();
     	
     	// The 1-based index of the first query result. A value less than 1 SHALL be interpreted as 1.

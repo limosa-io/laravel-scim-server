@@ -44,18 +44,24 @@ class ResourceController extends Controller{
         return $return;
     }
 
-    protected function validateScim(ResourceType $resourceType, $flattened){
+    protected function validateScim(ResourceType $resourceType, $flattened, ?Model $resourceObject){
 
         $forValidation = [];
         $validations = $resourceType->getValidations();
         $simpleValidations = [];
 
+        /**
+         * Dots have a different meaning in SCIM and in Laravel's validation logic
+         */
         foreach($flattened as $key => $value){
             $forValidation[preg_replace('/([^*])\.([^*])/','${1}___${2}',$key)] = $value;
         }
         
         foreach($validations as $key => $value){
-            $simpleValidations[preg_replace('/([^*])\.([^*])/','${1}___${2}',$key)] = $value;
+            
+            $simpleValidations[preg_replace('/([^*])\.([^*])/','${1}___${2}',$key)] = $resourceObject != null ? preg_replace('/,\[OBJECT_ID\]/',$resourceObject->id,$value) : str_replace(',[OBJECT_ID]','',$value);
+
+            
         }
 
         $validator = Validator::make($forValidation, $simpleValidations);
@@ -63,8 +69,6 @@ class ResourceController extends Controller{
         if ($validator->fails()) {
 
             $e = $validator->errors();
-
-
             $e = self::replaceKeys($e->toArray());
 
             throw (new SCIMException('Invalid data!'))->setCode(400)->setScimType('invalidSyntax')->setErrors( $e );
@@ -93,7 +97,7 @@ class ResourceController extends Controller{
         $input = $request->input();
 
         $flattened = Helper::flatten($input, $input['schemas'] );
-        $flattened = $this->validateScim($resourceType, $flattened);
+        $flattened = $this->validateScim($resourceType, $flattened, null);
 
         if(!$this->isAllowed($pdp, $request, PolicyDecisionPoint::OPERATION_POST, $flattened, $resourceType, null)){
 
@@ -119,7 +123,8 @@ class ResourceController extends Controller{
         try{
             $resourceObject->save();
         }catch(QueryException $exception){
-            throw new SCIMException('Could not save this');
+            throw $exception;
+            // throw new SCIMException('Could not save this');
         }
         
     	foreach($allAttributeConfigs as &$attributeConfig){
@@ -150,14 +155,10 @@ class ResourceController extends Controller{
         
     }
     
-    public function replace(Request $request, PolicyDecisionPoint $pdp, ResourceType $resourceType, $resourceObject){
+    public function replace(Request $request, PolicyDecisionPoint $pdp, ResourceType $resourceType, Model $resourceObject){
                 
-        // $schemas =  $request->input('schemas');
-        // var_dump($schemas);exit;
-
-        // $resourceType->getSchema()
         $flattened = Helper::flatten($request->input(),$resourceType->getSchema());
-        $flattened = $this->validateScim($resourceType, $flattened);
+        $flattened = $this->validateScim($resourceType, $flattened, $resourceObject);
 
         //Keep an array of written values
         $uses = [];
@@ -278,7 +279,7 @@ class ResourceController extends Controller{
             // TODO: prevent something from getten written before ...
             $newObject = Helper::flatten(Helper::objectToSCIMArray($resourceObject, $resourceType), $resourceType->getSchema());
 
-            $this->validateScim($resourceType, $newObject);
+            $this->validateScim($resourceType, $newObject, $resourceObject);
             
             $resourceObject->save();
 

@@ -72,7 +72,7 @@ class AttributeMapping {
 		        
                 $result[$key] = self::ensureAttributeMappingObject($value)->setParent($parent)->read($object);
                 
-                if(empty($result[$key])){
+                if(empty($result[$key]) && !is_bool($result[$key])){
                     unset($result[$key]);
                 }
 		    }
@@ -115,7 +115,18 @@ class AttributeMapping {
 			    return self::eloquentAttributeToString($result); 
 			    
 			})->setAdd(function($value, &$object) use ($eloquentAttribute) {
-			    $object->{$eloquentAttribute} = $value; 
+				
+				if(!is_array($value)){
+					$value = [$value];
+				}
+
+				$object->{$eloquentAttribute}()->attach(collect($value)->pluck('value'));
+
+			})->setReplace(function($value, &$object) use ($eloquentAttribute) {
+
+				$object->{$eloquentAttribute}()->sync(collect($value)->pluck('value'));
+
+
 			})->setSortAttribute($eloquentAttribute)->setEloquentAttributes([$eloquentAttribute]);
 	}
 	

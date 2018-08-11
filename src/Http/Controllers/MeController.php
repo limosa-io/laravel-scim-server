@@ -11,8 +11,7 @@ use ArieTimmerman\Laravel\SCIMServer\PolicyDecisionPoint;
 class MeController extends ResourceController{
 
     protected function isAllowed(PolicyDecisionPoint $pdp, Request $request, $operation, array $attributes, ResourceType $resourceType, ?Model $resourceObject){
-
-        //die('asdg');
+        
         return $pdp->isAllowed($request, PolicyDecisionPoint::OPERATION_POST, $attributes, $resourceType, null, true);
         
 

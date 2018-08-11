@@ -25,7 +25,7 @@ class ResourceController extends Controller{
 
     protected function isAllowed(PolicyDecisionPoint $pdp, Request $request, $operation, array $attributes, ResourceType $resourceType, ?Model $resourceObject){
 
-        return $pdp->isAllowed($request, PolicyDecisionPoint::OPERATION_POST, $flattened, $resourceType, null);
+        return $pdp->isAllowed($request, $operation, $attributes, $resourceType, $resourceObject);
 
     }
 
@@ -59,8 +59,9 @@ class ResourceController extends Controller{
         
         foreach($validations as $key => $value){
             
-            $simpleValidations[preg_replace('/([^*])\.([^*])/','${1}___${2}',$key)] = $resourceObject != null ? preg_replace('/,\[OBJECT_ID\]/',$resourceObject->id,$value) : str_replace(',[OBJECT_ID]','',$value);
-
+            $simpleValidations[
+                preg_replace('/([^*])\.([^*])/','${1}___${2}',$key)
+            ] = !is_string($value) ? $value : ($resourceObject != null ? preg_replace('/,\[OBJECT_ID\]/',$resourceObject->id,$value) : str_replace(',[OBJECT_ID]','',$value));
             
         }
 
@@ -74,8 +75,20 @@ class ResourceController extends Controller{
             throw (new SCIMException('Invalid data!'))->setCode(400)->setScimType('invalidSyntax')->setErrors( $e );
         }
 
-        $valid = $validator->valid();
+        $validTemp = $validator->valid();
+        $valid = [];
+
+        $keys = collect($simpleValidations)->keys()->map(function ($rule) {
+            return explode('.', $rule)[0];
+        })->unique()->toArray();
+
+        foreach($keys as $key){
+            if(isset($validTemp[$key])){
+                $valid[$key] = $validTemp[$key];
+            }
+        }
         
+        $flattened = [];
         foreach($valid as $key => $value){
             $flattened[str_replace(['___'],['.'],$key)] = $value;
         }
@@ -156,9 +169,28 @@ class ResourceController extends Controller{
     }
     
     public function replace(Request $request, PolicyDecisionPoint $pdp, ResourceType $resourceType, Model $resourceObject){
-                
+        
+        $original = Helper::flatten(Helper::objectToSCIMArray($resourceObject, $resourceType), $resourceType->getSchema());
+
+        //TODO: get flattend from $resourceObject
         $flattened = Helper::flatten($request->input(),$resourceType->getSchema());
         $flattened = $this->validateScim($resourceType, $flattened, $resourceObject);
+
+        $updated = [];
+
+        foreach($flattened as $key=>$value){
+            if(!isset($original[$key]) || json_encode($original[$key]) != json_encode($flattened[$key])  ){
+                $updated[$key] = $flattened[$key];
+            }
+        }
+
+        if(!$this->isAllowed($pdp, $request, PolicyDecisionPoint::OPERATION_PUT, $updated, $resourceType, null)){
+
+            throw new SCIMException('This is not allowed');
+
+        }
+
+
 
         //Keep an array of written values
         $uses = [];
@@ -204,8 +236,6 @@ class ResourceController extends Controller{
     
     public function update(Request $request, PolicyDecisionPoint $pdp, ResourceType $resourceType, Model $resourceObject){
                 
-        //TODO: implement validations
-
         $input = $request->input();
     	
     	if($input['schemas'] !== ["urn:ietf:params:scim:api:messages:2.0:PatchOp"]){
@@ -274,12 +304,18 @@ class ResourceController extends Controller{
                     
             }
 
-            $dirty = $resourceObject->getDirty();
+            $dirty = $resourceObject->getDirty();            
 
             // TODO: prevent something from getten written before ...
             $newObject = Helper::flatten(Helper::objectToSCIMArray($resourceObject, $resourceType), $resourceType->getSchema());
 
-            $this->validateScim($resourceType, $newObject, $resourceObject);
+            $flattened = $this->validateScim($resourceType, $newObject, $resourceObject);
+
+            if(!$this->isAllowed($pdp, $request, PolicyDecisionPoint::OPERATION_PATCH, $flattened, $resourceType, null)){
+
+                throw new SCIMException('This is not allowed');
+    
+            }
             
             $resourceObject->save();
 
@@ -291,6 +327,16 @@ class ResourceController extends Controller{
     	
     }
     
+
+    public function notImplemented(Request $request){
+        return response(null, 501);
+    }
+
+    public function wrongVersion(Request $request){
+        throw (new SCIMException('Only SCIM v2 is supported. Accessible under ' . url('scim/v2')))->setCode(501)
+                    ->setScimType('invalidVers');
+    }
+
     public function index(Request $request, PolicyDecisionPoint $pdp, ResourceType $resourceType){
                 
     	$class = $resourceType->getClass();

@@ -21,8 +21,6 @@ class PolicyDecisionPoint {
             
         }
         
-        // TODO: Check if operation is allowed
-
         return true;
 
     }

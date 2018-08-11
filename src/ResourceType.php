@@ -17,7 +17,7 @@ class ResourceType{
     }
     
     public function getMapping(){
-        return AttributeMapping::object($this->configuration['mapping'])->setDefaultSchema($this->configuration['schema']);
+        return AttributeMapping::object($this->configuration['mapping'] ?? [])->setDefaultSchema($this->configuration['schema']);
     }
     
     public function getName(){
@@ -37,7 +37,7 @@ class ResourceType{
     }
 
     public function getWithRelations(){
-        return $this->configuration['withRelations'];
+        return $this->configuration['withRelations'] ?? [];
     }
     
     public static function user(){

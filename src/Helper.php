@@ -83,12 +83,19 @@ class Helper
                         
             if (! empty($userArray) && $resourceType->getConfiguration()['map_unmapped']) {
                 
-                $namespace = $resourceType->getConfiguration()['unmapped_namespace'];
-                
-                $result[$namespace] = [];
+                $namespace = $resourceType->getConfiguration()['unmapped_namespace'] ?? null;
+
+                $parent = null;
+
+                if($namespace != null){
+                    $result[$namespace] = [];
+                    $parent = &$result[$namespace];
+                }else{
+                    $parent = &$result;
+                }
                 
                 foreach ($userArray as $key => $value) {
-                    $result[$namespace][$key] = AttributeMapping::eloquentAttributeToString($value);
+                    $parent[$key] = AttributeMapping::eloquentAttributeToString($value);
                 }
             }
             

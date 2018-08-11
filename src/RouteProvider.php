@@ -20,7 +20,6 @@ class RouteProvider
         Route::prefix(self::$prefix)->group(function () use($options) {
             
             Route::prefix('v2')->middleware([
-                'bindings',
                 'ArieTimmerman\Laravel\SCIMServer\Middleware\SCIMHeaders'
             ])
                 ->group(function () use($options) {
@@ -32,9 +31,9 @@ class RouteProvider
                     ->setScimType('invalidVers');
             };
             
-            Route::get('v1', $routeWrongVersion);
+            Route::get('v1', '\ArieTimmerman\Laravel\SCIMServer\Http\Controllers\ResourceController@wrongVersion');
             Route::prefix('v1')->group(function () use($options, $routeWrongVersion) {
-                Route::fallback($routeWrongVersion);
+                Route::fallback('\ArieTimmerman\Laravel\SCIMServer\Http\Controllers\ResourceController@wrongVersion');
             });
             
         });
@@ -43,9 +42,9 @@ class RouteProvider
     public static function meRoutes(array $options = [])
     {
 
-        Route::get('/scim/v2/Me', '\ArieTimmerman\Laravel\SCIMServer\Http\Controllers\MeController@getMe');
-        Route::put('/scim/v2/Me', '\ArieTimmerman\Laravel\SCIMServer\Http\Controllers\MeController@replaceMe');
-        Route::post('/scim/v2/Me', '\ArieTimmerman\Laravel\SCIMServer\Http\Controllers\MeController@createMe');
+        Route::get('/scim/v2/Me', '\ArieTimmerman\Laravel\SCIMServer\Http\Controllers\MeController@getMe')->name('scim.me.get');
+        Route::put('/scim/v2/Me', '\ArieTimmerman\Laravel\SCIMServer\Http\Controllers\MeController@replaceMe')->name('scim.me.put');
+        Route::post('/scim/v2/Me', '\ArieTimmerman\Laravel\SCIMServer\Http\Controllers\MeController@createMe')->name('scim.me.post');
 
     }
 
@@ -109,9 +108,7 @@ class RouteProvider
         
         
         
-        Route::post('.search',function () {
-            return response(null, 501);
-        });
+        Route::post('.search','\ArieTimmerman\Laravel\SCIMServer\Http\Controllers\ResourceController@notImplemented');
         
         // TODO: Use the attributes parameters ?attributes=userName, excludedAttributes=asdg,asdg (respect "returned" settings "always")        
         Route::get('/{resourceType}/{resourceObject}', '\ArieTimmerman\Laravel\SCIMServer\Http\Controllers\ResourceController@show')->name('scim.resource');
@@ -123,9 +120,7 @@ class RouteProvider
         Route::patch("/{resourceType}/{resourceObject}", '\ArieTimmerman\Laravel\SCIMServer\Http\Controllers\ResourceController@update');
         Route::delete("/{resourceType}/{resourceObject}", '\ArieTimmerman\Laravel\SCIMServer\Http\Controllers\ResourceController@delete');
         
-        Route::fallback(function () {
-            return response(null, 501);
-        });
+        Route::fallback('\ArieTimmerman\Laravel\SCIMServer\Http\Controllers\ResourceController@notImplemented');
         
     }
 }

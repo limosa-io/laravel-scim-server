@@ -422,7 +422,7 @@ class AttributeMapping {
 	 */
 	public function getSubNode($key, $schema = null){
 	     
-	    if($key == null) return $this;	    
+	    if($key == null) return $this;    
 	    
 	    if($this->mappingAssocArray != null && array_key_exists($key,$this->mappingAssocArray)){
 	        return self::ensureAttributeMappingObject($this->mappingAssocArray[$key])->setParent($this)->setKey($key)->setSchema($schema);
@@ -434,11 +434,12 @@ class AttributeMapping {
 	
 	public function getNode($attributePath){
 	    
-	    if($attributePath == null){
+	    if( empty($attributePath) ){
 	        return $this;
 		}
-	    
-		$schema = $attributePath->schema;
+		
+		//The first schema should be the default one
+		$schema = $attributePath->schema ?? $this->getDefaultSchema()[0];
 	    	    
 	    if(!empty($schema) && !empty($this->getSchema()) && $this->getSchema() != $schema){
 	        throw (new SCIMException(sprintf('Trying to get attribute for schema "%s". But schema is already "%s"',$attributePath->schema,$this->getSchema())))->setCode(500)->setScimType('noTarget');
@@ -449,8 +450,8 @@ class AttributeMapping {
 	    if(empty($attributePath->attributeNames) && !empty($schema)){
 	        $elements[] = $schema;
 	    }else if(empty($this->getSchema()) && !in_array($attributePath->attributeNames[0],Schema::ATTRIBUTES_CORE) ){
-	        $elements[] = $schema ?? $this->getDefaultSchema();
-	    }
+	        $elements[] = $schema ?? (is_array($this->getDefaultSchema()) ? $this->getDefaultSchema()[0] : $this->getDefaultSchema());
+		}
 	    
 	    foreach($attributePath->attributeNames as $a){
 	        $elements[] = $a;
@@ -488,8 +489,12 @@ class AttributeMapping {
 	        $getFilter = function() {
 	            return $this->filter;
 	        };
-	        
-	        return $this->getNode( @$getAttributePath->call($getValuePath->call($path)) )->withFilter( @$getFilter->call($getValuePath->call($path)) )->getNode( $getAttributePath->call($path) );
+			
+			$first = @$getAttributePath->call($getValuePath->call($path));
+			$filter = @$getFilter->call($getValuePath->call($path));
+			$last = $getAttributePath->call($path);
+			
+			return $this->getNode( $first )->withFilter( $filter  )->getNode( $last );
 	
 	    }
 	

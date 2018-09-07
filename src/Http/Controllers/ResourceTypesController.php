@@ -20,7 +20,7 @@ class ResourceTypesController extends Controller{
 		$resourceTypes = [];
 		
 		foreach($config as $key => $value){
-			$resourceTypes[] = new ResourceType($value['singular'], $key, $key, $value['description'], Schema::SCHEMA_USER, [ ] );
+			$resourceTypes[] = new ResourceType($value['singular'], $key, $key, $value['description'] ?? null, Schema::SCHEMA_USER, [ ] );
 		}
 		
 		$this->resourceTypes = collect($resourceTypes);

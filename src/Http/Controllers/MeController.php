@@ -21,7 +21,7 @@ class MeController extends ResourceController{
 
         $resourceType = ResourceType::user();
 
-        return parent::create($request, $pdp, $resourceType);
+        return parent::create($request, $pdp, $resourceType, true);
     }
 
     public function getMe(Request $request, PolicyDecisionPoint $pdp){
@@ -40,7 +40,7 @@ class MeController extends ResourceController{
         $class = $resourceType->getClass();
         $subject = $request->user();
         
-        return parent::replace($request, $pdp, $resourceType, $class::find($subject->getUserId()));
+        return parent::replace($request, $pdp, $resourceType, $class::find($subject->getUserId()), true);
 
     }
 
@@ -50,7 +50,7 @@ class MeController extends ResourceController{
         $class = $resourceType->getClass();
         $subject = $request->user();
         
-        return parent::update($request, $pdp, $resourceType, $class::find($subject->getUserId()));
+        return parent::update($request, $pdp, $resourceType, $class::find($subject->getUserId()), true);
 
     }
 

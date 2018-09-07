@@ -99,14 +99,10 @@ class ResourceController extends Controller{
     }
 
     /**
-     * Create a new scim resource
-     * @param Request $request
-     * @param ResourceType $resourceType
-     * @throws SCIMException
-     * @return \Symfony\Component\HttpFoundation\Response|\Illuminate\Contracts\Routing\ResponseFactory
+     * @return Model
      */
-    public function create(Request $request, PolicyDecisionPoint $pdp, ResourceType $resourceType){
-                
+    public function createObject(Request $request, PolicyDecisionPoint $pdp, ResourceType $resourceType, $isMe = false){
+
         $input = $request->input();
 
         $flattened = Helper::flatten($input, $input['schemas'] );
@@ -144,9 +140,23 @@ class ResourceController extends Controller{
     	    $attributeConfig->writeAfter($flattened[$attributeConfig->getFullKey()],$resourceObject);
         }
         
-        event(new Create($resourceObject));
+        event(new Create($resourceObject, $isMe));
+
+        return $resourceObject;
+    }
+
+    /**
+     * Create a new scim resource
+     * @param Request $request
+     * @param ResourceType $resourceType
+     * @throws SCIMException
+     * @return \Symfony\Component\HttpFoundation\Response|\Illuminate\Contracts\Routing\ResponseFactory
+     */
+    public function create(Request $request, PolicyDecisionPoint $pdp, ResourceType $resourceType, $isMe = false){
+                
+        $resourceObject = $this->createObject($request, $pdp, $resourceType, $isMe);
     	
-    	return Helper::objectToSCIMResponse($resourceObject, $resourceType)->setStatusCode(201);
+    	return Helper::objectToSCIMCreateResponse($resourceObject, $resourceType);
     	
     }
     
@@ -168,7 +178,7 @@ class ResourceController extends Controller{
         
     }
     
-    public function replace(Request $request, PolicyDecisionPoint $pdp, ResourceType $resourceType, Model $resourceObject){
+    public function replace(Request $request, PolicyDecisionPoint $pdp, ResourceType $resourceType, Model $resourceObject, $isMe = false){
         
         $original = Helper::flatten(Helper::objectToSCIMArray($resourceObject, $resourceType), $resourceType->getSchema());
 
@@ -228,13 +238,13 @@ class ResourceController extends Controller{
 
         $resourceObject->save();
 
-        event(new Replace($resourceObject));
+        event(new Replace($resourceObject, $isMe));
         
         return Helper::objectToSCIMResponse($resourceObject, $resourceType);
         
     }
     
-    public function update(Request $request, PolicyDecisionPoint $pdp, ResourceType $resourceType, Model $resourceObject){
+    public function update(Request $request, PolicyDecisionPoint $pdp, ResourceType $resourceType, Model $resourceObject, $isMe = false){
                 
         $input = $request->input();
     	
@@ -319,7 +329,7 @@ class ResourceController extends Controller{
             
             $resourceObject->save();
 
-            event(new Patch($resourceObject));
+            event(new Patch($resourceObject, $isMe));
             
             return Helper::objectToSCIMResponse($resourceObject, $resourceType);
             
@@ -368,7 +378,9 @@ class ResourceController extends Controller{
 			}
 			
 		} );
-		
+        
+        $totalResults = $resourceObjectsBase->count();
+        
         $resourceObjects = $resourceObjectsBase->skip($startIndex - 1)->take($count);
 
         $resourceObjects = $resourceObjects->with($resourceType->getWithRelations());
@@ -379,7 +391,7 @@ class ResourceController extends Controller{
 		
 		$resourceObjects = $resourceObjects->get();
 		
-		$totalResults = $resourceObjectsBase->count();
+		
 		$attributes = [];
 		$excludedAttributes = [];
         

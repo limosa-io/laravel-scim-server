@@ -129,6 +129,10 @@ class Helper
         return response(self::objectToSCIMArray($object,$resourceType))->setEtag(self::getResourceObjectVersion($object));
     }
 
+    public static function objectToSCIMCreateResponse(Model $object, ResourceType $resourceType = null){
+        return self::objectToSCIMResponse($object, $resourceType)->setStatusCode(201);
+    }
+
     /**
      * See https://tools.ietf.org/html/rfc7644#section-3.4.2.2
      * @param unknown $query

@@ -9,14 +9,21 @@ use ArieTimmerman\Laravel\SCIMServer\Exceptions\SCIMException;
 class SchemaController extends Controller{
 
 	private $schemas = null;
-	
-	function __construct(){
-	
+
+	public function getSchemas(){
+
+
+		if($this->schemas != null){
+			return $this->schemas;
+		}
+
 		$config = config("scimserver");
 	
 		$schemas = [];
 	
 		foreach($config as $key => $value){
+
+			if($key != 'Users' && $key != 'Group') continue;
 
 			// TODO: FIX THIS. Schema is now an array but should be a string
 			$schema = (new SchemaBuilderV2())->get($value['schema'][0]);
@@ -25,13 +32,15 @@ class SchemaController extends Controller{
 				throw new SCIMException("Schema not found");	
 			}
 			
-			$schema->getMeta()->setLocation(route('scim.schemas', ['id' => $schema->getId()]));
+			$schema->getMeta()->setLocation(route('scim.schemas', ['id' => '23']));
 			
 			$schemas[] = $schema->serializeObject();
 		}
 	
 		$this->schemas = collect($schemas);
-	
+
+		return $this->schemas;
+
 	}
 	
 	public function show($id){
@@ -50,7 +59,7 @@ class SchemaController extends Controller{
 	
     public function index(){
 
-    	return new ListResponse($this->schemas,1,$this->schemas->count());
+    	return new ListResponse($this->getSchemas(),1,$this->getSchemas()->count());
 
     }
 

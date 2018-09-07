@@ -88,7 +88,7 @@ class Collection extends AttributeMapping {
             
             $parent = $this;
             
-            return (new CollectionValue())->setParent($this)->setAdd(function($value, &$object) use ($key, $parent){
+            return (new CollectionValue())->setEloquentAttributes($this->collection[0][$key]->getEloquentAttributes())->setKey($key)->setParent($this)->setAdd(function($value, &$object) use ($key, $parent){
                 
                 $collection = Collection::filterCollection($parent->filter, collect($parent->collection), $object);
                 

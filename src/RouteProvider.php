@@ -44,6 +44,11 @@ class RouteProvider
 
         Route::get('/scim/v2/Me', '\ArieTimmerman\Laravel\SCIMServer\Http\Controllers\MeController@getMe')->name('scim.me.get');
         Route::put('/scim/v2/Me', '\ArieTimmerman\Laravel\SCIMServer\Http\Controllers\MeController@replaceMe')->name('scim.me.put');
+    }
+
+    public static function meRoutePost(array $options = [])
+    {
+
         Route::post('/scim/v2/Me', '\ArieTimmerman\Laravel\SCIMServer\Http\Controllers\MeController@createMe')->name('scim.me.post');
 
     }

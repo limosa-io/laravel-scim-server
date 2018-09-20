@@ -297,6 +297,10 @@ class ResourceController extends Controller{
                     
                     if(isset($operation['path'])){
                         
+                        if(!isset($operation['value'])){
+                            throw new SCIMException('Please provide a "value"',400);
+                        }
+
                         $attributeConfig = Helper::getAttributeConfigOrFail($resourceType, $operation['path']);
                         $attributeConfig->replace($operation['value'], $resourceObject);
                         

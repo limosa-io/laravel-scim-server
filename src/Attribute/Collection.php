@@ -43,7 +43,7 @@ class Collection extends AttributeMapping {
         
     }
     
-    public function remove(&$object){
+    public function remove($value, &$object){
         // throw (new SCIMException('Remove is not implemented for ' . $this->getFullKey()))->setCode(501);
 
         foreach($this->collection as $c){
@@ -51,7 +51,7 @@ class Collection extends AttributeMapping {
                 $mapping = AttributeMapping::ensureAttributeMappingObject($v);
 
                 if($mapping->isWriteSupported()){
-                    $mapping->remove($object);
+                    $mapping->remove($value, $object);
                 }
             }
         }

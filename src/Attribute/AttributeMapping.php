@@ -10,6 +10,8 @@ use ArieTimmerman\Laravel\SCIMServer\Helper;
 class AttributeMapping {
 	
 	public $read, $add, $replace, $remove, $writeAfter;
+
+	public $getSubNode;
 	
 	public $id = null;
 	public $parent = null;
@@ -21,6 +23,8 @@ class AttributeMapping {
 	private $writeEnabled = true;
 	
 	private $sortAttribute = null;
+
+	public $relationship = null;
 	
 	private $mappingAssocArray = null;
 	
@@ -31,7 +35,7 @@ class AttributeMapping {
 	/**
 	 * Can be always, never, default, request
 	 */
-	private $returned = 'always';
+	public $returned = 'always';
 
 	public const RETURNED_ALWAYS = 'always';
 	public const RETURNED_NEVER = 'never';
@@ -189,6 +193,9 @@ class AttributeMapping {
 	    return $this;
 	}
 	
+	/**
+	 * @return self
+	 */
 	public function ignoreRead(){
 	   
 	    $this->read = function(&$object){
@@ -199,6 +206,9 @@ class AttributeMapping {
 	    
 	}
 	
+	/**
+	 * @return self
+	 */
 	public function ignoreWrite(){
 	    
 	    $ignore = function($value, &$object){
@@ -228,6 +238,9 @@ class AttributeMapping {
 	    return $this;
 	}
 	
+	/**
+	 * @return self
+	 */
 	public function setRead($read) : AttributeMapping{
 	    
 	    $this->read = $read;
@@ -238,6 +251,13 @@ class AttributeMapping {
 	public function setAdd($write){
 	     
 	    $this->add = $write;
+	     
+	    return $this;
+	}
+
+	public function setRemove($write){
+	     
+	    $this->remove = $write;
 	     
 	    return $this;
 	}
@@ -361,10 +381,10 @@ class AttributeMapping {
 	    
 	}
 	
-	public function remove(&$object) {
+	public function remove($value, &$object) {
 	    
 	    //TODO: implement remove for multi valued attributes 
-	    return ($this->remove)(null, $object);
+	    return ($this->remove)($value, $object);
 	    
 	}
 	
@@ -421,6 +441,10 @@ class AttributeMapping {
 	 * @return \ArieTimmerman\Laravel\SCIMServer\Attribute\AttributeMapping
 	 */
 	public function getSubNode($key, $schema = null){
+
+		if($this->getSubNode != null){
+			return ($this->getSubNode)($key, $schema);
+		}
 	     
 	    if($key == null) return $this;    
 	    
@@ -430,6 +454,18 @@ class AttributeMapping {
 	        throw new SCIMException(sprintf('No mapping for "%s" in "%s"',$key,$this->getFullKey()));
 	    }
 	     
+	}
+
+	public function setGetSubNode($closure){
+		$this->getSubNode = $closure;
+
+		return $this;
+	}
+
+	public function setRelationship($relationship){
+		$this->relationship = $relationship;
+
+		return $this;
 	}
 	
 	public function getNode($attributePath){
@@ -446,7 +482,8 @@ class AttributeMapping {
 	    }
 	    
 	    $elements = [];
-	    
+		
+		// The attribute mapping MUST include the schema. Therefore, add the schema to the first element.
 	    if(empty($attributePath->attributeNames) && !empty($schema)){
 	        $elements[] = $schema;
 	    }else if(empty($this->getSchema()) && !in_array($attributePath->attributeNames[0],Schema::ATTRIBUTES_CORE) ){
@@ -500,15 +537,9 @@ class AttributeMapping {
 	
 	    return $result;
 	}
-	
-	public function applyWhereCondition(&$query,$operator,$value){
-	    
-	    //only filter on OWN eloquent attributes
-	    if(empty($this->eloquentAttributes)) throw new SCIMException("Can't filter on . " + $this->getFullKey());
-	    
-	    $attribute = $this->eloquentAttributes[0];
-	    
-	    switch($operator){
+
+	public function applyWhereConditionDirect($attribute, &$query,$operator,$value){
+		switch($operator){
 	         
 	        case "eq":
 	            $query->where($attribute,$value);
@@ -544,7 +575,28 @@ class AttributeMapping {
 	            die("Not supported!!");
 	            break;
 	            
-	    }
+		}
+		
+	}
+	
+	public function applyWhereCondition(&$query,$operator,$value){
+	    
+	    //only filter on OWN eloquent attributes
+	    if(empty($this->eloquentAttributes)) throw new SCIMException("Can't filter on . " + $this->getFullKey());
+	    
+		$attribute = $this->eloquentAttributes[0];
+		
+		if($this->relationship != null){
+
+			$query->whereHas($this->relationship, function ($query) use ($attribute, $operator, $value) {
+				$this->applyWhereConditionDirect($attribute, $query, $operator, $value);	
+			})->get();
+
+		}else{
+			$this->applyWhereConditionDirect($attribute, $query, $operator, $value);
+		}
+	    
+	    
 	    
 	}
 	

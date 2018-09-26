@@ -105,7 +105,11 @@ class ResourceController extends Controller{
 
         $input = $request->input();
 
-        $flattened = Helper::flatten($input, $input['schemas'] );
+        if(!isset($input['schemas']) || !is_array($input['schemas'])){
+            throw (new SCIMException('Missing a valid schemas-attribute.'))->setCode(500);
+        }
+
+        $flattened = Helper::flatten($input, $input['schemas'] );        
         $flattened = $this->validateScim($resourceType, $flattened, null);
 
         if(!$this->isAllowed($pdp, $request, PolicyDecisionPoint::OPERATION_POST, $flattened, $resourceType, null)){
@@ -284,7 +288,7 @@ class ResourceController extends Controller{
                     if(isset($operation['path'])){
                     
                         $attributeConfig = Helper::getAttributeConfigOrFail($resourceType, $operation['path']);
-                        $attributeConfig->remove($resourceObject);
+                        $attributeConfig->remove($operation['value'] ?? null, $resourceObject);
                     
                     }else{
                         throw new SCIMException('You MUST provide a "Path"');

@@ -12,7 +12,7 @@ class MeController extends ResourceController{
 
     protected function isAllowed(PolicyDecisionPoint $pdp, Request $request, $operation, array $attributes, ResourceType $resourceType, ?Model $resourceObject){
         
-        return $pdp->isAllowed($request, PolicyDecisionPoint::OPERATION_POST, $attributes, $resourceType, null, true);
+        return $pdp->isAllowed($request, $operation, $attributes, $resourceType, null, true);
         
 
     }

@@ -88,8 +88,8 @@ class RouteProvider
             }
             
             $class = $resourceType->getClass();
-             
-            $resourceObject = $class::find($id);
+            
+            $resourceObject = $class::with($resourceType->getWithRelations())->find($id);
                          
             if($resourceObject == null){
                 throw (new SCIMException(sprintf('Resource "%s" not found',$id)))->setCode(404);

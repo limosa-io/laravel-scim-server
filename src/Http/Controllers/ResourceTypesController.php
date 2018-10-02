@@ -8,6 +8,7 @@ use ArieTimmerman\Laravel\SCIMServer\SCIM\Schema;
 
 use Illuminate\Http\Request;
 use ArieTimmerman\Laravel\SCIMServer\Exceptions\SCIMException;
+use ArieTimmerman\Laravel\SCIMServer\SCIMConfig;
 
 class ResourceTypesController extends Controller{
 
@@ -15,7 +16,7 @@ class ResourceTypesController extends Controller{
 	
 	function __construct(){
 		
-		$config = config("scimserver");
+		$config = resolve(SCIMConfig::class)->getConfig();
 		
 		$resourceTypes = [];
 		

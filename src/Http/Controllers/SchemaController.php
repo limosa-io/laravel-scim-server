@@ -5,6 +5,7 @@ namespace ArieTimmerman\Laravel\SCIMServer\Http\Controllers;
 use Tmilos\ScimSchema\Builder\SchemaBuilderV2;
 use ArieTimmerman\Laravel\SCIMServer\SCIM\ListResponse;
 use ArieTimmerman\Laravel\SCIMServer\Exceptions\SCIMException;
+use ArieTimmerman\Laravel\SCIMServer\SCIMConfig;
 
 class SchemaController extends Controller{
 
@@ -17,7 +18,7 @@ class SchemaController extends Controller{
 			return $this->schemas;
 		}
 
-		$config = config("scimserver");
+		$config = resolve(SCIMConfig::class)->getConfig();
 	
 		$schemas = [];
 	

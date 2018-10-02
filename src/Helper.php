@@ -16,8 +16,7 @@ use Illuminate\Database\Eloquent\Model;
 
 class Helper
 {
-
-    // var_dump(class_uses(config('auth.providers.users.model')));exit;
+    
     public static function getAuthUserClass()
     {
         return config('auth.providers.users.model');

@@ -41,7 +41,7 @@ class ResourceType{
     }
     
     public static function user(){
-        return new ResourceType('Users', config('scimserver.Users'));
+        return new ResourceType('Users', config(SCIMConfig::class)->getUserConfig());
     }
     
     public function getAllAttributeConfigs($mapping = -1){

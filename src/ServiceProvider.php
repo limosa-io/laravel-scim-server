@@ -10,10 +10,6 @@ use ArieTimmerman\Laravel\SCIMServer\Exceptions\SCIMException;
 class ServiceProvider extends \Illuminate\Support\ServiceProvider{
 	
 	public function boot(\Illuminate\Routing\Router $router) {
-	    
-		$this->publishes([
-				__DIR__ . DIRECTORY_SEPARATOR . '..' . DIRECTORY_SEPARATOR . 'config' . DIRECTORY_SEPARATOR . 'scimserver.php' => config_path('scimserver.php'),
-		]);
 				
 		$this->loadMigrationsFrom(__DIR__ . DIRECTORY_SEPARATOR . '..' . DIRECTORY_SEPARATOR . 'database' . DIRECTORY_SEPARATOR . 'migrations');
 		
@@ -21,7 +17,7 @@ class ServiceProvider extends \Illuminate\Support\ServiceProvider{
 
 		$router->bind('resourceType', function ($name, $route) {
             
-            $config = @config("scimserver")[$name];
+            $config = resolve(SCIMConfig::class)->getConfigForResource($name);
             
             if ($config == null) {
                 throw (new SCIMException(sprintf('No resource "%s" found.', $name)))->setCode(404);
@@ -73,10 +69,8 @@ class ServiceProvider extends \Illuminate\Support\ServiceProvider{
 	 * @return void
 	 */
 	public function register() {
-		
-	    $this->mergeConfigFrom(
-            __DIR__ . DIRECTORY_SEPARATOR . '..' . DIRECTORY_SEPARATOR . 'config' . DIRECTORY_SEPARATOR . 'scimserver.php', 'scimserver'
-        );
+        
+        
 	    
 	}
 	

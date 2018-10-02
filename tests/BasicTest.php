@@ -30,9 +30,8 @@ class BasicTest extends TestCase {
 	protected function getEnvironmentSetUp($app) {
 
 	    
-	    $app ['config']->set ( 'app.url','http://localhost');;
-		$app ['config']->set ( 'scimserver', include realpath(dirname(__DIR__).'/config/scimserver.php') );
-		
+		$app ['config']->set ( 'app.url','http://localhost');;
+				
 		// Setup default database to use sqlite :memory:
 		
 		$app['config']->set('scimserver.Users.class', \ArieTimmerman\Laravel\SCIMServer\Tests\Model\User::class);

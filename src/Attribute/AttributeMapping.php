@@ -29,6 +29,8 @@ class AttributeMapping {
 	private $mappingAssocArray = null;
 	
 	public $eloquentAttributes = [];
+
+	public $eloquentReadAttribute = null;
 	
 	private $defaultSchema = null, $schema = null;
 
@@ -97,13 +99,7 @@ class AttributeMapping {
 	
 	public static function eloquent($eloquentAttribute, $parent = null) : AttributeMapping{
 	    
-	    return (new AttributeMapping())->setParent($parent)->setRead(function(&$object) use ($eloquentAttribute)  {
-	        	        
-			    $result = $object->{$eloquentAttribute};
-			    
-			    return self::eloquentAttributeToString($result); 
-			    
-			})->setAdd(function($value, &$object) use ($eloquentAttribute) {
+	    return (new EloquentAttributeMapping())->setEloquentReadAttribute($eloquentAttribute)->setParent($parent)->setAdd(function($value, &$object) use ($eloquentAttribute) {
 			    $object->{$eloquentAttribute} = $value; 
 			})->setReplace(function($value, &$object) use ($eloquentAttribute) {
 			    $object->{$eloquentAttribute} = $value; 
@@ -159,6 +155,12 @@ class AttributeMapping {
 	    return $this->defaultSchema;
 	}
 	
+	public function setEloquentReadAttribute($attribute){
+		$this->eloquentReadAttribute = $attribute;
+
+		return $this;
+	}
+
 	public function setEloquentAttributes(array $attributes){
 	    $this->eloquentAttributes = $attributes;
 	    

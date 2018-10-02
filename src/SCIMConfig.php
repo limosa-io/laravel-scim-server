@@ -14,7 +14,8 @@ class SCIMConfig {
         if($name == 'Users'){
             return $this->getUserConfig();
         }else{
-            return [];
+            $result = $this->getConfig();
+            return @$result[$name];
         }
 
     }

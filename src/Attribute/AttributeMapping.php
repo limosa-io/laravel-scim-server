@@ -323,29 +323,29 @@ class AttributeMapping {
 	    
 	    return $this;
 	}
+
+	public function readNotImplemented($object){
+		throw new SCIMException(sprintf('Read is not implemented for "%s"',$this->getFullKey()));
+	}
+
+	public function writeNotImplemented($object){
+		throw new SCIMException(sprintf('Write is not implemented for "%s"',$this->getFullKey()));
+	}
+
+	public function writeAfterIgnore($value, &$object){
+		
+	}
+
+	public function replaceNotImplemented($value, &$object){
+		throw new SCIMException(sprintf('Replace is not implemented for "%s"',$this->getFullKey()));
+	}
+
+	public function defaultRemove($value, &$object){
+
+	}
 	
 	function __construct() {
-		
-	    $this->read = function($object){
-	        throw new SCIMException(sprintf('Read is not implemented for "%s"',$this->getFullKey()));
-	    };
-	    
-	    $this->writeAfter = function($value, &$object){
-	        
-	    };
-	    
-	    $this->add = function($value, &$object){
-	        throw new SCIMException(sprintf('Write is not implemented for "%s"',$this->getFullKey()));
-	    };
-	    
-	    $this->replace = function($value, &$object){
-	        throw new SCIMException(sprintf('Replace is not implemented for "%s"',$this->getFullKey()));
-	    };
-	    
-	    $this->remove = function($value, &$object){
-	        $this->add(null,$object);
-	        //throw new SCIMException(sprintf('Remove is not implemented for "%s"',$this->getFullKey()));
-	    };
+			    
 		
 	}
 	
@@ -371,7 +371,7 @@ class AttributeMapping {
 	}
 	
 	public function add($value, &$object) {
-	    return ($this->add)($value, $object);
+	    return $this->add ? ($this->add)($value, $object) : $this->writeNotImplemented($object);
 	}
 	
 	public function replace($value, &$object) {
@@ -379,25 +379,25 @@ class AttributeMapping {
 	    $current = $this->read($object);
 	    
 	    //TODO: Really implement replace ...???	    
-	    return ($this->replace)($value, $object);
+	    return $this->replace ? ($this->replace)($value, $object) : $this->replaceNotImplemented($value, $object);
 	    
 	}
 	
 	public function remove($value, &$object) {
 	    
 	    //TODO: implement remove for multi valued attributes 
-	    return ($this->remove)($value, $object);
+	    return $this->remove ? ($this->remove)($value, $object) : $this->defaultRemove($value, $object);
 	    
 	}
 	
 	public function writeAfter($value, &$object) {
 	    
-        return ($this->writeAfter)($value, $object);
+        return $this->writeAfter ? ($this->writeAfter)($value, $object) : $this->writeAfterIgnore();
 	    
 	}
 	
 	public function read(&$object) {
-		return ($this->read)($object);
+		return $this->read ? ($this->read)($object) : $this->readNotImplemented($object);
 	}	
 	
 	public static function eloquentAttributeToString($value){

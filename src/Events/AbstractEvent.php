@@ -8,6 +8,8 @@ use Illuminate\Database\Eloquent\Model;
 abstract class AbstractEvent implements EventInterface {
 
     public $model;
+
+    /** @var boolean */
     public $me;
     
     public function getModel(){

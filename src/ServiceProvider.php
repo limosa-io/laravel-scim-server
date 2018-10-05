@@ -11,10 +11,8 @@ class ServiceProvider extends \Illuminate\Support\ServiceProvider{
 	
 	public function boot(\Illuminate\Routing\Router $router) {
 				
-		$this->loadMigrationsFrom(__DIR__ . DIRECTORY_SEPARATOR . '..' . DIRECTORY_SEPARATOR . 'database' . DIRECTORY_SEPARATOR . 'migrations');
-		
-
-
+        $this->loadMigrationsFrom(__DIR__ . DIRECTORY_SEPARATOR . '..' . DIRECTORY_SEPARATOR . 'database' . DIRECTORY_SEPARATOR . 'migrations');
+        
 		$router->bind('resourceType', function ($name, $route) {
             
             $config = resolve(SCIMConfig::class)->getConfigForResource($name);

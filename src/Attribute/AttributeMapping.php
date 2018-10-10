@@ -392,7 +392,7 @@ class AttributeMapping {
 	
 	public function writeAfter($value, &$object) {
 	    
-        return $this->writeAfter ? ($this->writeAfter)($value, $object) : $this->writeAfterIgnore();
+        return $this->writeAfter ? ($this->writeAfter)($value, $object) : $this->writeAfterIgnore($value, $object);
 	    
 	}
 	

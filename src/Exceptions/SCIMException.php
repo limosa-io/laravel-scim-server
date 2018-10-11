@@ -3,6 +3,7 @@
 namespace ArieTimmerman\Laravel\SCIMServer\Exceptions;
 
 use Exception;
+use Illuminate\Support\Facades\Log;
 
 class SCIMException extends Exception{
 	
@@ -31,7 +32,13 @@ class SCIMException extends Exception{
         $this->errors = $errors;
 
         return $this;
+	}
+	
+	public function report()
+    {
+        Log::error(sprintf('Validation failed. Errors: %s', json_encode($this->errors)));
     }
+
 	
 	public function render($request){
 		return response( (new \ArieTimmerman\Laravel\SCIMServer\SCIM\Error($this->getMessage(),$this->httpCode,$this->scimType))->setErrors($this->errors)  ,$this->httpCode) ;

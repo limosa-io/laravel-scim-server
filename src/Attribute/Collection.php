@@ -61,7 +61,7 @@ class Collection extends AttributeMapping {
     
     public function replace($value, &$object){
 
-        $this->remove($object);
+        $this->remove($value, $object);
 
         $this->add($value, $object);
 

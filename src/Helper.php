@@ -87,7 +87,9 @@ class Helper
                 $parent = null;
 
                 if ($namespace != null) {
-                    $result[$namespace] = [];
+                    if(!isset($result[$namespace])){
+                        $result[$namespace] = [];
+                    }
                     $parent = &$result[$namespace];
                 } else {
                     $parent = &$result;

@@ -272,12 +272,18 @@ class ResourceController extends Controller{
                     if(isset($operation['path'])){
                         
                         $attributeConfig = Helper::getAttributeConfigOrFail($resourceType, $operation['path']);
-                        $attributeConfig->add($operation['value'], $resourceObject);
+                        
+                        foreach($operation['value'] as $value){
+                            $attributeConfig->add($value, $resourceObject);
+                        }
                         
                     }else{
                         foreach($operation['value'] as $key => $value){
                             $attributeConfig = Helper::getAttributeConfigOrFail($resourceType, $key);
-                            $attributeConfig->add($value, $resourceObject);
+                            
+                            foreach($value as $value){
+                                $attributeConfig->add($v, $resourceObject);
+                            }
                         }
                     }
                     

@@ -13,6 +13,9 @@ class ServiceProvider extends \Illuminate\Support\ServiceProvider{
 				
         $this->loadMigrationsFrom(__DIR__ . DIRECTORY_SEPARATOR . '..' . DIRECTORY_SEPARATOR . 'database' . DIRECTORY_SEPARATOR . 'migrations');
         
+        // Match everything, except the Me routes
+        $router->pattern('resourceType', '^((?!Me).)*$');
+
 		$router->bind('resourceType', function ($name, $route) {
             
             $config = resolve(SCIMConfig::class)->getConfigForResource($name);

@@ -83,7 +83,7 @@ class ResourceController extends Controller{
         })->unique()->toArray();
 
         foreach($keys as $key){
-            if(isset($validTemp[$key])){
+            if(array_key_exists($key, $validTemp)){    
                 $valid[$key] = $validTemp[$key];
             }
         }

@@ -23,7 +23,7 @@ use Illuminate\Database\QueryException;
 
 class ResourceController extends Controller{
 
-    protected function isAllowed(PolicyDecisionPoint $pdp, Request $request, $operation, array $attributes, ResourceType $resourceType, ?Model $resourceObject){
+    protected static function isAllowed(PolicyDecisionPoint $pdp, Request $request, $operation, array $attributes, ResourceType $resourceType, ?Model $resourceObject){
 
         return $pdp->isAllowed($request, $operation, $attributes, $resourceType, $resourceObject);
 
@@ -44,7 +44,7 @@ class ResourceController extends Controller{
         return $return;
     }
 
-    protected function validateScim(ResourceType $resourceType, $flattened, ?Model $resourceObject){
+    protected static function validateScim(ResourceType $resourceType, $flattened, ?Model $resourceObject){
 
         $forValidation = [];
         $validations = $resourceType->getValidations();
@@ -98,21 +98,16 @@ class ResourceController extends Controller{
 
     }
 
-    /**
-     * @return Model
-     */
-    public function createObject(Request $request, PolicyDecisionPoint $pdp, ResourceType $resourceType, $isMe = false){
-
-        $input = $request->input();
+    public static function prepare($resourceType, $input, $allowAlways = false){
 
         if(!isset($input['schemas']) || !is_array($input['schemas'])){
             throw (new SCIMException('Missing a valid schemas-attribute.'))->setCode(500);
         }
 
         $flattened = Helper::flatten($input, $input['schemas'] );        
-        $flattened = $this->validateScim($resourceType, $flattened, null);
+        $flattened = self::validateScim($resourceType, $flattened, null);
 
-        if(!$this->isAllowed($pdp, $request, PolicyDecisionPoint::OPERATION_POST, $flattened, $resourceType, null)){
+        if(!$allowAlways && !self::isAllowed($pdp, $request, PolicyDecisionPoint::OPERATION_POST, $flattened, $resourceType, null)){
 
             throw new SCIMException('This is not allowed');
 
@@ -131,7 +126,19 @@ class ResourceController extends Controller{
 			$attributeConfig->add($value,$resourceObject);
 			$allAttributeConfigs[] = $attributeConfig;
     		
-    	}
+        }
+        
+        return $resourceObject;
+    }
+
+    /**
+     * @return Model
+     */
+    public function createObject(Request $request, PolicyDecisionPoint $pdp, ResourceType $resourceType, $isMe = false){
+
+        $input = $request->input();
+
+        $resourceObject = self::prepare($resourceType, $input);
     	
         try{
             $resourceObject->save();
@@ -198,7 +205,7 @@ class ResourceController extends Controller{
             }
         }
 
-        if(!$this->isAllowed($pdp, $request, PolicyDecisionPoint::OPERATION_PUT, $updated, $resourceType, null)){
+        if(!self::isAllowed($pdp, $request, PolicyDecisionPoint::OPERATION_PUT, $updated, $resourceType, null)){
 
             throw new SCIMException('This is not allowed');
 
@@ -336,7 +343,7 @@ class ResourceController extends Controller{
 
             $flattened = $this->validateScim($resourceType, $newObject, $resourceObject);
 
-            if(!$this->isAllowed($pdp, $request, PolicyDecisionPoint::OPERATION_PATCH, $flattened, $resourceType, null)){
+            if(!self::isAllowed($pdp, $request, PolicyDecisionPoint::OPERATION_PATCH, $flattened, $resourceType, null)){
 
                 throw new SCIMException('This is not allowed');
     

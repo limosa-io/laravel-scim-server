@@ -10,7 +10,7 @@ use ArieTimmerman\Laravel\SCIMServer\PolicyDecisionPoint;
 
 class MeController extends ResourceController{
 
-    protected function isAllowed(PolicyDecisionPoint $pdp, Request $request, $operation, array $attributes, ResourceType $resourceType, ?Model $resourceObject){
+    protected static function isAllowed(PolicyDecisionPoint $pdp, Request $request, $operation, array $attributes, ResourceType $resourceType, ?Model $resourceObject){
         
         return $pdp->isAllowed($request, $operation, $attributes, $resourceType, null, true);
         

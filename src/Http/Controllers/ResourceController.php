@@ -98,7 +98,7 @@ class ResourceController extends Controller{
 
     }
 
-    public static function prepare($resourceType, $input, $allowAlways = false){
+    public static function createFromSCIM($resourceType, $input, PolicyDecisionPoint $pdp = null, Request $request = null, $allowAlways = false){
 
         if(!isset($input['schemas']) || !is_array($input['schemas'])){
             throw (new SCIMException('Missing a valid schemas-attribute.'))->setCode(500);
@@ -127,6 +127,17 @@ class ResourceController extends Controller{
 			$allAttributeConfigs[] = $attributeConfig;
     		
         }
+
+        try{
+            $resourceObject->save();
+        }catch(QueryException $exception){
+            throw $exception;
+            // throw new SCIMException('Could not save this');
+        }
+        
+    	foreach($allAttributeConfigs as &$attributeConfig){
+    	    $attributeConfig->writeAfter($flattened[$attributeConfig->getFullKey()],$resourceObject);
+        }
         
         return $resourceObject;
     }
@@ -138,18 +149,7 @@ class ResourceController extends Controller{
 
         $input = $request->input();
 
-        $resourceObject = self::prepare($resourceType, $input);
-    	
-        try{
-            $resourceObject->save();
-        }catch(QueryException $exception){
-            throw $exception;
-            // throw new SCIMException('Could not save this');
-        }
-        
-    	foreach($allAttributeConfigs as &$attributeConfig){
-    	    $attributeConfig->writeAfter($flattened[$attributeConfig->getFullKey()],$resourceObject);
-        }
+        $resourceObject = self::createFromSCIM($resourceType, $input, $pdp, $request);
         
         event(new Create($resourceObject, $isMe));
 

@@ -191,7 +191,8 @@ class ResourceController extends Controller{
     
     public function replace(Request $request, PolicyDecisionPoint $pdp, ResourceType $resourceType, Model $resourceObject, $isMe = false){
         
-        $original = Helper::flatten(Helper::objectToSCIMArray($resourceObject, $resourceType), $resourceType->getSchema());
+        $originalRaw = Helper::objectToSCIMArray($resourceObject, $resourceType);
+        $original = Helper::flatten($originalRaw, $resourceType->getSchema());
 
         //TODO: get flattend from $resourceObject
         $flattened = Helper::flatten($request->input(),$resourceType->getSchema());
@@ -210,8 +211,6 @@ class ResourceController extends Controller{
             throw new SCIMException('This is not allowed');
 
         }
-
-
 
         //Keep an array of written values
         $uses = [];
@@ -249,7 +248,7 @@ class ResourceController extends Controller{
 
         $resourceObject->save();
 
-        event(new Replace($resourceObject, $isMe));
+        event(new Replace($resourceObject, $isMe, $originalRaw));
         
         return Helper::objectToSCIMResponse($resourceObject, $resourceType);
         
@@ -351,7 +350,7 @@ class ResourceController extends Controller{
             
             $resourceObject->save();
 
-            event(new Patch($resourceObject, $isMe));
+            event(new Patch($resourceObject, $isMe, $oldObject));
             
             return Helper::objectToSCIMResponse($resourceObject, $resourceType);
             

@@ -9,7 +9,7 @@ class Patch extends AbstractEvent
 {
     use SerializesModels;
 
-    public $model;
+    public $odlObjectArray;
 
     /**
      * Create a new event instance.
@@ -17,9 +17,10 @@ class Patch extends AbstractEvent
      * @param  \App\Order  $order
      * @return void
      */
-    public function __construct(Model $model, bool $me = null)
+    public function __construct(Model $model, bool $me = null, $odlObjectArray = [])
     {
         $this->model = $model;
         $this->me = $me;
+        $this->odlObjectArray = $odlObjectArray;
     }
 }

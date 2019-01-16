@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 use ArieTimmerman\Laravel\SCIMServer\ResourceType;
 use ArieTimmerman\Laravel\SCIMServer\Helper;
 use ArieTimmerman\Laravel\SCIMServer\PolicyDecisionPoint;
+use ArieTimmerman\Laravel\SCIMServer\Exceptions\SCIMException;
 
 class MeController extends ResourceController{
 
@@ -30,7 +31,13 @@ class MeController extends ResourceController{
         $class = $resourceType->getClass();
         $subject = $request->user();
 
-        return Helper::objectToSCIMArray( $class::find($subject->getUserId()) , $resourceType);
+        $object = $class::find($subject->getUserId());
+
+        if($object == null){
+            throw new SCIMException('This is not a registered user');
+        }
+
+        return Helper::objectToSCIMArray( $object , $resourceType);
         
     }
 

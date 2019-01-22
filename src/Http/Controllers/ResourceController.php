@@ -407,7 +407,9 @@ class ResourceController extends Controller{
         $resourceObjects = $resourceObjects->with($resourceType->getWithRelations());
 		
 		if($sortBy != null){
-		  $resourceObjects = $resourceObjects->orderBy($sortBy, 'desc');
+          $direction = $request->input('sortOrder') == 'descending' ? 'desc' : 'asc';
+            
+		  $resourceObjects = $resourceObjects->orderBy($sortBy, $direction);
 		}
 		
 		$resourceObjects = $resourceObjects->get();

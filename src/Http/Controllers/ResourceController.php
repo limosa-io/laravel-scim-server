@@ -23,9 +23,9 @@ use Illuminate\Database\QueryException;
 
 class ResourceController extends Controller{
 
-    protected static function isAllowed(PolicyDecisionPoint $pdp, Request $request, $operation, array $attributes, ResourceType $resourceType, ?Model $resourceObject){
+    protected static function isAllowed(PolicyDecisionPoint $pdp, Request $request, $operation, array $attributes, ResourceType $resourceType, ?Model $resourceObject, $isMe = false){
 
-        return $pdp->isAllowed($request, $operation, $attributes, $resourceType, $resourceObject);
+        return $pdp->isAllowed($request, $operation, $attributes, $resourceType, $resourceObject, $isMe);
 
     }
 
@@ -98,7 +98,7 @@ class ResourceController extends Controller{
 
     }
 
-    public static function createFromSCIM($resourceType, $input, PolicyDecisionPoint $pdp = null, Request $request = null, $allowAlways = false){
+    public static function createFromSCIM($resourceType, $input, PolicyDecisionPoint $pdp = null, Request $request = null, $allowAlways = false, $isMe = false){
 
         if(!isset($input['schemas']) || !is_array($input['schemas'])){
             throw (new SCIMException('Missing a valid schemas-attribute.'))->setCode(500);
@@ -107,10 +107,8 @@ class ResourceController extends Controller{
         $flattened = Helper::flatten($input, $input['schemas'] );        
         $flattened = self::validateScim($resourceType, $flattened, null);
 
-        if(!$allowAlways && !self::isAllowed($pdp, $request, PolicyDecisionPoint::OPERATION_POST, $flattened, $resourceType, null)){
-
-            throw new SCIMException('This is not allowed');
-
+        if(!$allowAlways && !self::isAllowed($pdp, $request, PolicyDecisionPoint::OPERATION_POST, $flattened, $resourceType, null, $isMe)){
+            throw (new SCIMException('This is not allowed'))->setCode(403);
         }
 
         $class = $resourceType->getClass();
@@ -149,7 +147,7 @@ class ResourceController extends Controller{
 
         $input = $request->input();
 
-        $resourceObject = self::createFromSCIM($resourceType, $input, $pdp, $request);
+        $resourceObject = self::createFromSCIM($resourceType, $input, $pdp, $request, false, $isMe);
         
         event(new Create($resourceObject, $isMe));
 

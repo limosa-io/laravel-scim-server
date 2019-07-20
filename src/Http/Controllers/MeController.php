@@ -11,7 +11,7 @@ use ArieTimmerman\Laravel\SCIMServer\Exceptions\SCIMException;
 
 class MeController extends ResourceController{
 
-    protected static function isAllowed(PolicyDecisionPoint $pdp, Request $request, $operation, array $attributes, ResourceType $resourceType, ?Model $resourceObject){
+    protected static function isAllowed(PolicyDecisionPoint $pdp, Request $request, $operation, array $attributes, ResourceType $resourceType, ?Model $resourceObject, $isMe = true){
         
         return $pdp->isAllowed($request, $operation, $attributes, $resourceType, null, true);
         

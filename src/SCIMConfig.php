@@ -6,21 +6,20 @@ use ArieTimmerman\Laravel\SCIMServer\SCIM\Schema;
 use ArieTimmerman\Laravel\SCIMServer\Helper;
 use ArieTimmerman\Laravel\SCIMServer\Attribute\AttributeMapping;
 
-
-class SCIMConfig {
-
-    public function getConfigForResource($name){
-        
-        if($name == 'Users'){
+class SCIMConfig
+{
+    public function getConfigForResource($name)
+    {
+        if ($name == 'Users') {
             return $this->getUserConfig();
-        }else{
+        } else {
             $result = $this->getConfig();
             return @$result[$name];
         }
-
     }
 
-    public function getUserConfig(){
+    public function getUserConfig()
+    {
         return [
                 
             // Set to 'null' to make use of auth.providers.users.model (App\User::class)
@@ -74,7 +73,7 @@ class SCIMConfig {
                 ])->ignoreWrite(),
                 
                 'example:name:space' => [
-                    'cityPrefix' => AttributeMapping::eloquent('cityPrefix')    
+                    'cityPrefix' => AttributeMapping::eloquent('cityPrefix')
                 ],
                 
                 'urn:ietf:params:scim:schemas:core:2.0:User' => [
@@ -162,8 +161,8 @@ class SCIMConfig {
             ];
     }
 
-    public function getConfig(){
-
+    public function getConfig()
+    {
         return [
 
             'Users' => $this->getUserConfig()
@@ -171,5 +170,4 @@ class SCIMConfig {
 
         ;
     }
-
 }

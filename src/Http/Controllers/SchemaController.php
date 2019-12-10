@@ -7,61 +7,57 @@ use ArieTimmerman\Laravel\SCIMServer\SCIM\ListResponse;
 use ArieTimmerman\Laravel\SCIMServer\Exceptions\SCIMException;
 use ArieTimmerman\Laravel\SCIMServer\SCIMConfig;
 
-class SchemaController extends Controller{
+class SchemaController extends Controller
+{
+    private $schemas = null;
 
-	private $schemas = null;
+    public function getSchemas()
+    {
+        if ($this->schemas != null) {
+            return $this->schemas;
+        }
 
-	public function getSchemas(){
+        $config = resolve(SCIMConfig::class)->getConfig();
+    
+        $schemas = [];
+    
+        foreach ($config as $key => $value) {
+            if ($key != 'Users' && $key != 'Group') {
+                continue;
+            }
 
+            // TODO: FIX THIS. Schema is now an array but should be a string
+            $schema = (new SchemaBuilderV2())->get($value['schema'][0]);
+            
+            if ($schema == null) {
+                throw new SCIMException("Schema not found");
+            }
+            
+            $schema->getMeta()->setLocation(route('scim.schemas', ['id' => '23']));
+            
+            $schemas[] = $schema->serializeObject();
+        }
+    
+        $this->schemas = collect($schemas);
 
-		if($this->schemas != null){
-			return $this->schemas;
-		}
-
-		$config = resolve(SCIMConfig::class)->getConfig();
-	
-		$schemas = [];
-	
-		foreach($config as $key => $value){
-
-			if($key != 'Users' && $key != 'Group') continue;
-
-			// TODO: FIX THIS. Schema is now an array but should be a string
-			$schema = (new SchemaBuilderV2())->get($value['schema'][0]);
-			
-			if($schema == null){
-				throw new SCIMException("Schema not found");	
-			}
-			
-			$schema->getMeta()->setLocation(route('scim.schemas', ['id' => '23']));
-			
-			$schemas[] = $schema->serializeObject();
-		}
-	
-		$this->schemas = collect($schemas);
-
-		return $this->schemas;
-
-	}
-	
-	public function show($id){
-		
-		$result = $this->schemas->first(function($value, $key) use ($id) {
-			return $value['id'] == $id;
-		});
-		 
-		if($result == null){
-			throw (new SCIMException(sprintf('Resource "%s" not found',$id)))->setCode(404);
-		}
-		 
-		return $result;
-		
-	}
-	
-    public function index(){
-
-    	return new ListResponse($this->getSchemas(),1,$this->getSchemas()->count());
-
+        return $this->schemas;
     }
-
+    
+    public function show($id)
+    {
+        $result = $this->schemas->first(function ($value, $key) use ($id) {
+            return $value['id'] == $id;
+        });
+         
+        if ($result == null) {
+            throw (new SCIMException(sprintf('Resource "%s" not found', $id)))->setCode(404);
+        }
+         
+        return $result;
+    }
+    
+    public function index()
+    {
+        return new ListResponse($this->getSchemas(), 1, $this->getSchemas()->count());
+    }
 }

@@ -2,8 +2,6 @@
 
 namespace ArieTimmerman\Laravel\SCIMServer\Attribute;
 
-class CollectionValue extends AttributeMapping {
-    
-    
-    
+class CollectionValue extends AttributeMapping
+{
 }

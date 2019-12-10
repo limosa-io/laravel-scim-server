@@ -4,11 +4,15 @@ namespace ArieTimmerman\Laravel\SCIMServer\SCIM;
 
 use Illuminate\Contracts\Support\Jsonable;
 
-class Error implements Jsonable{
+class Error implements Jsonable
+{
+    protected $detail;
+    protected $status;
+    protected $scimType;
+    protected $errors;
 
-    protected $detail, $status, $scimType, $errors;
-
-    public function toJson($options = 0) {
+    public function toJson($options = 0)
+    {
         return json_encode(array_filter([
             "schemas" => ['urn:ietf:params:scim:api:messages:2.0:Error'],
             "detail" => $this->detail,
@@ -20,17 +24,17 @@ class Error implements Jsonable{
         ]), $options);
     }
 
-    function __construct($detail, $status = "404", $scimType = "invalidValue"){
+    public function __construct($detail, $status = "404", $scimType = "invalidValue")
+    {
         $this->detail = $detail;
         $this->status = $status;
         $this->scimType = $scimType;
     }
 
-    public function setErrors($errors){
+    public function setErrors($errors)
+    {
         $this->errors = $errors;
 
         return $this;
     }
-
-
 }

@@ -13,6 +13,7 @@ use Tmilos\ScimFilterParser\Ast\Path;
 use Tmilos\ScimFilterParser\Ast\AttributePath;
 use ArieTimmerman\Laravel\SCIMServer\Exceptions\SCIMException;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Arr;
 
 class Helper
 {
@@ -251,7 +252,7 @@ class Helper
 
         $partsCopy = $parts;
 
-        $first = array_first($partsCopy);
+        $first = Arr::first($partsCopy);
 
         if ($first != null) {
             if (in_array($first, $schemas)) {

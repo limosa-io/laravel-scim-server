@@ -1,10 +1,10 @@
 <?php
 namespace ArieTimmerman\Laravel\SCIMServer;
 
-use Route;
 use Illuminate\Support\Facades\Auth;
 use ArieTimmerman\Laravel\SCIMServer\Exceptions\SCIMException;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Route;
 
 /**
  * Helper class for the URL shortener

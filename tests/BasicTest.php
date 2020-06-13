@@ -2,6 +2,7 @@
 
 namespace ArieTimmerman\Laravel\SCIMServer\Tests;
 
+use ArieTimmerman\Laravel\SCIMServer\ServiceProvider;
 use Orchestra\Testbench\TestCase;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
@@ -11,9 +12,7 @@ class BasicTest extends TestCase
     
     use RefreshDatabase;
     
-    
-    
-    public function setUp()
+    protected function setUp(): void
     {
         parent::setUp();
         
@@ -29,12 +28,12 @@ class BasicTest extends TestCase
     protected function getEnvironmentSetUp($app)
     {
         $app ['config']->set('app.url', 'http://localhost');
-        ;
+
+        $app->register(ServiceProvider::class);
                 
-        // Setup default database to use sqlite :memory:
-        
+        // Setup default database to use sqlite :memory:        
         $app['config']->set('scimserver.Users.class', \ArieTimmerman\Laravel\SCIMServer\Tests\Model\User::class);
-        
+        $app['config']->set('auth.providers.users.model', \ArieTimmerman\Laravel\SCIMServer\Tests\Model\User::class);
         $app['config']->set('database.default', 'testbench');
         $app['config']->set('database.connections.testbench', [
             'driver'   => 'sqlite',
@@ -46,7 +45,6 @@ class BasicTest extends TestCase
     public function testGet()
     {
         $response = $this->get('/scim/v2/Users');
-        
         
         $response->assertStatus(200);
     }

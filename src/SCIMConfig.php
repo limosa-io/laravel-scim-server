@@ -59,8 +59,8 @@ class SCIMConfig
                     
                     'location' => (new AttributeMapping())->setRead(function ($object) {
                         return route('scim.resource', [
-                            'name' => 'Users',
-                            'id' => $object->id
+                            'resourceType' => 'Users',
+                            'resourceObject' => $object->id
                         ]);
                     })->disableWrite(),
                     
@@ -164,10 +164,7 @@ class SCIMConfig
     public function getConfig()
     {
         return [
-
             'Users' => $this->getUserConfig()
-        ]
-
-        ;
+        ];
     }
 }

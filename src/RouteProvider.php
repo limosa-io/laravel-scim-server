@@ -17,6 +17,7 @@ class RouteProvider
     {
         Route::prefix(self::$prefix)->group(function () use ($options) {
             Route::prefix('v2')->middleware([
+                'bindings',
                 'ArieTimmerman\Laravel\SCIMServer\Middleware\SCIMHeaders'
             ])
                 ->group(function () use ($options) {

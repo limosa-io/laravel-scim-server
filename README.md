@@ -8,3 +8,11 @@ composer require arietimmerman/laravel-scim-server
 ~~~
 
 The module is used by [idaas.nl](https://www.idaas.nl/).
+
+# Test server
+
+~~~
+docker-compose up
+~~~
+
+Now visit `http://localhost:18123/scim/v2/Users`.

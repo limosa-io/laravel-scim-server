@@ -56,6 +56,8 @@ class ServiceProvider extends \Illuminate\Support\ServiceProvider
         });
         
         $router->middleware('SCIMHeaders', 'ArieTimmerman\Laravel\SCIMServer\Middleware\SCIMHeaders');
+
+        \ArieTimmerman\Laravel\SCIMServer\RouteProvider::routes();
     }
     
     /**

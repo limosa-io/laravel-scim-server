@@ -1,0 +1,8 @@
+version: '3'
+services:
+  laravel-scim-server:
+    build: .
+    ports:
+      - "127.0.0.1:18123:8000"
+    volumes:
+      - .:/laravel-scim-server

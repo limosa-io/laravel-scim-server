@@ -17,20 +17,15 @@ class RouteProvider
     {
         Route::prefix(self::$prefix)->group(function () use ($options) {
             Route::prefix('v2')->middleware([
-                'bindings',
+                // TODO: Not loading this middleware introduces resolve issues. But having it, might slow things down.
+                \Illuminate\Routing\Middleware\SubstituteBindings::class,
                 'ArieTimmerman\Laravel\SCIMServer\Middleware\SCIMHeaders'
-            ])
-                ->group(function () use ($options) {
-                    self::allRoutes($options);
-                });
-            
-            $routeWrongVersion = function () {
-                throw (new SCIMException('Only SCIM v2 is supported. Accessible under ' . url(self::$prefix . '/v2')))->setCode(501)
-                    ->setScimType('invalidVers');
-            };
+            ])->group(function () use ($options) {
+                self::allRoutes($options);
+            });
             
             Route::get('v1', '\ArieTimmerman\Laravel\SCIMServer\Http\Controllers\ResourceController@wrongVersion');
-            Route::prefix('v1')->group(function () use ($options, $routeWrongVersion) {
+            Route::prefix('v1')->group(function () {
                 Route::fallback('\ArieTimmerman\Laravel\SCIMServer\Http\Controllers\ResourceController@wrongVersion');
             });
         });

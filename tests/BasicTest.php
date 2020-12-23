@@ -31,7 +31,7 @@ class BasicTest extends TestCase
 
         $app->register(ServiceProvider::class);
                 
-        // Setup default database to use sqlite :memory:        
+        // Setup default database to use sqlite :memory:
         $app['config']->set('scimserver.Users.class', \ArieTimmerman\Laravel\SCIMServer\Tests\Model\User::class);
         $app['config']->set('auth.providers.users.model', \ArieTimmerman\Laravel\SCIMServer\Tests\Model\User::class);
         $app['config']->set('database.default', 'testbench');
@@ -45,7 +45,7 @@ class BasicTest extends TestCase
     public function testGet()
     {
         $response = $this->get('/scim/v2/Users');
-        
+                
         $response->assertStatus(200);
     }
 }

@@ -13,6 +13,41 @@ composer require arietimmerman/laravel-scim-server
 
 The module is used by [idaas.nl](https://www.idaas.nl/).
 
+# Routes
+
+~~~
++----------+-----------------------------------------+
+| GET|HEAD | scim/v1                                 |
+| GET|HEAD | scim/v1/{fallbackPlaceholder}           |
+| POST     | scim/v2/.search                         |
+|          |                                         |
+| GET|HEAD | scim/v2/{fallbackPlaceholder}           |
+|          |                                         |
+| GET|HEAD | scim/v2/{resourceType}                  |
+|          |                                         |
+| POST     | scim/v2/{resourceType}                  |
+|          |                                         |
+| GET|HEAD | scim/v2/{resourceType}/{resourceObject} |
+|          |                                         |
+| PUT      | scim/v2/{resourceType}/{resourceObject} |
+|          |                                         |
+| PATCH    | scim/v2/{resourceType}/{resourceObject} |
+|          |                                         |
+| DELETE   | scim/v2/{resourceType}/{resourceObject} |
+|          |                                         |
++----------+-----------------------------------------+
+~~~
+
+# Configuration
+
+The configuration is retrieved from `SCIMConfig::class`.
+
+Extend this class and register your extension in `app/Providers/AppServiceProvider.php` like this.
+
+~~~.php
+$this->app->singleton('ArieTimmerman\Laravel\SCIMServer\SCIMConfig', YourCustomSCIMConfig::class);
+~~~
+
 # Test server
 
 ~~~

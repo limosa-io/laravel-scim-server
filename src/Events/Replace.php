@@ -14,7 +14,7 @@ class Replace extends AbstractEvent
     /**
      * Create a new event instance.
      *
-     * @param  \App\Order  $order
+     * @param  \App\Order $order
      * @return void
      */
     public function __construct(Model $model, bool $me = null, $odlObjectArray = [])

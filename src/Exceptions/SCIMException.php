@@ -46,6 +46,6 @@ class SCIMException extends Exception
     
     public function render($request)
     {
-        return response((new \ArieTimmerman\Laravel\SCIMServer\SCIM\Error($this->getMessage(), $this->httpCode, $this->scimType))->setErrors($this->errors), $this->httpCode) ;
+        return response((new \ArieTimmerman\Laravel\SCIMServer\SCIM\Error($this->getMessage(), $this->httpCode, $this->scimType))->setErrors($this->errors), $this->httpCode);
     }
 }

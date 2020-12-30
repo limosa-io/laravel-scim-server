@@ -15,20 +15,28 @@ class RouteProvider
 
     public static function routes(array $options = [])
     {
-        Route::prefix(self::$prefix)->group(function () use ($options) {
-            Route::prefix('v2')->middleware([
-                // TODO: Not loading this middleware introduces resolve issues. But having it, might slow things down.
-                \Illuminate\Routing\Middleware\SubstituteBindings::class,
-                'ArieTimmerman\Laravel\SCIMServer\Middleware\SCIMHeaders'
-            ])->group(function () use ($options) {
-                self::allRoutes($options);
-            });
+        Route::prefix(self::$prefix)->group(
+            function () use ($options) {
+                Route::prefix('v2')->middleware(
+                    [
+                    // TODO: Not loading this middleware introduces resolve issues. But having it, might slow things down.
+                    \Illuminate\Routing\Middleware\SubstituteBindings::class,
+                    'ArieTimmerman\Laravel\SCIMServer\Middleware\SCIMHeaders'
+                    ]
+                )->group(
+                    function () use ($options) {
+                        self::allRoutes($options);
+                    }
+                );
             
-            Route::get('v1', '\ArieTimmerman\Laravel\SCIMServer\Http\Controllers\ResourceController@wrongVersion');
-            Route::prefix('v1')->group(function () {
-                Route::fallback('\ArieTimmerman\Laravel\SCIMServer\Http\Controllers\ResourceController@wrongVersion');
-            });
-        });
+                Route::get('v1', '\ArieTimmerman\Laravel\SCIMServer\Http\Controllers\ResourceController@wrongVersion');
+                Route::prefix('v1')->group(
+                    function () {
+                        Route::fallback('\ArieTimmerman\Laravel\SCIMServer\Http\Controllers\ResourceController@wrongVersion');
+                    }
+                );
+            }
+        );
     }
 
     public static function meRoutes(array $options = [])

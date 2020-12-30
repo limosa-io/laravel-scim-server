@@ -84,25 +84,29 @@ class Collection extends AttributeMapping
         if (!empty($this->collection) && is_array($this->collection[0]) && array_key_exists($key, $this->collection[0])) {
             $parent = $this;
             
-            return (new CollectionValue())->setEloquentAttributes($this->collection[0][$key]->getEloquentAttributes())->setKey($key)->setParent($this)->setAdd(function ($value, &$object) use ($key, $parent) {
-                $collection = Collection::filterCollection($parent->filter, collect($parent->collection), $object);
+            return (new CollectionValue())->setEloquentAttributes($this->collection[0][$key]->getEloquentAttributes())->setKey($key)->setParent($this)->setAdd(
+                function ($value, &$object) use ($key, $parent) {
+                    $collection = Collection::filterCollection($parent->filter, collect($parent->collection), $object);
                 
-                $result = [];
+                    $result = [];
                 
-                foreach ($collection as $o) {
-                    $o[$key]->add($value, $object);
+                    foreach ($collection as $o) {
+                        $o[$key]->add($value, $object);
+                    }
                 }
-            })->setRead(function (&$object) use ($key, $parent) {
-                $collection = Collection::filterCollection($parent->filter, collect($parent->collection), $object);
+            )->setRead(
+                function (&$object) use ($key, $parent) {
+                    $collection = Collection::filterCollection($parent->filter, collect($parent->collection), $object);
                 
-                $result = [];
+                    $result = [];
                 
-                foreach ($collection as $o) {
-                    $result = AttributeMapping::ensureAttributeMappingObject($o);
+                    foreach ($collection as $o) {
+                        $result = AttributeMapping::ensureAttributeMappingObject($o);
+                    }
+                
+                    return $result;
                 }
-                
-                return $result;
-            })->setSchema($schema);
+            )->setSchema($schema);
         }
     }
     
@@ -128,39 +132,41 @@ class Collection extends AttributeMapping
                         
         switch ($operator) {
              
-            case "eq":
-                /** @var $collection Coll */
-                $result = $collection->where($attribute, '==', $compareValue);
+        case "eq":
+            /**
+ * @var $collection Coll 
+*/
+            $result = $collection->where($attribute, '==', $compareValue);
+            break;
+        case "ne":
+            $result = $collection->where($attribute, '<>', $compareValue);
+            break;
+        case "co":
+            throw (new SCIMException(sprintf('"co" is not supported for attribute "%s"', $this->getFullKey())))->setCode(501);
                 break;
-            case "ne":
-                $result = $collection->where($attribute, '<>', $compareValue);
+        case "sw":
+            throw (new SCIMException(sprintf('"sw" is not supported for attribute "%s"', $this->getFullKey())))->setCode(501);
                 break;
-            case "co":
-                throw (new SCIMException(sprintf('"co" is not supported for attribute "%s"', $this->getFullKey())))->setCode(501);
+        case "ew":
+            throw (new SCIMException(sprintf('"ew" is not supported for attribute "%s"', $this->getFullKey())))->setCode(501);
                 break;
-            case "sw":
-                throw (new SCIMException(sprintf('"sw" is not supported for attribute "%s"', $this->getFullKey())))->setCode(501);
-                break;
-            case "ew":
-                throw (new SCIMException(sprintf('"ew" is not supported for attribute "%s"', $this->getFullKey())))->setCode(501);
-                break;
-            case "pr":
-                $result = $collection->where($attribute, '!=', null);
-                break;
-            case "gt":
-                $result = $collection->where($attribute, '>', $compareValue);
-                break;
-            case "ge":
-                $result = $collection->where($attribute, '>=', $compareValue);
-                break;
-            case "lt":
-                $result = $collection->where($attribute, '<', $compareValue);
-                break;
-            case "le":
-                $result = $collection->where($attribute, '<=', $compareValue);
-                break;
-            default:
-                die("Not supported!!");
+        case "pr":
+            $result = $collection->where($attribute, '!=', null);
+            break;
+        case "gt":
+            $result = $collection->where($attribute, '>', $compareValue);
+            break;
+        case "ge":
+            $result = $collection->where($attribute, '>=', $compareValue);
+            break;
+        case "lt":
+            $result = $collection->where($attribute, '<', $compareValue);
+            break;
+        case "le":
+            $result = $collection->where($attribute, '<=', $compareValue);
+            break;
+        default:
+            die("Not supported!!");
                 break;
                  
         }
@@ -177,8 +183,8 @@ class Collection extends AttributeMapping
     /**
      * Get an operator checker callback.
      *
-     * @param  string  $key
-     * @param  string  $operator
+     * @param  string $key
+     * @param  string $operator
      * @param  mixed  $value
      * @return \Closure
      */
@@ -193,27 +199,37 @@ class Collection extends AttributeMapping
         return function ($item) use ($key, $operator, $value) {
             $retrieved = data_get($item, $key);
     
-            $strings = array_filter([$retrieved, $value], function ($value) {
-                return is_string($value) || (is_object($value) && method_exists($value, '__toString'));
-            });
+            $strings = array_filter(
+                [$retrieved, $value], function ($value) {
+                    return is_string($value) || (is_object($value) && method_exists($value, '__toString'));
+                }
+            );
     
             if (count($strings) < 2 && count(array_filter([$retrieved, $value], 'is_object')) == 1) {
                 return in_array($operator, ['!=', '<>', '!==']);
             }
     
             switch ($operator) {
-                    default:
-                    case '=':
-                    case '==':  return $retrieved == $value;
-                    case '!=':
-                    case '<>':  return $retrieved != $value;
-                    case '<':   return $retrieved < $value;
-                    case '>':   return $retrieved > $value;
-                    case '<=':  return $retrieved <= $value;
-                    case '>=':  return $retrieved >= $value;
-                    case '===': return $retrieved === $value;
-                    case '!==': return $retrieved !== $value;
-                }
+            default:
+            case '=':
+            case '==':  
+                return $retrieved == $value;
+            case '!=':
+            case '<>':  
+                return $retrieved != $value;
+            case '<':   
+                return $retrieved < $value;
+            case '>':   
+                return $retrieved > $value;
+            case '<=':  
+                return $retrieved <= $value;
+            case '>=':  
+                return $retrieved >= $value;
+            case '===': 
+                return $retrieved === $value;
+            case '!==': 
+                return $retrieved !== $value;
+            }
         };
     }
     

@@ -63,7 +63,7 @@ class ResourceType
             $mapping = $this->getMapping();
         }
         
-        foreach ($mapping as $key=>$value) {
+        foreach ($mapping as $key => $value) {
             if ($value instanceof AttributeMapping && $value != null) {
                 $result[] = $value;
             } elseif (is_array($value)) {

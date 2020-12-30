@@ -14,6 +14,9 @@ use Tmilos\ScimFilterParser\Ast\AttributePath;
 use ArieTimmerman\Laravel\SCIMServer\Exceptions\SCIMException;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\DB;
+use Tmilos\ScimFilterParser\Ast\Factor;
+use Tmilos\ScimFilterParser\Ast\ValuePath;
 
 class Helper
 {
@@ -46,12 +49,12 @@ class Helper
 
         return $result;
     }
-    
+
     // TODO: Auto map eloquent attributes with scim naming to the correct attributes
     public static function objectToSCIMArray($object, ResourceType $resourceType = null)
     {
         $userArray = $object->toArray();
-        
+
         // If the getDates-method exists, ensure proper formatting of date attributes
         if (method_exists($object, 'getDates')) {
             $dateAttributes = $object->getDates();
@@ -110,14 +113,14 @@ class Helper
         } else {
             $version = sha1($object->getKey() . $object->updated_at . $object->created_at);
         }
-        
+
         // Entity tags uniquely representing the requested resources. They are a string of ASCII characters placed between double quotes
         return sprintf('W/"%s"', $version);
     }
 
     /**
      *
-     * @param unknown $object
+     * @param unknown      $object
      * @param ResourceType $resourceType
      */
     public static function objectToSCIMResponse(Model $object, ResourceType $resourceType = null)
@@ -132,13 +135,14 @@ class Helper
 
     /**
      * See https://tools.ietf.org/html/rfc7644#section-3.4.2.2
-     * @param unknown $query
-     * @param unknown $node
+     *
+     * @param  unknown $query
+     * @param  unknown $node
      * @throws SCIMException
      */
     public static function scimFilterToLaravelQuery(ResourceType $resourceType, &$query, $node)
     {
-         
+
         //var_dump($node);exit;
 
         if ($node instanceof Negation) {
@@ -153,19 +157,21 @@ class Helper
             $attributeConfig->applyWhereCondition($query, $operator, $node->compareValue);
         } elseif ($node instanceof Conjunction) {
             foreach ($node->getFactors() as $factor) {
-                $query->where(function ($query) use ($factor, $resourceType) {
-                    Helper::scimFilterToLaravelQuery($resourceType, $query, $factor);
-                });
+                $query->where(
+                    function ($query) use ($factor, $resourceType) {
+                        Helper::scimFilterToLaravelQuery($resourceType, $query, $factor);
+                    }
+                );
             }
         } elseif ($node instanceof Disjunction) {
             foreach ($node->getTerms() as $term) {
-                $query->orWhere(function ($query) use ($term, $resourceType) {
-                    Helper::scimFilterToLaravelQuery($resourceType, $query, $term);
-                });
+                $query->orWhere(
+                    function ($query) use ($term, $resourceType) {
+                        Helper::scimFilterToLaravelQuery($resourceType, $query, $term);
+                    }
+                );
             }
         } elseif ($node instanceof ValuePath) {
-            
-                
             // ->filer
             $getAttributePath = function () {
                 return $this->attributePath;
@@ -175,14 +181,16 @@ class Helper
                 return $this->filter;
             };
 
-            $query->whereExists(function ($query) {
-                $query->select(DB::raw(1))
-                    ->from('users AS users2')
-                    ->whereRaw('users.id = users2.id');
-            });
-                    
-                    
-        //$node->
+            $query->whereExists(
+                function ($query) {
+                    $query->select(DB::raw(1))
+                        ->from('users AS users2')
+                        ->whereRaw('users.id = users2.id');
+                }
+            );
+
+
+            //$node->
         } elseif ($node instanceof Factor) {
             var_dump($node);
             die("Not ok hier!\n");
@@ -190,7 +198,6 @@ class Helper
     }
 
     /**
-     *
      * $scimAttribute could be
      * - urn:ietf:params:scim:schemas:core:2.0:User.userName
      * - userName
@@ -200,8 +207,8 @@ class Helper
      * - emails.0.value
      * - schemas.0
      *
-     * @param unknown $name
-     * @param unknown $scimAttribute
+     * @param  unknown $name
+     * @param  unknown $scimAttribute
      * @return AttributeMapping
      */
     public static function getAttributeConfig(ResourceType $resourceType, $scimAttribute)
@@ -212,7 +219,7 @@ class Helper
         $scimAttribute = preg_replace('/\.[0-9]+\./', '.', $scimAttribute);
 
         $path = $parser->parse($scimAttribute);
-        
+
         //TODO: FIX this. If $scimAttribute is a schema-indication, it should be considered as a schema
         if ($scimAttribute == 'urn:ietf:params:scim:schemas:core:2.0:User') {
             $attributePath = new AttributePath();
@@ -288,7 +295,6 @@ class Helper
 
                 $result[$final][$key] = $value;
             } elseif (is_array($value)) {
-                
                 //Empty values do matter. For example in case of empty-ing a multi-valued attribute via PUT/replace
                 if (empty($value)) {
                     $partsCopy = $parts;

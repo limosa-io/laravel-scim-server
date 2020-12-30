@@ -9,9 +9,11 @@ abstract class AbstractEvent implements EventInterface
 {
     public $model;
 
-    /** @var boolean */
+    /**
+     * @var boolean
+     */
     public $me;
-    
+
     public function getModel()
     {
         return $this->model;

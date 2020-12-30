@@ -45,9 +45,11 @@ class SchemaController extends Controller
     
     public function show($id)
     {
-        $result = $this->schemas->first(function ($value, $key) use ($id) {
-            return $value['id'] == $id;
-        });
+        $result = $this->schemas->first(
+            function ($value, $key) use ($id) {
+                return $value['id'] == $id;
+            }
+        );
          
         if ($result == null) {
             throw (new SCIMException(sprintf('Resource "%s" not found', $id)))->setCode(404);

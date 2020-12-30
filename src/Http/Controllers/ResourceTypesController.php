@@ -32,11 +32,13 @@ class ResourceTypesController extends Controller
         return new ListResponse($this->resourceTypes, 1, $this->resourceTypes->count());
     }
     
-    public function show(Request $request, $id=null)
+    public function show(Request $request, $id = null)
     {
-        $result = $this->resourceTypes->first(function ($value, $key) use ($id) {
-            return $value->id == $id;
-        });
+        $result = $this->resourceTypes->first(
+            function ($value, $key) use ($id) {
+                return $value->id == $id;
+            }
+        );
         
         if ($result == null) {
             throw (new SCIMException("Resource not found"))->setCode(404);

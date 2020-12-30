@@ -57,20 +57,27 @@ class SCIMConfig
                     'created' => AttributeMapping::eloquent("created_at")->disableWrite(),
                     'lastModified' => AttributeMapping::eloquent("updated_at")->disableWrite(),
                     
-                    'location' => (new AttributeMapping())->setRead(function ($object) {
-                        return route('scim.resource', [
-                            'resourceType' => 'Users',
-                            'resourceObject' => $object->id
-                        ]);
-                    })->disableWrite(),
+                    'location' => (new AttributeMapping())->setRead(
+                        function ($object) {
+                            return route(
+                                'scim.resource',
+                                [
+                                'resourceType' => 'Users',
+                                'resourceObject' => $object->id
+                                ]
+                            );
+                        }
+                    )->disableWrite(),
                     
                     'resourceType' => AttributeMapping::constant("User")
                 ],
                 
-                'schemas' => AttributeMapping::constant([
+                'schemas' => AttributeMapping::constant(
+                    [
                     'urn:ietf:params:scim:schemas:core:2.0:User',
                     'example:name:space',
-                ])->ignoreWrite(),
+                    ]
+                )->ignoreWrite(),
                 
                 'example:name:space' => [
                     'cityPrefix' => AttributeMapping::eloquent('cityPrefix')

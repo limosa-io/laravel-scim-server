@@ -28,6 +28,7 @@ class BasicTest extends TestCase
     protected function getEnvironmentSetUp($app)
     {
         $app ['config']->set('app.url', 'http://localhost');
+        $app ['config']->set('app.debug', true);
 
         $app->register(ServiceProvider::class);
                 

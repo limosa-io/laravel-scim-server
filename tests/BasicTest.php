@@ -131,7 +131,11 @@ class BasicTest extends TestCase
             ]
         ]);
         
-        $this->assertEquals(201, $response->baseResponse->getStatusCode(), 'Wrong status: ' + json_encode($response->json()));
+        $this->assertEquals(
+            201,
+            $response->baseResponse->getStatusCode(),
+            'Wrong status: ' . $response->baseResponse->content()
+        );
 
         $json = $response->json();
 

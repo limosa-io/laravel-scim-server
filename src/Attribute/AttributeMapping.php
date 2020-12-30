@@ -461,7 +461,8 @@ class AttributeMapping
         } elseif ($attributeMapping instanceof AttributeMapping) {
             $result = $attributeMapping->setParent($parent);
         } else {
-            throw (new SCIMException(sprintf('Found unknown attribute "%s" in "%s"', $attributeMapping, $this->getFullKey())))->setCode(500);
+            throw (new SCIMException(sprintf('Found unknown attribute "%s" in "%s"', $attributeMapping, 'unknown')))
+                ->setCode(500);
         }
 
         return $result;

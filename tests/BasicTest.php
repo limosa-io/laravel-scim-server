@@ -28,6 +28,7 @@ class BasicTest extends TestCase
     protected function getEnvironmentSetUp($app)
     {
         $app ['config']->set('app.url', 'http://localhost');
+        $app ['config']->set('app.debug', true);
 
         $app->register(ServiceProvider::class);
                 
@@ -131,7 +132,11 @@ class BasicTest extends TestCase
             ]
         ]);
         
-        $response->assertStatus(201);
+        $this->assertEquals(
+            201,
+            $response->baseResponse->getStatusCode(),
+            'Wrong status: ' . $response->baseResponse->content()
+        );
 
         $json = $response->json();
 

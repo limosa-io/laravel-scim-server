@@ -46,7 +46,7 @@ class ResourceController extends Controller
 
     protected static function validateScim(ResourceType $resourceType, $flattened, ?Model $resourceObject)
     {
-        $forValidation = [];
+        $objectPreparedForValidation = [];
         $validations = $resourceType->getValidations();
         $simpleValidations = [];
 
@@ -54,7 +54,7 @@ class ResourceController extends Controller
          * Dots have a different meaning in SCIM and in Laravel's validation logic
          */
         foreach ($flattened as $key => $value) {
-            $forValidation[preg_replace('/([^*])\.([^*])/', '${1}___${2}', $key)] = $value;
+            $objectPreparedForValidation[preg_replace('/([^*])\.([^*])/', '${1}___${2}', $key)] = $value;
         }
 
         foreach ($validations as $key => $value) {
@@ -63,7 +63,7 @@ class ResourceController extends Controller
                 ] = !is_string($value) ? $value : ($resourceObject != null ? preg_replace('/,\[OBJECT_ID\]/', ','.$resourceObject->id, $value) : str_replace(',[OBJECT_ID]', '', $value));
         }
 
-        $validator = Validator::make($forValidation, $simpleValidations);
+        $validator = Validator::make($objectPreparedForValidation, $simpleValidations);
 
         if ($validator->fails()) {
             $e = $validator->errors();

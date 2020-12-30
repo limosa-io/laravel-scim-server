@@ -190,7 +190,7 @@ class Helper
             );
 
 
-            //$node->
+        //$node->
         } elseif ($node instanceof Factor) {
             var_dump($node);
             die("Not ok hier!\n");

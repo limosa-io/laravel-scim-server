@@ -18,7 +18,8 @@ class ServiceProvider extends \Illuminate\Support\ServiceProvider
         $router->pattern('resourceType', '^((?!Me).)*$');
 
         $router->bind(
-            'resourceType', function ($name, $route) {
+            'resourceType',
+            function ($name, $route) {
                 $config = resolve(SCIMConfig::class)->getConfigForResource($name);
             
                 if ($config == null) {
@@ -30,7 +31,8 @@ class ServiceProvider extends \Illuminate\Support\ServiceProvider
         );
         
         $router->bind(
-            'resourceObject', function ($id, $route) {
+            'resourceObject',
+            function ($id, $route) {
                 $resourceType = $route->parameter('resourceType');
             
                 if (!$resourceType) {

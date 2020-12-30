@@ -14,8 +14,14 @@ class PolicyDecisionPoint
     const OPERATION_PATCH = 'PATCH';
     const OPERATION_PUT = 'PUT';
     
-    public function isAllowed(Request $request, $operation, array $attributes, ResourceType $resourceType, ?Model $resourceObject, $isMe = false)
-    {
+    public function isAllowed(
+        Request $request,
+        $operation,
+        array $attributes,
+        ResourceType $resourceType,
+        ?Model $resourceObject,
+        $isMe = false
+    ) {
         if ($isMe) {
         }
         

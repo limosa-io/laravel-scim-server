@@ -21,6 +21,11 @@ The module is used by [idaas.nl](https://www.idaas.nl/).
 | GET|HEAD | scim/v1/{fallbackPlaceholder}           |
 | POST     | scim/v2/.search                         |
 |          |                                         |
+| GET|HEAD | scim/v2/ResourceTypes                   |
+| GET|HEAD | scim/v2/ResourceTypes/{id}              |
+| GET|HEAD | scim/v2/Schemas                         |
+| GET|HEAD | scim/v2/Schemas/{id}                    |
+| GET|HEAD | scim/v2/ServiceProviderConfig           |
 | GET|HEAD | scim/v2/{fallbackPlaceholder}           |
 |          |                                         |
 | GET|HEAD | scim/v2/{resourceType}                  |

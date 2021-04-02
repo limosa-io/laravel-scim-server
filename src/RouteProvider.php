@@ -15,6 +15,11 @@ class RouteProvider
 
     public static function routes(array $options = [])
     {
+
+        if (!isset($options['public_routes']) || $options['public_routes'] === true) {
+            self::publicRoutes($options);
+        }
+
         Route::prefix(self::$prefix)->group(
             function () use ($options) {
                 Route::prefix('v2')->middleware(

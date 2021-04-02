@@ -30,8 +30,7 @@
     },
     "require-dev": {
         "orchestra/testbench": "^5.0|^6.0",
-        "laravel/legacy-factories": "*",
-        "fzaninotto/faker": "^1.7"
+        "laravel/legacy-factories": "*"
     },
     
     "extra": {

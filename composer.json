@@ -29,7 +29,8 @@
         }
     },
     "require-dev": {
-        "orchestra/testbench": "~3.0",
+        "orchestra/testbench": "^5.0|^6.0",
+        "laravel/legacy-factories": "*",
         "fzaninotto/faker": "^1.7"
     },
     

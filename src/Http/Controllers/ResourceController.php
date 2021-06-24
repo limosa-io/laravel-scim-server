@@ -262,14 +262,14 @@ class ResourceController extends Controller
                 case "add":
                     if (isset($operation['path'])) {
                         $attributeConfig = Helper::getAttributeConfigOrFail($resourceType, $operation['path']);
-                        foreach ($operation['value'] as $value) {
+                        foreach ((array) $operation['value'] as $value) {
                             $attributeConfig->add($value, $resourceObject);
                         }
                     } else {
-                        foreach ($operation['value'] as $key => $value) {
+                        foreach ((array) $operation['value'] as $key => $value) {
                             $attributeConfig = Helper::getAttributeConfigOrFail($resourceType, $key);
 
-                            foreach ($value as $v) {
+                            foreach ((array) $value as $v) {
                                 $attributeConfig->add($v, $resourceObject);
                             }
                         }
@@ -298,7 +298,7 @@ class ResourceController extends Controller
                         $attributeConfig = Helper::getAttributeConfigOrFail($resourceType, $operation['path']);
                         $attributeConfig->replace($operation['value'], $resourceObject);
                     } else {
-                        foreach ($operation['value'] as $key => $value) {
+                        foreach ((array) $operation['value'] as $key => $value) {
                             $attributeConfig = Helper::getAttributeConfigOrFail($resourceType, $key);
                             $attributeConfig->replace($value, $resourceObject);
                         }

@@ -309,24 +309,24 @@ class ResourceController extends Controller
                 default:
                     throw new SCIMException(sprintf('Operation "%s" is not supported', $operation['op']));
             }
-
-            $dirty = $resourceObject->getDirty();
-
-            // TODO: prevent something from getten written before ...
-            $newObject = Helper::flatten(Helper::objectToSCIMArray($resourceObject, $resourceType), $resourceType->getSchema());
-
-            $flattened = $this->validateScim($resourceType, $newObject, $resourceObject);
-
-            if (!self::isAllowed($pdp, $request, PolicyDecisionPoint::OPERATION_PATCH, $flattened, $resourceType, null)) {
-                throw new SCIMException('This is not allowed');
-            }
-
-            $resourceObject->save();
-
-            event(new Patch($resourceObject, $isMe, $oldObject));
-
-            return Helper::objectToSCIMResponse($resourceObject, $resourceType);
         }
+
+        $dirty = $resourceObject->getDirty();
+
+        // TODO: prevent something from getten written before ...
+        $newObject = Helper::flatten(Helper::objectToSCIMArray($resourceObject, $resourceType), $resourceType->getSchema());
+
+        $flattened = $this->validateScim($resourceType, $newObject, $resourceObject);
+
+        if (!self::isAllowed($pdp, $request, PolicyDecisionPoint::OPERATION_PATCH, $flattened, $resourceType, null)) {
+            throw new SCIMException('This is not allowed');
+        }
+
+        $resourceObject->save();
+
+        event(new Patch($resourceObject, $isMe, $oldObject));
+
+        return Helper::objectToSCIMResponse($resourceObject, $resourceType);
     }
 
 

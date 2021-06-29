@@ -262,14 +262,14 @@ class ResourceController extends Controller
                 case "add":
                     if (isset($operation['path'])) {
                         $attributeConfig = Helper::getAttributeConfigOrFail($resourceType, $operation['path']);
-                        foreach ($operation['value'] as $value) {
+                        foreach ((array) $operation['value'] as $value) {
                             $attributeConfig->add($value, $resourceObject);
                         }
                     } else {
-                        foreach ($operation['value'] as $key => $value) {
+                        foreach ((array) $operation['value'] as $key => $value) {
                             $attributeConfig = Helper::getAttributeConfigOrFail($resourceType, $key);
 
-                            foreach ($value as $v) {
+                            foreach ((array) $value as $v) {
                                 $attributeConfig->add($v, $resourceObject);
                             }
                         }
@@ -298,7 +298,7 @@ class ResourceController extends Controller
                         $attributeConfig = Helper::getAttributeConfigOrFail($resourceType, $operation['path']);
                         $attributeConfig->replace($operation['value'], $resourceObject);
                     } else {
-                        foreach ($operation['value'] as $key => $value) {
+                        foreach ((array) $operation['value'] as $key => $value) {
                             $attributeConfig = Helper::getAttributeConfigOrFail($resourceType, $key);
                             $attributeConfig->replace($value, $resourceObject);
                         }
@@ -309,24 +309,24 @@ class ResourceController extends Controller
                 default:
                     throw new SCIMException(sprintf('Operation "%s" is not supported', $operation['op']));
             }
-
-            $dirty = $resourceObject->getDirty();
-
-            // TODO: prevent something from getten written before ...
-            $newObject = Helper::flatten(Helper::objectToSCIMArray($resourceObject, $resourceType), $resourceType->getSchema());
-
-            $flattened = $this->validateScim($resourceType, $newObject, $resourceObject);
-
-            if (!self::isAllowed($pdp, $request, PolicyDecisionPoint::OPERATION_PATCH, $flattened, $resourceType, null)) {
-                throw new SCIMException('This is not allowed');
-            }
-
-            $resourceObject->save();
-
-            event(new Patch($resourceObject, $isMe, $oldObject));
-
-            return Helper::objectToSCIMResponse($resourceObject, $resourceType);
         }
+
+        $dirty = $resourceObject->getDirty();
+
+        // TODO: prevent something from getten written before ...
+        $newObject = Helper::flatten(Helper::objectToSCIMArray($resourceObject, $resourceType), $resourceType->getSchema());
+
+        $flattened = $this->validateScim($resourceType, $newObject, $resourceObject);
+
+        if (!self::isAllowed($pdp, $request, PolicyDecisionPoint::OPERATION_PATCH, $flattened, $resourceType, null)) {
+            throw new SCIMException('This is not allowed');
+        }
+
+        $resourceObject->save();
+
+        event(new Patch($resourceObject, $isMe, $oldObject));
+
+        return Helper::objectToSCIMResponse($resourceObject, $resourceType);
     }
 
 

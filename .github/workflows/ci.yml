@@ -9,6 +9,7 @@ jobs:
     steps:
     - uses: actions/checkout@v2
     - uses: php-actions/composer@v6
-    - name: Clean install dependencies and build
+    - name: Run phpunit
       run: |
+        chmod -R 777 vendor/orchestra/testbench-core/laravel/bootstrap/cache
         make phpunit

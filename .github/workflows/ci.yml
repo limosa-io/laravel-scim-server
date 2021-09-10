@@ -11,5 +11,6 @@ jobs:
     - uses: php-actions/composer@v6
     - name: Run phpunit
       run: |
+        whoami
         ls -all vendor/orchestra/testbench-core/laravel/bootstrap/cache
         sh -c "phpunit"

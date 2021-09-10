@@ -9,8 +9,6 @@ jobs:
     steps:
     - uses: actions/checkout@v2
     - uses: php-actions/composer@v6
-    - name: Run phpunit
-      run: |
-        whoami
-        ls -all vendor/orchestra/testbench-core/laravel/bootstrap/cache
-        sh -c "phpunit"
+    - uses: php-actions/phpunit@v3
+      with:
+        php_version: 7.4

@@ -11,5 +11,6 @@ jobs:
     - uses: php-actions/composer@v6
     - name: Run phpunit
       run: |
+        mkdir -p vendor/orchestra/testbench-core/laravel/bootstrap/cache
         chmod -R 755 vendor/orchestra/testbench-core/laravel/bootstrap/cache
         make phpunit

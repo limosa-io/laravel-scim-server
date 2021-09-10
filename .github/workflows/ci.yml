@@ -9,5 +9,6 @@ jobs:
     steps:
     - uses: actions/checkout@v2
     - uses: php-actions/composer@v6
-      with:
-        command: make phpunit
+    - name: Clean install dependencies and build
+      run: |
+        make phpunit

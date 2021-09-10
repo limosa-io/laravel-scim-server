@@ -8,8 +8,7 @@ jobs:
 
     steps:
     - uses: actions/checkout@v1
-    - uses: php-actions/composer@v1
+    - uses: php-actions/composer@v6
     - name: Clean install dependencies and build
       run: |
-        php artisan cache:clear &&
         make phpunit

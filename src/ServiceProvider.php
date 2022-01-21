@@ -14,6 +14,10 @@ class ServiceProvider extends \Illuminate\Support\ServiceProvider
     {
         $this->loadMigrationsFrom(__DIR__ . DIRECTORY_SEPARATOR . '..' . DIRECTORY_SEPARATOR . 'database' . DIRECTORY_SEPARATOR . 'migrations');
         
+        $this->publishes([
+            __DIR__.'/../config/scim.php' => config_path('scim.php'),
+        ], 'laravel-scim');
+
         // Match everything, except the Me routes
         $router->pattern('resourceType', '^((?!Me).)*$');
 
@@ -63,7 +67,9 @@ class ServiceProvider extends \Illuminate\Support\ServiceProvider
         
         $router->middleware('SCIMHeaders', 'ArieTimmerman\Laravel\SCIMServer\Middleware\SCIMHeaders');
 
-        \ArieTimmerman\Laravel\SCIMServer\RouteProvider::routes();
+        if (config('scim.publish_routes')) {
+            \ArieTimmerman\Laravel\SCIMServer\RouteProvider::routes();
+        }
     }
     
     /**
@@ -73,5 +79,9 @@ class ServiceProvider extends \Illuminate\Support\ServiceProvider
      */
     public function register()
     {
+        $this->mergeConfigFrom(
+            __DIR__.'/../config/scim.php',
+            'scim'
+        );
     }
 }

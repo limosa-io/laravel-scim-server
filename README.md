@@ -11,6 +11,12 @@ Add SCIM 2.0 Server capabilities with ease. Usually, no configuration is needed 
 composer require arietimmerman/laravel-scim-server
 ~~~
 
+And optionally
+
+~~~
+php artisan vendor:publish --tag=laravel-scim
+~~~
+
 The module is used by [idaas.nl](https://www.idaas.nl/).
 
 # Routes

@@ -564,9 +564,9 @@ class AttributeMapping
                 return $this->filter;
             };
 
-            $first = @$getAttributePath->call($getValuePath->call($path));
-            $filter = @$getFilter->call($getValuePath->call($path));
-            $last = $getAttributePath->call($path);
+            $first = @$getAttributePath->call((object)$getValuePath->call($path));
+            $filter = @$getFilter->call((object)$getValuePath->call($path));
+            $last = $getAttributePath->call((object)$path);
 
             return $this->getNode($first)->withFilter($filter)->getNode($last);
         }

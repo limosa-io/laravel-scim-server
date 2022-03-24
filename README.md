@@ -59,6 +59,47 @@ Extend this class and register your extension in `app/Providers/AppServiceProvid
 $this->app->singleton('ArieTimmerman\Laravel\SCIMServer\SCIMConfig', YourCustomSCIMConfig::class);
 ~~~
 
+# Security & App Integration
+
+By default, this package does no security checks on its own. This can be dangerous, in that a functioning SCIM Server can view, add, update, delete, or list users. 
+You are welcome to implement your own security checks at the middleware layer, 
+or somehow/somewhere else that makes sense for your application. But make sure to do **something**.
+
+If you want to integrate into _already existing_ middleware, you'll want to take the following steps - 
+
+## Turn off automatic publishing of routes
+
+Modify `config/scim.php` like this:
+```php
+<?php
+return [
+    "publish_routes" => false
+];
+```
+
+## Next, explicitly publish your routes with your choice of middleware
+
+In either your RouteServiceProvider, or in a particular route file, add the following:
+
+```php
+use ArieTimmerman\Laravel\SCIMServer\RouteProvider as SCIMServerRouteProvider;
+
+SCIMServerRouteProvider::publicRoutes(); // Make sure to add public routes *first*
+
+
+Route::middleware('auth:api')->group(function () { // or any other middleware you choose
+    SCIMServerRouteProvider::routes(
+        [
+            'public_routes' => false // but do not hide public routes (metadata) behind authentication
+        ]
+    );
+
+    SCIMServerRouteProvider::meRoutes();
+});
+
+
+```
+
 # Test server
 
 ~~~

@@ -59,6 +59,26 @@ Extend this class and register your extension in `app/Providers/AppServiceProvid
 $this->app->singleton('ArieTimmerman\Laravel\SCIMServer\SCIMConfig', YourCustomSCIMConfig::class);
 ~~~
 
+## An example override
+
+Here's one way to override the default configuration without copying too much of the SCIMConfig file into your app.
+~~~.php
+<?php
+
+class YourCustomSCIMConfig extends \ArieTimmerman\Laravel\SCIMServer\SCIMConfig
+{
+    public function getUserConfig()
+    {
+        $config = parent::getUserConfig();
+
+        // Modify the $config variable however you need...
+
+        return $config;
+    }
+}
+~~~
+
+
 # Security & App Integration
 
 By default, this package does no security checks on its own. This can be dangerous, in that a functioning SCIM Server can view, add, update, delete, or list users. 

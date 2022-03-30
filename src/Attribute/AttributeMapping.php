@@ -512,7 +512,7 @@ class AttributeMapping
         }
 
         //The first schema should be the default one
-        $schema = $attributePath->schema ?? $this->getDefaultSchema()[0];
+        $schema = $attributePath->schema ?? ($this->getDefaultSchema() ? $this->getDefaultSchema()[0] : null);
 
         if (!empty($schema) && !empty($this->getSchema()) && $this->getSchema() != $schema) {
             throw (new SCIMException(sprintf('Trying to get attribute for schema "%s". But schema is already "%s"', $attributePath->schema, $this->getSchema())))->setCode(500)->setScimType('noTarget');

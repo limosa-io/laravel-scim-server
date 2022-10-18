@@ -616,7 +616,7 @@ class AttributeMapping
 
         //only filter on OWN eloquent attributes
         if (empty($this->eloquentAttributes)) {
-            throw new SCIMException("Can't filter on . " + $this->getFullKey());
+            throw new SCIMException("Can't filter on . " . $this->getFullKey());
         }
 
         $attribute = $this->eloquentAttributes[0];

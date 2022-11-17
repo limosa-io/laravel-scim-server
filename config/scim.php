@@ -2,5 +2,5 @@
 
 return [
     "publish_routes" => true,
-    'omit_main_schema_in_return' => true
+    'omit_main_schema_in_return' => false
 ];

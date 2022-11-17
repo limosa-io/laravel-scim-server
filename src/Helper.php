@@ -1,4 +1,5 @@
 <?php
+
 namespace ArieTimmerman\Laravel\SCIMServer;
 
 use ArieTimmerman\Laravel\SCIMServer\Attribute\AttributeMapping;
@@ -96,6 +97,16 @@ class Helper
                     $parent[$key] = AttributeMapping::eloquentAttributeToString($value);
                 }
             }
+
+            if (config('scim.omit_main_schema_in_return')) {
+                $defaultSchema = collect($mapping->getDefaultSchema())->first();
+
+                $main = $result[$defaultSchema];
+                unset($result[$defaultSchema]);
+
+                $result = array_merge($result, $main);
+            }
+            
         } else {
             $result = $userArray;
         }

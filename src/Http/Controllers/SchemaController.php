@@ -18,9 +18,9 @@ class SchemaController extends Controller
         }
 
         $config = resolve(SCIMConfig::class)->getConfig();
-    
+
         $schemas = [];
-    
+
         foreach ($config as $key => $value) {
             if ($key != 'Users' && $key != 'Group') {
                 continue;
@@ -28,36 +28,36 @@ class SchemaController extends Controller
 
             // TODO: FIX THIS. Schema is now an array but should be a string
             $schema = (new SchemaBuilderV2())->get($value['schema'][0]);
-            
+
             if ($schema == null) {
                 throw new SCIMException("Schema not found");
             }
-            
-            $schema->getMeta()->setLocation(route('scim.schemas', ['id' => '23']));
-            
+
+            $schema->getMeta()->setLocation(route('scim.schemas', ['id' => $schema->getId()]));
+
             $schemas[] = $schema->serializeObject();
         }
-    
+
         $this->schemas = collect($schemas);
 
         return $this->schemas;
     }
-    
+
     public function show($id)
     {
-        $result = $this->schemas->first(
+        $result = $this->getSchemas()->first(
             function ($value, $key) use ($id) {
                 return $value['id'] == $id;
             }
         );
-         
+
         if ($result == null) {
             throw (new SCIMException(sprintf('Resource "%s" not found', $id)))->setCode(404);
         }
-         
+
         return $result;
     }
-    
+
     public function index()
     {
         return new ListResponse($this->getSchemas(), 1, $this->getSchemas()->count());

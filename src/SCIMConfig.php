@@ -25,6 +25,9 @@ class SCIMConfig
             // Set to 'null' to make use of auth.providers.users.model (App\User::class)
             'class' => Helper::getAuthUserClass(),
             
+            // Set to 'null' to make use of new $class
+            'query' => null,
+            
             'validations' => [
     
                 'urn:ietf:params:scim:schemas:core:2.0:User:userName' => 'required',

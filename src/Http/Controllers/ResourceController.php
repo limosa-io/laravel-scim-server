@@ -343,7 +343,7 @@ class ResourceController extends Controller
 
     public function index(Request $request, PolicyDecisionPoint $pdp, ResourceType $resourceType)
     {
-        $class = $resourceType->getClass();
+        $query = $resourceType->getQuery();
 
         // The 1-based index of the first query result. A value less than 1 SHALL be interpreted as 1.
         $startIndex = max(1, intVal($request->input('startIndex', 0)));
@@ -357,7 +357,7 @@ class ResourceController extends Controller
             $sortBy = Helper::getEloquentSortAttribute($resourceType, $request->input('sortBy'));
         }
 
-        $resourceObjectsBase = $class::when(
+        $resourceObjectsBase = $query->when(
             $filter = $request->input('filter'),
             function ($query) use ($filter, $resourceType) {
                 $parser = new Parser(Mode::FILTER());

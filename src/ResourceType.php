@@ -40,6 +40,11 @@ class ResourceType
         return $this->configuration['class'];
     }
 
+    public function getQuery()
+    {
+        return $this->configuration['query'] ?? $this->getClass()::query();
+    }
+
     public function getValidations()
     {
         return $this->configuration['validations'];

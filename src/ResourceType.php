@@ -2,6 +2,7 @@
 
 namespace ArieTimmerman\Laravel\SCIMServer;
 
+use Illuminate\Support\Arr;
 use ArieTimmerman\Laravel\SCIMServer\Attribute\AttributeMapping;
 
 class ResourceType
@@ -42,7 +43,7 @@ class ResourceType
 
     public function getQuery()
     {
-        return $this->configuration['query'] ?? $this->getClass()::query();
+        return Arr::get($this->configuration, 'query', $this->getClass()::query());
     }
 
     public function getValidations()

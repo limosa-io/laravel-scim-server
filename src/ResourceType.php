@@ -43,7 +43,7 @@ class ResourceType
 
     public function getQuery()
     {
-        return Arr::get($this->configuration, 'query', $this->getClass()::query());
+        return Arr::get($this->configuration, 'query') ?? $this->getClass()::query();
     }
 
     public function getValidations()

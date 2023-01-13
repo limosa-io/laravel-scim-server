@@ -185,10 +185,10 @@ class ResourceController extends Controller
     public function replace(Request $request, PolicyDecisionPoint $pdp, ResourceType $resourceType, Model $resourceObject, $isMe = false)
     {
         $originalRaw = Helper::objectToSCIMArray($resourceObject, $resourceType);
-        $original = Helper::flatten($originalRaw, $resourceType->getSchema());
+        $original = Helper::flatten($originalRaw, $request->input()['schemas']);
 
         //TODO: get flattend from $resourceObject
-        $flattened = Helper::flatten($request->input(), $resourceType->getSchema());
+        $flattened = Helper::flatten($request->input(), $request->input()['schemas']);
         $flattened = $this->validateScim($resourceType, $flattened, $resourceObject);
 
         $updated = [];

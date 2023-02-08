@@ -41,7 +41,10 @@ class SCIMConfig
             ],
     
             'singular' => 'User',
-            'schema' => [Schema::SCHEMA_USER],
+            'schema' => [
+                Schema::SCHEMA_USER,
+                'example:name:space'
+            ],
     
             //eager loading
             'withRelations' => [],
@@ -74,13 +77,6 @@ class SCIMConfig
                     
                     'resourceType' => AttributeMapping::constant("User")
                 ],
-                
-                'schemas' => AttributeMapping::constant(
-                    [
-                    'urn:ietf:params:scim:schemas:core:2.0:User',
-                    'example:name:space',
-                    ]
-                )->ignoreWrite(),
                 
                 'example:name:space' => [
                     'cityPrefix' => AttributeMapping::eloquent('cityPrefix')

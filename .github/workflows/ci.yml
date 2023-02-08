@@ -11,6 +11,6 @@ jobs:
     - uses: php-actions/composer@v6
       with:
         php_version: 8
-    - uses: php-actions/phpunit@v3
+    - uses: php-actions/phpunit@v3.0.0
       with:
         php_version: 8

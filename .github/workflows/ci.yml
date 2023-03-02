@@ -1,17 +1,39 @@
 name: CI
 
-on: [push]
+on: ['push', 'pull_request']
 
 jobs:
-  build-test:
+  tests:
     runs-on: ubuntu-latest
+    continue-on-error: true
+    strategy:
+      matrix:
+        php: [7.3, 7.4, 8.0, 8.1]
+        laravel: [6.*, 7.*, 8.*, 9.*]
+        exclude:
+          - laravel: 6.*
+            php: 8.1
+          - laravel: 7.*
+            php: 8.1
+          - laravel: 8.*
+            php: 7.2
+          - laravel: 9.*
+            php: 7.3
+          - laravel: 9.*
+            php: 7.4
+
+    name: PHP ${{ matrix.php }} on Laravel ${{ matrix.laravel }}
 
     steps:
-    - uses: actions/checkout@v2
-    - uses: php-actions/composer@v6
+    - name: Checkout code
+      uses: actions/checkout@v2
+    - name: Setup PHP
+      uses: shivammathur/setup-php@v2
       with:
-        php_version: 8
-    - uses: php-actions/phpunit@v3
-      with:
-        php_version: 8
-        version: 9.5
+        php-version: ${{ matrix.php }}
+    - name: Install dependencies
+      run: |
+        composer require "illuminate/console:${{ matrix.laravel }}" "illuminate/database:${{ matrix.laravel }}" "illuminate/support:${{ matrix.laravel }}" --no-interaction --no-update
+        composer update
+    - name: Run tests
+      run: vendor/bin/phpunit

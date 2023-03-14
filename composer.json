@@ -11,9 +11,9 @@
     ],
     "require": {
 		"php": "^7.0|^8.0",
-        "illuminate/database": "^6.0|^7.0|^8.0|^9.0",
-        "illuminate/support": "^6.0|^7.0|^8.0|^9.0",
-        "illuminate/console": "^6.0|^7.0|^8.0|^9.0",
+        "illuminate/database": "^6.0|^7.0|^8.0|^9.0|^10.0",
+        "illuminate/support": "^6.0|^7.0|^8.0|^9.0|^10.0",
+        "illuminate/console": "^6.0|^7.0|^8.0|^9.0|^10.0",
         "tmilos/scim-schema": "^0.1.0",
         "tmilos/scim-filter-parser": "^1.3"
     },
@@ -29,10 +29,10 @@
         }
     },
     "require-dev": {
-        "orchestra/testbench": "^4.0|^5.0|^6.0|^7.0",
+        "orchestra/testbench": "^4.0|^5.0|^6.0|^7.0|^8.0",
         "laravel/legacy-factories": "*"
     },
-    
+
     "extra": {
 	    "laravel": {
 	        "providers": [
@@ -43,5 +43,5 @@
 	        }
 	    }
 	}
-	
+
 }

@@ -55,7 +55,11 @@ class SCIMConfig
             // Map a SCIM attribute to an attribute of the object.
             'mapping' => [
                 
-                'id' => AttributeMapping::eloquent("id")->disableWrite(),
+                'id' => (new AttributeMapping())->setRead(
+                    function (&$object) {
+                        return (string)$object->id;
+                    }
+                )->disableWrite(),
                 
                 'externalId' => null,
                 

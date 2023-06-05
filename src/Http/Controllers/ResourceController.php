@@ -262,9 +262,7 @@ class ResourceController extends Controller
                 case "add":
                     if (isset($operation['path'])) {
                         $attributeConfig = Helper::getAttributeConfigOrFail($resourceType, $operation['path']);
-                        foreach ((array) $operation['value'] as $value) {
-                            $attributeConfig->add($value, $resourceObject);
-                        }
+                        $attributeConfig->add($$operation['value'], $resourceObject);
                     } else {
                         foreach ((array) $operation['value'] as $key => $value) {
                             $attributeConfig = Helper::getAttributeConfigOrFail($resourceType, $key);

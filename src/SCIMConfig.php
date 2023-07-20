@@ -5,6 +5,7 @@ namespace ArieTimmerman\Laravel\SCIMServer;
 use ArieTimmerman\Laravel\SCIMServer\SCIM\Schema;
 use ArieTimmerman\Laravel\SCIMServer\Helper;
 use ArieTimmerman\Laravel\SCIMServer\Attribute\AttributeMapping;
+use Illuminate\Support\Facades\Auth;
 
 class SCIMConfig
 {
@@ -27,6 +28,9 @@ class SCIMConfig
             
             // Set to 'null' to make use of $class::query()
             'query' => null,
+
+            // Set to 'null' to make use new $class()
+            'factory' => null,
             
             'validations' => [
     

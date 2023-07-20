@@ -47,6 +47,15 @@ class ResourceType
         return $this->configuration['class'];
     }
 
+    public function getFactory()
+    {
+        return $this->configuration['factory'] ?? function () {
+            $class = $this->getClass();
+
+            return new $class();
+        };
+    }
+
     public function getQuery()
     {
         return Arr::get($this->configuration, 'query') ?? $this->getClass()::query();

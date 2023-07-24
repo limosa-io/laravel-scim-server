@@ -108,12 +108,7 @@ class ResourceController extends Controller
             throw (new SCIMException('This is not allowed'))->setCode(403);
         }
 
-        $class = $resourceType->getClass();
-
-        /**
- * @var Model
-*/
-        $resourceObject = new $class();
+        $resourceObject = $resourceType->getFactory()();
 
         $allAttributeConfigs = [];
 

@@ -539,6 +539,10 @@ class AttributeMapping
         foreach ($elements as $element) {
             try {
                 $node = $node->getSubNode($element, $schema);
+
+                if ($node instanceof AttributeMapping && $this->getDefaultSchema()) {
+                    $node->setDefaultSchema($this->getDefaultSchema());
+                }
             } catch (\Exception $e) {
                 throw $e;
             }

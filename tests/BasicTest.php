@@ -2,73 +2,38 @@
 
 namespace ArieTimmerman\Laravel\SCIMServer\Tests;
 
+
 use ArieTimmerman\Laravel\SCIMServer\ServiceProvider;
-use Orchestra\Testbench\TestCase;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
-class BasicTest extends TestCase
+class BasicTest extends BaseTest
 {
-    protected $baseUrl = 'http://localhost';
-    
-    use RefreshDatabase;
-    
-    protected function setUp(): void
-    {
-        parent::setUp();
-        
-        $this->loadLaravelMigrations('testbench');
-        
-        $this->withFactories(realpath(dirname(__DIR__).'/database/factories'));
-        
-        \ArieTimmerman\Laravel\SCIMServer\RouteProvider::routes();
-        
-        factory(\ArieTimmerman\Laravel\SCIMServer\Tests\Model\User::class, 100)->create();
-    }
-
-    protected function getEnvironmentSetUp($app)
-    {
-        $app ['config']->set('app.url', 'http://localhost');
-        $app ['config']->set('app.debug', true);
-
-        $app->register(ServiceProvider::class);
-                
-        // Setup default database to use sqlite :memory:
-        $app['config']->set('scimserver.Users.class', \ArieTimmerman\Laravel\SCIMServer\Tests\Model\User::class);
-        $app['config']->set('auth.providers.users.model', \ArieTimmerman\Laravel\SCIMServer\Tests\Model\User::class);
-        $app['config']->set('database.default', 'testbench');
-        $app['config']->set('database.connections.testbench', [
-            'driver'   => 'sqlite',
-            'database' => ':memory:',
-            'prefix'   => '',
-        ]);
-    }
-    
     public function testGet()
     {
         $response = $this->get('/scim/v2/Users');
-                
+
         $response->assertStatus(200);
     }
 
     public function testPut()
     {
         $response = $this->put('/scim/v2/Users/1', [
-            "id"=> 1,
+            "id" => 1,
             "schemas" => [
                 "urn:ietf:params:scim:schemas:core:2.0:User",
             ],
             "urn:ietf:params:scim:schemas:core:2.0:User" => [
-                "userName"=> "Dr. John Doe",
-                "emails"=> [
+                "userName" => "Dr. John Doe",
+                "emails" => [
                     [
-                        "value"=> "johndoe@bailey.org",
-                        "type"=> "other",
-                        "primary"=> true
+                        "value" => "johndoe@bailey.org",
+                        "type" => "other",
+                        "primary" => true
                     ]
                 ]
             ]
         ]);
-                
+
         $response->assertStatus(200);
 
         $json = $response->json();
@@ -97,7 +62,7 @@ class BasicTest extends TestCase
                 ]
             ]]
         ]);
-                
+
         $response->assertStatus(200);
 
         $json = $response->json();
@@ -115,23 +80,23 @@ class BasicTest extends TestCase
     public function testPost()
     {
         $response = $this->post('/scim/v2/Users', [
-            "id"=> 1,
+            "id" => 1,
             "schemas" => [
                 "urn:ietf:params:scim:schemas:core:2.0:User",
             ],
             "urn:ietf:params:scim:schemas:core:2.0:User" => [
-                "userName"=> "Dr. Marie Jo",
-                "password"=>"Password123",
-                "emails"=> [
+                "userName" => "Dr. Marie Jo",
+                "password" => "Password123",
+                "emails" => [
                     [
-                        "value"=> "mariejo@example.com",
-                        "type"=> "primary",
-                        "primary"=> true
+                        "value" => "mariejo@example.com",
+                        "type" => "primary",
+                        "primary" => true
                     ]
                 ]
             ]
         ]);
-        
+
         $this->assertEquals(
             201,
             $response->baseResponse->getStatusCode(),

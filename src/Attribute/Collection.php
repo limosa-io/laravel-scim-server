@@ -25,9 +25,6 @@ class Collection extends AttributeMapping
             }
         } else {
             foreach ($value as $key => $v) {
-                // var_dump($value);
-                // echo $this->getFullKey() . " - " .  $key . "\n";
-
                 if ($this->getSubNode($key) != null) {
                     $this->getSubNode($key)->add($v, $object);
                 } else {

@@ -60,7 +60,7 @@ class ResourceController extends Controller
         foreach ($validations as $key => $value) {
             $simpleValidations[
                 preg_replace('/([^*])\.([^*])/', '${1}___${2}', $key)
-                ] = !is_string($value) ? $value : ($resourceObject != null ? preg_replace('/,\[OBJECT_ID\]/', ','.$resourceObject->id, $value) : str_replace(',[OBJECT_ID]', '', $value));
+                ] = !is_string($value) ? $value : ($resourceObject != null ? preg_replace('/,\[OBJECT_ID\]/', ',' . $resourceObject->id, $value) : str_replace(',[OBJECT_ID]', '', $value));
         }
 
         $validator = Validator::make($objectPreparedForValidation, $simpleValidations);

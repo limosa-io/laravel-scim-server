@@ -81,8 +81,11 @@ class Collection extends AttributeMapping
         if (!empty($this->collection) && is_array($this->collection[0]) && array_key_exists($key, $this->collection[0])) {
             $parent = $this;
 
-            return (new CollectionValue())->setEloquentAttributes($this->collection[0][$key]->getEloquentAttributes())->setKey($key)->setParent($this)->setAdd(
-                function ($value, &$object) use ($key, $parent) {
+            return (new CollectionValue())
+                ->setEloquentAttributes($this->collection[0][$key]->getEloquentAttributes())
+                ->setKey($key)
+                ->setParent($this)
+                ->setAdd(function ($value, &$object) use ($key, $parent) {
                     $collection = Collection::filterCollection($parent->filter, collect($parent->collection), $object);
 
                     $result = [];
@@ -90,9 +93,17 @@ class Collection extends AttributeMapping
                     foreach ($collection as $o) {
                         $o[$key]->add($value, $object);
                     }
-                }
-            )->setRead(
-                function (&$object) use ($key, $parent) {
+                })
+                ->setReplace(function ($value, &$object) use ($key, $parent) {
+                    $collection = Collection::filterCollection($parent->filter, collect($parent->collection), $object);
+
+                    $result = [];
+
+                    foreach ($collection as $o) {
+                        $o[$key]->add($value, $object);
+                    }
+                })
+                ->setRead(function (&$object) use ($key, $parent) {
                     $collection = Collection::filterCollection($parent->filter, collect($parent->collection), $object);
 
                     $result = [];
@@ -102,8 +113,8 @@ class Collection extends AttributeMapping
                     }
 
                     return $result;
-                }
-            )->setSchema($schema);
+                })
+                ->setSchema($schema);
         }
     }
 

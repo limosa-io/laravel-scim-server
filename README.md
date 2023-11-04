@@ -17,7 +17,7 @@ And optionally
 php artisan vendor:publish --tag=laravel-scim
 ~~~
 
-The module is used by [idaas.nl](https://www.idaas.nl/).
+The module is used by [idaas.nl](https://www.idaas.nl/) and by [The SCIM Playground](https://scim.dev). 
 
 # Routes
 

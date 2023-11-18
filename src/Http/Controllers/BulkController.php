@@ -10,6 +10,7 @@ class BulkController extends Controller
 {
 
     const MAX_PAYLOAD_SIZE = 1048576;
+    const MAX_OPERATIONS = 10;
 
     /**
      * Process SCIM BULK requests.
@@ -44,6 +45,10 @@ class BulkController extends Controller
         }
 
         $operations = $request->input('Operations');
+
+        if(count($operations) > static::MAX_OPERATIONS){
+            throw (new SCIMException('Too many operations!'))->setCode(413)->setScimType('tooLarge');
+        }
 
         $bulkIdMapping = [];
         $responses = [];

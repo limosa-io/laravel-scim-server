@@ -35,7 +35,6 @@ class BulkController extends Controller
             'failOnErrors' => 'nullable|int',
             'Operations' => 'required|array',
             'Operations.*.method' => 'required|string|in:POST,PUT,PATCH,DELETE',
-            'Operations.*.path' => 'required|string|in:/Users,/Groups',
             'Operations.*.bulkId' => 'nullable|string',
             'Operations.*.data' => 'nullable|array',
         ]);
@@ -66,9 +65,15 @@ class BulkController extends Controller
             // Call internal Laravel route based on method, path and data
             $encoded = json_encode($operation['data'] ?? []);
             $encoded = str_replace(array_keys($bulkIdMapping), array_values($bulkIdMapping), $encoded);
+            $path = str_replace(array_keys($bulkIdMapping), array_values($bulkIdMapping), $operation['path']);
+
+            // ensure $path starts with /Users or /Groups
+            if (!preg_match('/^\/(Users|Groups)/', $path)) {
+                throw (new SCIMException('Invalid path!'))->setCode(400)->setScimType('invalidPath');
+            }
 
             $request = Request::create(
-                $prefix . $operation['path'],
+                $prefix . $path,
                 $operation['method'], 
                 server: [
                     'HTTP_Authorization' => $request->header('Authorization'),

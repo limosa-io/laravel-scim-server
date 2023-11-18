@@ -14,7 +14,8 @@ class ServiceProviderController extends Controller
                 "supported" => true,
             ],
             "bulk" => [
-                "supported" => false,
+                "supported" => true,
+                "maxPayloadSize" => BulkController::MAX_PAYLOAD_SIZE
             ],
             "filter" => [
                 "supported" => true,

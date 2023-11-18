@@ -8,6 +8,9 @@ use Illuminate\Support\Facades\Validator;
 
 class BulkController extends Controller
 {
+
+    const MAX_PAYLOAD_SIZE = 1048576;
+
     /**
      * Process SCIM BULK requests.
      *
@@ -16,6 +19,13 @@ class BulkController extends Controller
      */
     public function processBulkRequest(Request $request)
     {
+
+        // get the content size in bytes from raw content (not entirely accurate, but good enough for now)
+        $contentSize = mb_strlen($request->getContent(), '8bit');
+
+        if($contentSize > static::MAX_PAYLOAD_SIZE){
+            throw (new SCIMException('Payload too large!'))->setCode(413)->setScimType('tooLarge');
+        }
 
         $validator = Validator::make($request->input(), [
             'schemas' => 'required|array',

@@ -76,6 +76,8 @@ class RouteProvider
     {
         Route::post('.search', '\ArieTimmerman\Laravel\SCIMServer\Http\Controllers\ResourceController@notImplemented');
 
+        Route::post("/Bulk", '\ArieTimmerman\Laravel\SCIMServer\Http\Controllers\BulkController@processBulkRequest');
+
         // TODO: Use the attributes parameters ?attributes=userName, excludedAttributes=asdg,asdg (respect "returned" settings "always")
         Route::get('/{resourceType}/{resourceObject}', '\ArieTimmerman\Laravel\SCIMServer\Http\Controllers\ResourceController@show')->name('scim.resource');
         Route::get("/{resourceType}", '\ArieTimmerman\Laravel\SCIMServer\Http\Controllers\ResourceController@index')->name('scim.resources');

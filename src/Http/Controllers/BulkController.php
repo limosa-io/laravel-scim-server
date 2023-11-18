@@ -31,6 +31,8 @@ class BulkController extends Controller
         $validator = Validator::make($request->input(), [
             'schemas' => 'required|array',
             'schemas.*' => 'required|string|in:urn:ietf:params:scim:api:messages:2.0:BulkRequest',
+            // TODO: implement failOnErrors
+            'failOnErrors' => 'nullable|int',
             'Operations' => 'required|array',
             'Operations.*.method' => 'required|string|in:POST,PUT,PATCH,DELETE',
             'Operations.*.path' => 'required|string|in:/Users,/Groups',

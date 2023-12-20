@@ -141,7 +141,7 @@ class ResourceController extends Controller
 
         $resourceObject = self::createFromSCIM($resourceType, $input, $pdp, $request, false, $isMe);
 
-        event(new Create($resourceObject, $isMe));
+        event(new Create($resourceObject, $resourceType, $isMe, $request->input()));
 
         return $resourceObject;
     }
@@ -163,7 +163,7 @@ class ResourceController extends Controller
 
     public function show(Request $request, PolicyDecisionPoint $pdp, ResourceType $resourceType, Model $resourceObject)
     {
-        event(new Get($resourceObject));
+        event(new Get($resourceObject, $resourceType, null, $request->input()));
 
         return Helper::objectToSCIMResponse($resourceObject, $resourceType);
     }
@@ -172,7 +172,7 @@ class ResourceController extends Controller
     {
         $resourceObject->delete();
 
-        event(new Delete($resourceObject));
+        event(new Delete($resourceObject, $resourceType, null, $request->input()));
 
         return response(null, 204);
     }
@@ -232,7 +232,7 @@ class ResourceController extends Controller
 
         $resourceObject->save();
 
-        event(new Replace($resourceObject, $isMe, $originalRaw));
+        event(new Replace($resourceObject, $resourceType, $isMe, $request->input(), $originalRaw));
 
         return Helper::objectToSCIMResponse($resourceObject, $resourceType);
     }
@@ -319,7 +319,7 @@ class ResourceController extends Controller
 
         $resourceObject->save();
 
-        event(new Patch($resourceObject, $isMe, $oldObject));
+        event(new Patch($resourceObject, $resourceType, $isMe, $request->input(), $oldObject));
 
         return Helper::objectToSCIMResponse($resourceObject, $resourceType);
     }

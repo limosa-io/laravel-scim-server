@@ -23,7 +23,6 @@ class ResourceType
 
     public function getMapping()
     {
-
         $mapping = $this->configuration['mapping'];
 
         if (!isset($mapping['schema'])) {

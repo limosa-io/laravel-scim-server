@@ -3,10 +3,10 @@
 namespace ArieTimmerman\Laravel\SCIMServer\Tests;
 
 use ArieTimmerman\Laravel\SCIMServer\ServiceProvider;
-use Orchestra\Testbench\TestCase;
+use Orchestra\Testbench\TestCase as BaseTestCase;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
-abstract class BaseTest extends TestCase
+abstract class TestCase extends BaseTestCase
 {
     use RefreshDatabase;
 

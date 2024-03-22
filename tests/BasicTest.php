@@ -2,11 +2,7 @@
 
 namespace ArieTimmerman\Laravel\SCIMServer\Tests;
 
-
-use ArieTimmerman\Laravel\SCIMServer\ServiceProvider;
-use Illuminate\Foundation\Testing\RefreshDatabase;
-
-class BasicTest extends BaseTest
+class BasicTest extends TestCase
 {
     public function testGet()
     {

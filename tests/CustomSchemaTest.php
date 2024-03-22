@@ -24,10 +24,8 @@ class CustomSCIMConfig extends SCIMConfig
     }
 }
 
-class CustomSchemaTest extends BaseTest
+class CustomSchemaTest extends TestCase
 {
-    
-
     protected function setUp(): void
     {
         parent::setUp();

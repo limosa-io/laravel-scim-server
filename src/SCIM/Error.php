@@ -19,7 +19,7 @@ class Error implements Jsonable
                 "schemas" => ['urn:ietf:params:scim:api:messages:2.0:Error'],
                 "detail" => $this->detail,
                 "status" => $this->status,
-                "scimType" => ($this->status == 400 ? $this->scimType : null),
+                "scimType" => ($this->status == 400 ? $this->scimType : ($this->status == 409 ? 'uniqueness' : null)),
 
                 // not defined in SCIM 2.0
                 'errors' => $this->errors

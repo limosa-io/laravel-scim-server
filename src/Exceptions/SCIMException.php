@@ -12,7 +12,7 @@ class SCIMException extends Exception
 
     protected $errors = [];
     
-    public function __construct($message, $code)
+    public function __construct($message, $code = 404)
     {
         parent::__construct($message, $code);
         $this->setCode($code);

@@ -22,7 +22,7 @@ class SchemaController extends Controller
         $schemas = [];
 
         foreach ($config as $key => $value) {
-            if ($key != 'Users' && $key != 'Group') {
+            if ($key != 'Users' && $key != 'Groups') {
                 continue;
             }
 

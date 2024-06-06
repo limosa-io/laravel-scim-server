@@ -6,14 +6,14 @@ class BasicTest extends TestCase
 {
     public function testGet()
     {
-        $response = $this->get('/scim/v2/Users');
+        $response = $this->get('/scim/v2/Users', $this->headers);
 
         $response->assertStatus(200);
     }
 
     public function testPut()
     {
-        $response = $this->put('/scim/v2/Users/1', [
+        $response = $this->putJson('/scim/v2/Users/1', [
             "id" => 1,
             "schemas" => [
                 "urn:ietf:params:scim:schemas:core:2.0:User",
@@ -28,7 +28,7 @@ class BasicTest extends TestCase
                     ]
                 ]
             ]
-        ]);
+        ], $this->headers);
 
         $response->assertStatus(200);
 
@@ -41,7 +41,7 @@ class BasicTest extends TestCase
 
     public function testPatch()
     {
-        $response = $this->patch('/scim/v2/Users/2', [
+        $response = $this->patchJson('/scim/v2/Users/2', [
             "schemas" => [
                 "urn:ietf:params:scim:api:messages:2.0:PatchOp",
             ],
@@ -57,7 +57,7 @@ class BasicTest extends TestCase
                   ]
                 ]
             ]]
-        ]);
+        ], $this->headers);
 
         $response->assertStatus(200);
 
@@ -69,13 +69,13 @@ class BasicTest extends TestCase
 
     public function testDelete()
     {
-        $response = $this->delete('/scim/v2/Users/1');
+        $response = $this->deleteJson('/scim/v2/Users/1', [], $this->headers);
         $response->assertStatus(204);
     }
 
     public function testPost()
     {
-        $response = $this->post('/scim/v2/Users', [
+        $response = $this->postJson('/scim/v2/Users', [
             "id" => 1,
             "schemas" => [
                 "urn:ietf:params:scim:schemas:core:2.0:User",
@@ -91,7 +91,7 @@ class BasicTest extends TestCase
                     ]
                 ]
             ]
-        ]);
+        ], $this->headers);
 
         $this->assertEquals(
             201,

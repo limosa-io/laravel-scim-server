@@ -10,8 +10,12 @@ class SCIMHeaders
 {
     public function handle(Request $request, Closure $next)
     {
-        if ($request->method() != 'GET' && stripos($request->header('content-type'), 'application/scim+json') === false && stripos($request->header('content-type'), 'application/json') === false && strlen($request->getContent()) > 0) {
-            throw new SCIMException(sprintf('The content-type header should be set to "%s"', 'application/scim+json'));
+        if ($request->method() != 'GET'
+            && strtolower($request->header('content-type') !== 'application/scim+json')
+            && strtolower($request->header('content-type') !== 'application/json')
+            && $request->getPayload()->count()) {
+
+            throw new SCIMException(sprintf('The content-type header should be set to "%s"', 'application/scim+json'), 400);
         }
         
         $response = $next($request);

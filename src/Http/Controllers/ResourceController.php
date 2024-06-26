@@ -27,72 +27,25 @@ class ResourceController extends Controller
         return $pdp->isAllowed($request, $operation, $attributes, $resourceType, $resourceObject, $isMe);
     }
 
-    protected static function replaceKeys(array $input)
-    {
-        $return = array();
-        foreach ($input as $key => $value) {
-            if (strpos($key, '_') > 0) {
-                $key = str_replace('___', '.', $key);
-            }
-
-            if (is_array($value)) {
-                $value = self::replaceKeys($value);
-            }
-
-            $return[$key] = $value;
-        }
-        return $return;
-    }
-
     protected static function validateScim(ResourceType $resourceType, $flattened, ?Model $resourceObject)
     {
-        $objectPreparedForValidation = [];
         $validations = $resourceType->getValidations();
-        $simpleValidations = [];
-
-        /**
-         * Dots have a different meaning in SCIM and in Laravel's validation logic
-         */
-        foreach ($flattened as $key => $value) {
-            $objectPreparedForValidation[preg_replace('/([^*])\.([^*])/', '${1}___${2}', $key)] = $value;
-        }
 
         foreach ($validations as $key => $value) {
-            $simpleValidations[
-                preg_replace('/([^*])\.([^*])/', '${1}___${2}', $key)
-                ] = !is_string($value) ? $value : ($resourceObject != null ? preg_replace('/,\[OBJECT_ID\]/', ',' . $resourceObject->id, $value) : str_replace(',[OBJECT_ID]', '', $value));
+            if (is_string($value)) {
+                $validations[$key] = $resourceObject ? preg_replace('/,\[OBJECT_ID\]/', ',' . $resourceObject->id, $value) : str_replace(',[OBJECT_ID]', '', $value);
+            }
         }
 
-        $validator = Validator::make($objectPreparedForValidation, $simpleValidations);
+        $validator = Validator::make($flattened, $validations);
 
         if ($validator->fails()) {
             $e = $validator->errors();
-            $e = self::replaceKeys($e->toArray());
 
             throw (new SCIMException('Invalid data!'))->setCode(400)->setScimType('invalidSyntax')->setErrors($e);
         }
 
-        $validTemp = $validator->validate();
-        $valid = [];
-
-        $keys = collect($simpleValidations)->keys()->map(
-            function ($rule) {
-                return explode('.', $rule)[0];
-            }
-        )->unique()->toArray();
-
-        foreach ($keys as $key) {
-            if (array_key_exists($key, $validTemp)) {
-                $valid[$key] = $validTemp[$key];
-            }
-        }
-
-        $flattened = [];
-        foreach ($valid as $key => $value) {
-            $flattened[str_replace(['___'], ['.'], $key)] = $value;
-        }
-
-        return $flattened;
+        return $validator->validate();
     }
 
     public static function createFromSCIM($resourceType, $input, PolicyDecisionPoint $pdp = null, Request $request = null, $allowAlways = false, $isMe = false)

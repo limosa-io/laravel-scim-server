@@ -34,13 +34,13 @@ class SCIMConfig
             
             'validations' => [
     
-                'urn:ietf:params:scim:schemas:core:2.0:User:userName' => 'required',
-                'urn:ietf:params:scim:schemas:core:2.0:User:password' => 'nullable',
-                'urn:ietf:params:scim:schemas:core:2.0:User:active' => 'boolean',
-                'urn:ietf:params:scim:schemas:core:2.0:User:emails' => 'required|array',
-                'urn:ietf:params:scim:schemas:core:2.0:User:emails.*.value' => 'required|email',
-                'urn:ietf:params:scim:schemas:core:2.0:User:roles' => 'nullable|array',
-                'urn:ietf:params:scim:schemas:core:2.0:User:roles.*.value' => 'required',
+                'urn:ietf:params:scim:schemas:core:2\.0:User:userName' => 'required',
+                'urn:ietf:params:scim:schemas:core:2\.0:User:password' => 'nullable',
+                'urn:ietf:params:scim:schemas:core:2\.0:User:active' => 'boolean',
+                'urn:ietf:params:scim:schemas:core:2\.0:User:emails' => 'required|array',
+                'urn:ietf:params:scim:schemas:core:2\.0:User:emails.*.value' => 'required|email',
+                'urn:ietf:params:scim:schemas:core:2\.0:User:roles' => 'nullable|array',
+                'urn:ietf:params:scim:schemas:core:2\.0:User:roles.*.value' => 'required',
     
             ],
     

@@ -14,7 +14,7 @@ class CustomSCIMConfig extends SCIMConfig
         $config = parent::getUserConfig();
 
         $config['schemas'][] = 'urn:ietf:params:scim:schemas:extension:enterprise:2.0:User';
-        $config['validations']['urn:ietf:params:scim:schemas:extension:enterprise:2.0:User:employeeNumber'] = 'nullable';
+        $config['validations']['urn:ietf:params:scim:schemas:extension:enterprise:2\.0:User:employeeNumber'] = 'nullable';
 
         $config['mapping']['urn:ietf:params:scim:schemas:extension:enterprise:2.0:User'] = [
             'employeeNumber' => AttributeMapping::eloquent("employeeNumber")

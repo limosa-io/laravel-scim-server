@@ -11,9 +11,9 @@
     ],
     "require": {
 		"php": "^7.0|^8.0",
-        "illuminate/database": "^6.0|^7.0|^8.0|^9.0|^10.0|^11.0",
-        "illuminate/support": "^6.0|^7.0|^8.0|^9.0|^10.0|^11.0",
-        "illuminate/console": "^6.0|^7.0|^8.0|^9.0|^10.0|^11.0",
+        "illuminate/database": "^7.0|^8.0|^9.0|^10.0|^11.0",
+        "illuminate/support": "^7.0|^8.0|^9.0|^10.0|^11.0",
+        "illuminate/console": "^7.0|^8.0|^9.0|^10.0|^11.0",
         "tmilos/scim-schema": "^0.1.0",
         "tmilos/scim-filter-parser": "^1.3"
     },

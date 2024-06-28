@@ -21,7 +21,7 @@ class ListResponse implements Jsonable
         $this->resourceObjects = $resourceObjects;
         $this->startIndex = $startIndex;
         $this->totalResults = $totalResults;
-        $this->attribtues = $attributes;
+        $this->attributes = $attributes;
         $this->excludedAttributes = $excludedAttributes;
     }
 
@@ -29,7 +29,7 @@ class ListResponse implements Jsonable
     {
         return json_encode($this->toSCIMArray(), $options);
     }
-    
+
     public function toSCIMArray()
     {
         return [

@@ -73,29 +73,13 @@ class Helper
 
             $uses = $mapping->getEloquentAttributes();
 
-            $result = $mapping->read($object);
+            $result = null;
+            if ($mapping->shouldReturn($object)) {
+                $result = $mapping->read($object);
+            }
 
             foreach ($uses as $key) {
                 unset($userArray[$key]);
-            }
-
-            if (!empty($userArray) && (($resourceType->getConfiguration()['map_unmapped']) ?? false)) {
-                $namespace = $resourceType->getConfiguration()['unmapped_namespace'] ?? null;
-
-                $parent = null;
-
-                if ($namespace != null) {
-                    if (!isset($result[$namespace])) {
-                        $result[$namespace] = [];
-                    }
-                    $parent = &$result[$namespace];
-                } else {
-                    $parent = &$result;
-                }
-
-                foreach ($userArray as $key => $value) {
-                    $parent[$key] = AttributeMapping::eloquentAttributeToString($value);
-                }
             }
 
             if (config('scim.omit_main_schema_in_return')) {
@@ -106,7 +90,6 @@ class Helper
 
                 $result = array_merge($result, $main);
             }
-            
         } else {
             $result = $userArray;
         }
@@ -218,8 +201,8 @@ class Helper
      * - emails.0.value
      * - schemas.0
      *
-     * @param  unknown $name
-     * @param  unknown $scimAttribute
+     * @param  string $name
+     * @param  string $scimAttribute
      * @return AttributeMapping
      */
     public static function getAttributeConfig(ResourceType $resourceType, $scimAttribute)

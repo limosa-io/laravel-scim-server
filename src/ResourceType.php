@@ -23,12 +23,7 @@ class ResourceType
 
     public function getMapping()
     {
-        $mapping = $this->configuration['mapping'];
-
-        if (!isset($mapping['schema'])) {
-            $mapping['schemas'] = AttributeMapping::constant($this->configuration['schema'])->ignoreWrite();
-        }
-        return AttributeMapping::object($mapping ?? [])->setDefaultSchema($this->configuration['schema']);
+        return $this->configuration['map'];
     }
 
     public function getName()

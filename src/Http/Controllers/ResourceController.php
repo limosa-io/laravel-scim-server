@@ -15,6 +15,7 @@ use ArieTimmerman\Laravel\SCIMServer\Events\Get;
 use ArieTimmerman\Laravel\SCIMServer\Events\Create;
 use ArieTimmerman\Laravel\SCIMServer\Events\Replace;
 use ArieTimmerman\Laravel\SCIMServer\Events\Patch;
+use ArieTimmerman\Laravel\SCIMServer\Parser\Parser as ParserParser;
 use ArieTimmerman\Laravel\SCIMServer\SCIM\Schema;
 use ArieTimmerman\Laravel\SCIMServer\PolicyDecisionPoint;
 use Illuminate\Database\QueryException;
@@ -63,24 +64,8 @@ class ResourceController extends Controller
 
         $resourceObject = $resourceType->getFactory()();
 
-        $allAttributeConfigs = [];
-
-        foreach ($flattened as $scimAttribute => $value) {
-            $attributeConfig = Helper::getAttributeConfigOrFail($resourceType, $scimAttribute);
-            $attributeConfig->add($value, $resourceObject);
-            $allAttributeConfigs[] = $attributeConfig;
-        }
-
-        try {
-            $resourceObject->save();
-        } catch (QueryException $exception) {
-            throw $exception;
-            // throw new SCIMException('Could not save this');
-        }
-
-        foreach ($allAttributeConfigs as &$attributeConfig) {
-            $attributeConfig->writeAfter($flattened[$attributeConfig->getFullKey()], $resourceObject);
-        }
+        $resourceType->getMapping()->replace($input, $resourceObject);
+        $resourceObject->save();
 
         return $resourceObject;
     }
@@ -133,56 +118,25 @@ class ResourceController extends Controller
     public function replace(Request $request, PolicyDecisionPoint $pdp, ResourceType $resourceType, Model $resourceObject, $isMe = false)
     {
         $originalRaw = Helper::objectToSCIMArray($resourceObject, $resourceType);
-        $original = Helper::flatten($originalRaw, $resourceType->getSchema());
+        // $original = Helper::flatten($originalRaw, $resourceType->getSchema());
 
         //TODO: get flattend from $resourceObject
-        $flattened = Helper::flatten($request->input(), $resourceType->getSchema());
-        $flattened = $this->validateScim($resourceType, $flattened, $resourceObject);
+        // $flattened = Helper::flatten($request->input(), $resourceType->getSchema());
+        // $flattened = $this->validateScim($resourceType, $flattened, $resourceObject);
 
-        $updated = [];
+        // $updated = [];
 
-        foreach ($flattened as $key => $value) {
-            if (!isset($original[$key]) || json_encode($original[$key]) != json_encode($flattened[$key])) {
-                $updated[$key] = $flattened[$key];
-            }
-        }
+        // foreach ($flattened as $key => $value) {
+        //     if (!isset($original[$key]) || json_encode($original[$key]) != json_encode($flattened[$key])) {
+        //         $updated[$key] = $flattened[$key];
+        //     }
+        // }
 
-        if (!self::isAllowed($pdp, $request, PolicyDecisionPoint::OPERATION_PUT, $updated, $resourceType, null)) {
-            throw new SCIMException('This is not allowed');
-        }
+        // if (!self::isAllowed($pdp, $request, PolicyDecisionPoint::OPERATION_PUT, $updated, $resourceType, null)) {
+        //     throw new SCIMException('This is not allowed');
+        // }
 
-        //Keep an array of written values
-        $uses = [];
-
-        //Write all values
-        foreach ($flattened as $scimAttribute => $value) {
-            $attributeConfig = Helper::getAttributeConfigOrFail($resourceType, $scimAttribute);
-
-            if ($attributeConfig->isWriteSupported()) {
-                $attributeConfig->replace($value, $resourceObject);
-            }
-
-            $uses[] = $attributeConfig;
-        }
-
-        //Find values that have not been written in order to empty these.
-        $allAttributeConfigs = $resourceType->getAllAttributeConfigs();
-
-        foreach ($uses as $use) {
-            foreach ($allAttributeConfigs as $key => $option) {
-                if ($use->getFullKey() == $option->getFullKey()) {
-                    unset($allAttributeConfigs[$key]);
-                }
-            }
-        }
-
-        foreach ($allAttributeConfigs as $attributeConfig) {
-            // Do not write write-only attribtues (such as passwords)
-            if ($attributeConfig->isReadSupported() && $attributeConfig->isWriteSupported()) {
-                //   $attributeConfig->remove($resourceObject);
-            }
-        }
-
+        $resourceType->getMapping()->replace($request->input(), $resourceObject, null, true);
         $resourceObject->save();
 
         event(new Replace($resourceObject, $resourceType, $isMe, $request->input(), $originalRaw));
@@ -208,27 +162,12 @@ class ResourceController extends Controller
         foreach ($input['Operations'] as $operation) {
             switch (strtolower($operation['op'])) {
                 case "add":
-                    if (isset($operation['path'])) {
-                        $attributeConfig = Helper::getAttributeConfigOrFail($resourceType, $operation['path']);
-                        foreach ((array) $operation['value'] as $value) {
-                            $attributeConfig->add($value, $resourceObject);
-                        }
-                    } else {
-                        foreach ((array) $operation['value'] as $key => $value) {
-                            $attributeConfig = Helper::getAttributeConfigOrFail($resourceType, $key);
-
-                            foreach ((array) $value as $v) {
-                                $attributeConfig->add($v, $resourceObject);
-                            }
-                        }
-                    }
-
+                    $resourceType->getMapping()->add($operation['value'], $resourceObject, $operation['path']);
                     break;
 
                 case "remove":
                     if (isset($operation['path'])) {
-                        $attributeConfig = Helper::getAttributeConfigOrFail($resourceType, $operation['path']);
-                        $attributeConfig->remove($operation['value'] ?? null, $resourceObject);
+                        $resourceType->getMapping()->remove($operation['value'], $resourceObject, $operation['path']);
                     } else {
                         throw new SCIMException('You MUST provide a "Path"');
                     }
@@ -237,21 +176,7 @@ class ResourceController extends Controller
                     break;
 
                 case "replace":
-                    if (isset($operation['path'])) {
-                        // Removed this check. A replace with a null/empty value should be valid.
-                        // if(!isset($operation['value'])){
-                        //     throw new SCIMException('Please provide a "value"',400);
-                        // }
-
-                        $attributeConfig = Helper::getAttributeConfigOrFail($resourceType, $operation['path']);
-                        $attributeConfig->replace($operation['value'], $resourceObject);
-                    } else {
-                        foreach ((array) $operation['value'] as $key => $value) {
-                            $attributeConfig = Helper::getAttributeConfigOrFail($resourceType, $key);
-                            $attributeConfig->replace($value, $resourceObject);
-                        }
-                    }
-
+                    $resourceType->getMapping()->patch('replace', $operation['value'], $resourceObject, ParserParser::parse($operation['path'] ?? null));
                     break;
 
                 default:

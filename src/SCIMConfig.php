@@ -5,10 +5,25 @@ namespace ArieTimmerman\Laravel\SCIMServer;
 use ArieTimmerman\Laravel\SCIMServer\SCIM\Schema;
 use ArieTimmerman\Laravel\SCIMServer\Helper;
 use ArieTimmerman\Laravel\SCIMServer\Attribute\Attribute;
+use ArieTimmerman\Laravel\SCIMServer\Attribute\Collection;
+use ArieTimmerman\Laravel\SCIMServer\Attribute\Complex;
+use ArieTimmerman\Laravel\SCIMServer\Attribute\Constant;
+use ArieTimmerman\Laravel\SCIMServer\Attribute\Eloquent;
+use Illuminate\Database\Eloquent\Model;
 
 function a($name = null, $schemaNode = false): Attribute
 {
     return new Attribute($name, $schemaNode);
+}
+
+function complex($name = null, $schemaNode = false): Complex
+{
+    return new Complex($name, $schemaNode);
+}
+
+function eloquent($name, $attribute = null, $schemaNode = false): Attribute
+{
+    return new Eloquent($name, $attribute, $schemaNode);
 }
 
 
@@ -57,20 +72,28 @@ class SCIMConfig
             'withRelations' => [],
             'description' => 'User Account',
 
-            'map' => a()->object(
-                a('schemas')->constant([
+            'map' => complex()->withSubAttributes(
+                new class ('schemas', [
                     "urn:ietf:params:scim:schemas:core:2.0:User",
-                ]),
-                a('id')->setRead(
-                    function (&$object) {
+                ]) extends Constant {
+                    public function replace($value, &$object, $path = null)
+                    {
+                        // do nothing
+                    }
+                },
+                (new class ('id') extends Attribute {
+                    public function read(&$object)
+                    {
                         return (string)$object->id;
                     }
+                }
                 )->disableWrite(),
-                a('meta')->object(
-                    a('created')->eloquent()->disableWrite(),
-                    a('lastModified')->eloquent()->disableWrite(),
-                    a('location')->setRead(
-                        function ($object) {
+                complex('meta')->withSubAttributes(
+                    eloquent('created')->disableWrite(),
+                    eloquent('lastModified')->disableWrite(),
+                    (new class ('location') extends Eloquent {
+                        public function read(&$object)
+                        {
                             return route(
                                 'scim.resource',
                                 [
@@ -79,27 +102,40 @@ class SCIMConfig
                                 ]
                             );
                         }
-                    )->disableWrite(),
-                    a('resourceType')->constant("User")
+                    })->disableWrite(),
+                    new Constant('resourceType', 'User')
                 ),
-                a(Schema::SCHEMA_USER, true)->object(
-                    a('userName')->eloquent('name')->ensure('required'),
-                    a('name')->object(
-                        a('formatted')->eloquent('name')
-                    ),
-                    a('password')->eloquent()->disableRead()->ensure('nullable'),
-                    a('emails')->ensure('required', 'array')->collection(
-                        a()->object(
-                            a('value')->eloquent('email')->ensure('required', 'email'),
-                            a('type')->constant('other')->ignoreWrite(),
-                            a('primary')->constant(true)->ignoreWrite()
-                        ),
-                        a()->object(
-                            a('value')->eloquent('email'),
-                            a('type')->constant('work')->ignoreWrite(),
-                            a('primary')->constant(true)->ignoreWrite()
-                        )
-                    )
+                complex(Schema::SCHEMA_USER, true)->withSubAttributes(
+                    eloquent('userName', 'name')->ensure('required'),
+                    complex('name')->withSubAttributes(eloquent('formatted', 'name')),
+                    eloquent('password')->disableRead()->ensure('nullable'),
+                    (new class ('emails') extends Complex {
+                        public function read(&$object)
+                        {
+                            return collect([$object->email])->map(function ($email) {
+                                return [
+                                    'value' => $email,
+                                    'type' => 'other',
+                                    'primary' => true
+                                ];
+                            })->toArray();
+                        }
+                        public function add($value, Model &$object)
+                        {
+                            $object->email = $value[0]['value'];
+                        }
+                        public function replace($value, Model &$object, $path = null, $removeIfNotSet = false)
+                        {
+                            $object->email = $value[0]['value'];
+                        }
+                    })->withSubAttributes(
+                        eloquent('value', 'email')->ensure('required', 'email'),
+                        new Constant('type', 'other'),
+                        new Constant('primary', true)
+                    )->ensure('required', 'array')
+                ),
+                complex('urn:ietf:params:scim:schemas:extension:enterprise:2.0:User', true)->withSubAttributes(
+                    eloquent('employeeNumber')->ensure('nullable')
                 )
             ),
         ];

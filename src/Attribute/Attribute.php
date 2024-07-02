@@ -3,9 +3,12 @@
 namespace ArieTimmerman\Laravel\SCIMServer\Attribute;
 
 use ArieTimmerman\Laravel\SCIMServer\Exceptions\SCIMException;
+use ArieTimmerman\Laravel\SCIMServer\Parser\Path;
 use ArieTimmerman\Laravel\SCIMServer\SCIM\Schema;
+use Illuminate\Database\Eloquent\Model;
 use Tmilos\ScimFilterParser\Ast\AttributePath;
 use Tmilos\ScimFilterParser\Ast\ComparisonExpression;
+use Tmilos\ScimSchema\Model\Resource;
 
 class Attribute
 {
@@ -32,10 +35,9 @@ class Attribute
     public $filter;
     public $sortAttribute;
 
-    /**
-     * @var Attribute[]
-     */
-    public $subAttributes = [];
+    public $dirty = false;
+
+
 
     public function __construct($name = null, $schemaNode = false)
     {
@@ -43,12 +45,6 @@ class Attribute
         $this->schemaNode = $schemaNode;
     }
 
-    public function getSubNode($key)
-    {
-        return collect($this->subAttributes)->first(function ($element) use ($key) {
-            return $element->name == $key;
-        });
-    }
 
     public function ensure(...$validations)
     {
@@ -82,102 +78,15 @@ class Attribute
         return true;
     }
 
-    public function eloquent(string $attribute = null)
-    {
-        if ($attribute == null) {
-            $attribute = $this->name;
-        }
-
-        $this->eloquentAttributes = [$attribute];
-
-        $this->setRead(function ($object) use ($attribute) {
-
-            $value = $object->{$attribute};
-
-            if ($value instanceof \Carbon\Carbon) {
-                $value = $value->format('c');
-            }
-
-            return $value;
-        })->setAdd(
-            function ($value, &$object) use ($attribute) {
-                $object->{$attribute} = $value;
-            }
-        )->setReplace(
-            function ($value, &$object) use ($attribute) {
-                $object->{$attribute} = $value;
-            }
-        )->setSortAttribute($attribute);
-
-        return $this;
-    }
-
-    public function constant($text)
-    {
-        return $this->disableWrite()->setRead(
-            function (&$object) use ($text) {
-                return $text;
-            }
-        );
-    }
-
     public function setParent($parent)
     {
         $this->parent = $parent;
         return $this;
     }
 
-    public function object(...$attributes)
-    {
-        $this->subAttributes = $attributes;
-
-        foreach ($attributes as $attribute) {
-            $attribute->setParent($this);
-        }
-
-        $this->setRead(function (&$object) {
-            $result = [];
-            foreach ($this->subAttributes as $attribute) {
-                $result[$attribute->name] = $attribute->read($object);
-            }
-            return $result;
-        });
-
-        return $this;
-    }
-
-    public function collection(...$attributes)
-    {
-        $this->subAttributes = $attributes;
-
-        foreach ($attributes as $attribute) {
-            $attribute->setParent($this);
-        }
-
-        $this->setRead(function (&$object) {
-            $result = [];
-            foreach ($this->subAttributes as $attribute) {
-                $result[] = $attribute->read($object);
-            }
-            return $result;
-        });
-
-        return $this;
-    }
-
     public function read(&$object)
     {
-        if ($this->read) {
-            return ($this->read)($object);
-        } else {
-            throw new SCIMException(sprintf('Read is not implemented for "%s"', $this->getFullKey()));
-        };
-    }
-
-    public function setRead($read)
-    {
-        $this->read = $read;
-        return $this;
+        throw new SCIMException(sprintf('Read is not implemented for "%s"', $this->getFullKey()));
     }
 
     public function disableWrite(): Attribute
@@ -221,7 +130,7 @@ class Attribute
 
     public function getFullKey()
     {
-        if ($this->parent != null) {
+        if ($this->parent != null && $this->parent->name != null) {
             $seperator = $this->parent->schemaNode ? ':' : '.';
             return $this->parent->getFullKey() . $seperator . $this->name;
         } else {
@@ -244,7 +153,6 @@ class Attribute
         }
     }
 
-    // TODO: only invoked on the highest level???
     public function getNode(?AttributePath $attributePath)
     {
         if (empty($attributePath)) {
@@ -252,7 +160,7 @@ class Attribute
         }
 
         //The first schema should be the default one
-        $schema = $attributePath->schema ?? $this->getDefaultSchema()[0];
+        $schema = $attributePath->schema ?? $this->getDefaultSchema();
 
         if (!empty($schema) && !empty($this->getSchema()) && $this->getSchema() != $schema) {
             throw (new SCIMException(sprintf('Trying to get attribute for schema "%s". But schema is already "%s"', $attributePath->schema, $this->getSchema())))->setCode(500)->setScimType('noTarget');
@@ -403,54 +311,24 @@ class Attribute
         }
     }
 
-    public function writeAfterIgnore($value, &$object)
+    public function add($value, Model &$object)
     {
+        new SCIMException(sprintf('Write is not implemented for "%s"', $this->getFullKey()));
     }
 
-    public function add($value, &$object)
+    public function replace($value, Model &$object, Path $path = null)
     {
-        return $this->add ? ($this->add)($value, $object) : new SCIMException(sprintf('Write is not implemented for "%s"', $this->getFullKey()));
+        throw new SCIMException(sprintf('Replace is not implemented for "%s"', $this->getFullKey()));
     }
 
-    public function replace($value, &$object)
+    public function patch($operation, $value, Model &$object, Path $path = null)
     {
-        $current = $this->read($object);
-
-        //TODO: Really implement replace ...???
-        return $this->replace ? ($this->replace)($value, $object) : throw new SCIMException(sprintf('Replace is not implemented for "%s"', $this->getFullKey()));
+        throw new SCIMException(sprintf('Patch is not implemented for "%s"', $this->getFullKey()));
     }
 
-    public function remove($value, &$object)
+    public function remove($value, Model &$object, string $path = null)
     {
-
-        //TODO: implement remove for multi valued attributes
-        return $this->remove ? ($this->remove)($value, $object) : null;
-    }
-
-    public function writeAfter($value, &$object)
-    {
-        return $this->writeAfter ? ($this->writeAfter)($value, $object) : $this->writeAfterIgnore($value, $object);
-    }
-
-    public function setAdd($write)
-    {
-        $this->add = $write;
-
-        return $this;
-    }
-
-    public function setRemove($write)
-    {
-        $this->remove = $write;
-
-        return $this;
-    }
-
-    public function setReplace($replace)
-    {
-        $this->replace = $replace;
-
-        return $this;
+        throw new SCIMException(sprintf('Remove is not implemented for "%s"', $this->getFullKey()));
     }
 
     public function setSortAttribute($attribute)
@@ -467,5 +345,10 @@ class Attribute
         }
 
         return $this->sortAttribute;
+    }
+
+    public function isDirty()
+    {
+        return $this->dirty;
     }
 }

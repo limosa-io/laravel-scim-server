@@ -27,6 +27,10 @@ class Constant extends Attribute
 
     public function replace($value, &$object, $path = null)
     {
-        throw (new SCIMException(sprintf('Write to "%s" is not supported', $this->getFullKey())))->setCode(500)->setScimType('mutability');
+        if (json_encode($value) != json_encode($this->read($object))) {
+            throw (new SCIMException(sprintf('Write to "%s" is not supported, tried to change "%s" to "%s"', $this->getFullKey(), json_encode($this->read($object)), json_encode($value))))->setCode(500)->setScimType('mutability');
+        }
+
+        $this->dirty = true;
     }
 }

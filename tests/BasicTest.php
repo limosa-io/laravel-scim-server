@@ -8,13 +8,15 @@ class BasicTest extends TestCase
     {
         $response = $this->get('/scim/v2/Users');
 
+        var_dump($response->baseResponse->content());
+
         $response->assertStatus(200);
     }
 
     public function testPut()
     {
         $response = $this->put('/scim/v2/Users/1', [
-            "id" => 1,
+            "id" => "1",
             "schemas" => [
                 "urn:ietf:params:scim:schemas:core:2.0:User",
             ],
@@ -47,18 +49,18 @@ class BasicTest extends TestCase
             ],
             "Operations" => [[
                 "op" => "replace",
+                "path" => "emails",
                 "value" => [
-                  "emails" => [
                     [
                       "value" => "something@example.com",
                       "type" => "work",
                       "primary" => true
                     ]
-                  ]
                 ]
             ]]
         ]);
 
+        var_dump($response->baseResponse->content());
         $response->assertStatus(200);
 
         $json = $response->json();
@@ -76,7 +78,7 @@ class BasicTest extends TestCase
     public function testPost()
     {
         $response = $this->post('/scim/v2/Users', [
-            "id" => 1,
+            // "id" => 1,
             "schemas" => [
                 "urn:ietf:params:scim:schemas:core:2.0:User",
             ],

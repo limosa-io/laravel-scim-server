@@ -9,6 +9,7 @@ use ArieTimmerman\Laravel\SCIMServer\Attribute\Collection;
 use ArieTimmerman\Laravel\SCIMServer\Attribute\Complex;
 use ArieTimmerman\Laravel\SCIMServer\Attribute\Constant;
 use ArieTimmerman\Laravel\SCIMServer\Attribute\Eloquent;
+use ArieTimmerman\Laravel\SCIMServer\Exceptions\SCIMException;
 use Illuminate\Database\Eloquent\Model;
 
 function a($name = null, $schemaNode = false): Attribute
@@ -79,18 +80,19 @@ class SCIMConfig
                     public function replace($value, &$object, $path = null)
                     {
                         // do nothing
+                        $this->dirty = true;
                     }
                 },
-                (new class ('id') extends Attribute {
+                (new class ('id', null) extends Constant {
                     public function read(&$object)
                     {
                         return (string)$object->id;
                     }
                 }
-                )->disableWrite(),
+                ),
                 complex('meta')->withSubAttributes(
-                    eloquent('created')->disableWrite(),
-                    eloquent('lastModified')->disableWrite(),
+                    eloquent('created'),
+                    eloquent('lastModified'),
                     (new class ('location') extends Eloquent {
                         public function read(&$object)
                         {
@@ -102,13 +104,13 @@ class SCIMConfig
                                 ]
                             );
                         }
-                    })->disableWrite(),
+                    }),
                     new Constant('resourceType', 'User')
                 ),
                 complex(Schema::SCHEMA_USER, true)->withSubAttributes(
                     eloquent('userName', 'name')->ensure('required'),
                     complex('name')->withSubAttributes(eloquent('formatted', 'name')),
-                    eloquent('password')->disableRead()->ensure('nullable'),
+                    eloquent('password')->ensure('nullable'),
                     (new class ('emails') extends Complex {
                         public function read(&$object)
                         {

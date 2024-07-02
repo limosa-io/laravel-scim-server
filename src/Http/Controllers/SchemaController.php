@@ -13,6 +13,8 @@ class SchemaController extends Controller
 
     public function getSchemas()
     {
+
+        $this->generateSchema();
         if ($this->schemas != null) {
             return $this->schemas;
         }
@@ -26,16 +28,19 @@ class SchemaController extends Controller
                 continue;
             }
 
-            // TODO: FIX THIS. Schema is now an array but should be a string
-            $schema = (new SchemaBuilderV2())->get($value['schema'][0]);
 
-            if ($schema == null) {
-                throw new SCIMException("Schema not found");
+            foreach ($value['schema'] as $s) {
+                $schema = (new SchemaBuilderV2())->get($s);
+
+                if ($schema == null) {
+                    continue;
+                    throw new SCIMException("Schema not found");
+                }
+
+                $schema->getMeta()->setLocation(route('scim.schemas', ['id' => $schema->getId()]));
+
+                $schemas[] = $schema->serializeObject();
             }
-
-            $schema->getMeta()->setLocation(route('scim.schemas', ['id' => $schema->getId()]));
-
-            $schemas[] = $schema->serializeObject();
         }
 
         $this->schemas = collect($schemas);
@@ -61,5 +66,27 @@ class SchemaController extends Controller
     public function index()
     {
         return new ListResponse($this->getSchemas(), 1, $this->getSchemas()->count());
+    }
+
+    public function generateSchemaPart($value)
+    {
+    }
+
+    public function generateSchema()
+    {
+        $config = resolve(SCIMConfig::class)->getConfig();
+
+        $schemas = [];
+
+        foreach ($config as $key => $value) {
+            foreach ($value['mapping'] as $k => $v) {
+                // $key contains :
+                if (strpos($k, ':') !== false) {
+                    foreach ($v as $attribute => $value) {
+                        var_dump($attribute);
+                    }
+                }
+            }
+        }
     }
 }

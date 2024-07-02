@@ -49,6 +49,8 @@ class Complex extends Attribute
 
     public function patch($operation, $value, Model &$object, Path $path = null, $removeIfNotSet = false)
     {
+        $this->dirty = true;
+        
         if ($path != null && $path->isNotEmpty()) {
             $attributeNames = $path->getValuePathAttributes();
 
@@ -107,6 +109,7 @@ class Complex extends Attribute
     public function replace($value, Model &$object, Path $path = null, $removeIfNotSet = false)
     {
         $match = false;
+        $this->dirty = true;
 
         // if there is no path, keys of value are attribute names
         foreach ($value as $key => $v) {

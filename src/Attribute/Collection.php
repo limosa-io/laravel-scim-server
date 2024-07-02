@@ -3,19 +3,31 @@
 namespace ArieTimmerman\Laravel\SCIMServer\Attribute;
 
 use ArieTimmerman\Laravel\SCIMServer\Exceptions\SCIMException;
+use Illuminate\Database\Eloquent\Model;
+use Tmilos\ScimSchema\Model\Resource;
 
-class Collection extends AttributeMapping
+class Collection extends Attribute
 {
-    protected $collection = null;
+    public $collection = [];
 
-    public function setStaticCollection($collection)
+    public function __construct($name = null, $collection = [])
     {
+        $this->name = $name;
         $this->collection = $collection;
-
-        return $this;
     }
 
-    public function add($value, &$object)
+    public function read(&$object)
+    {
+        $result = [];
+
+        foreach ($this->collection as $attribute) {
+            $result[] = $attribute->read($object);
+        }
+
+        return $result;
+    }
+
+    public function add($value, Model &$object)
     {
 
         //only for creation requests
@@ -36,29 +48,20 @@ class Collection extends AttributeMapping
         }
     }
 
-    public function remove($value, &$object)
+    public function remove($value, Model &$object)
     {
-        // throw (new SCIMException('Remove is not implemented for ' . $this->getFullKey()))->setCode(501);
-
         foreach ($this->collection as $c) {
-            foreach ($c as $k => $v) {
-                $mapping = AttributeMapping::ensureAttributeMappingObject($v);
-
-                if ($mapping->isWriteSupported()) {
-                    $mapping->remove($value, $object);
-                }
+            if ($c->isWriteSupported()) {
+                $c->remove($value, $object);
             }
         }
     }
 
-    public function replace($value, &$object)
+    public function replace($value, Model &$object)
     {
         $this->remove($value, $object);
 
         $this->add($value, $object);
-
-        // var_dump(json_encode($object));exit;
-        // throw (new SCIMException('Replace is not implemented for ' . $this->getFullKey()))->setCode(501);
     }
 
     public function getEloquentAttributes()
@@ -66,7 +69,7 @@ class Collection extends AttributeMapping
         $result = $this->eloquentAttributes;
 
         foreach ($this->collection as $value) {
-            $result = array_merge($result, AttributeMapping::ensureAttributeMappingObject($value)->getEloquentAttributes());
+            $result = array_merge($result, $value->getEloquentAttributes());
         }
 
         return $result;
@@ -175,7 +178,6 @@ class Collection extends AttributeMapping
             default:
                 die("Not supported!!");
                     break;
-
         }
 
         foreach ($collectionOriginal->keys()->all() as $key) {

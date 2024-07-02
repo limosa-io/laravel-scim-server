@@ -2,6 +2,7 @@
 
 namespace ArieTimmerman\Laravel\SCIMServer;
 
+use ArieTimmerman\Laravel\SCIMServer\Attribute\Attribute;
 use Illuminate\Support\Arr;
 use ArieTimmerman\Laravel\SCIMServer\Attribute\AttributeMapping;
 
@@ -21,7 +22,7 @@ class ResourceType
         return $this->configuration;
     }
 
-    public function getMapping()
+    public function getMapping(): Attribute
     {
         return $this->configuration['map'];
     }

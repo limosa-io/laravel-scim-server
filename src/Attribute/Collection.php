@@ -84,7 +84,7 @@ class Collection extends Attribute
         if (!empty($this->collection) && is_array($this->collection[0]) && array_key_exists($key, $this->collection[0])) {
             $parent = $this;
 
-            return (new CollectionValue())
+            return (new Attribute())
                 ->setEloquentAttributes($this->collection[0][$key]->getEloquentAttributes())
                 ->setKey($key)
                 ->setParent($this)

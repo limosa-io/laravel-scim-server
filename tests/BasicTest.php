@@ -2,15 +2,63 @@
 
 namespace ArieTimmerman\Laravel\SCIMServer\Tests;
 
+use Illuminate\Support\Arr;
+
 class BasicTest extends TestCase
 {
     public function testGet()
     {
         $response = $this->get('/scim/v2/Users');
 
-        var_dump($response->baseResponse->content());
+        $response->assertStatus(200);
+        $response->assertJsonCount(10, 'Resources');
+        $response->assertJson([
+            'totalResults' => 100,
+            'itemsPerPage' => 10,
+            'startIndex' => 1
+        ]);
+    }
+
+    public function testPagination()
+    {
+        $response = $this->get('/scim/v2/Users?startIndex=21&count=20');
 
         $response->assertStatus(200);
+        $response->assertJsonCount(20, 'Resources');
+        $response->assertJson([
+            'totalResults' => 100,
+            'itemsPerPage' => 20,
+            'startIndex' => 21
+        ]);
+    }
+
+    public function testSort()
+    {
+        $response = $this->get('/scim/v2/Users?sortBy=name.formatted');
+
+        $response->assertStatus(200);
+
+        $formattedNames = collect($response->json('Resources') ?? [])
+            ->map(function ($resource) {
+                return $resource['urn:ietf:params:scim:schemas:core:2.0:User']['name']['formatted'] ?? null;
+            })
+            ->filter() // Remove null values
+            ->values() // Re-index the array
+            ->toArray();
+
+        $this->assertEquals(Arr::sort($formattedNames), $formattedNames);
+    }
+
+    public function testFilter(){
+        // First get a username to search for
+        $response = $this->get('/scim/v2/Users?startIndex=30&count=1');
+        $userName = $response->json('Resources')[0]['urn:ietf:params:scim:schemas:core:2.0:User']['userName'];
+
+        // Now search for this username
+        $response = $this->get('/scim/v2/Users?filter=userName eq "'.$userName.'"');
+        $response->assertStatus(200);
+
+        $this->assertEquals(1, count($response->json('Resources')));
     }
 
     public function testPut()
@@ -60,13 +108,33 @@ class BasicTest extends TestCase
             ]]
         ]);
 
-        var_dump($response->baseResponse->content());
         $response->assertStatus(200);
 
         $json = $response->json();
 
         $this->assertArrayHasKey('urn:ietf:params:scim:schemas:core:2.0:User', $json);
         $this->assertEquals('something@example.com', $json['urn:ietf:params:scim:schemas:core:2.0:User']['emails'][0]['value']);
+    }
+
+    public function testPatchUsername()
+    {
+        $response = $this->patch('/scim/v2/Users/4', [
+            "schemas" => [
+                "urn:ietf:params:scim:api:messages:2.0:PatchOp",
+            ],
+            "Operations" => [[
+                "op" => "add",
+                "path" => "userName",
+                "value" => "johndoe@example.com"
+            ]]
+        ]);
+
+        $response->assertStatus(200);
+
+        $json = $response->json();
+
+        $this->assertArrayHasKey('urn:ietf:params:scim:schemas:core:2.0:User', $json);
+        $this->assertEquals('johndoe@example.com', $json['urn:ietf:params:scim:schemas:core:2.0:User']['userName']);
     }
 
     public function testDelete()

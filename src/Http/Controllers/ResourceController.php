@@ -96,7 +96,7 @@ class ResourceController extends Controller
     {
         $resourceObject = $this->createObject($request, $pdp, $resourceType, $isMe);
 
-        return Helper::objectToSCIMCreateResponse($resourceObject, $resourceType);
+        return Helper::objectToSCIMResponse($resourceObject, $resourceType)->setStatusCode(201);
     }
 
     public function show(Request $request, PolicyDecisionPoint $pdp, ResourceType $resourceType, Model $resourceObject)
@@ -162,12 +162,12 @@ class ResourceController extends Controller
         foreach ($input['Operations'] as $operation) {
             switch (strtolower($operation['op'])) {
                 case "add":
-                    $resourceType->getMapping()->add($operation['value'], $resourceObject, $operation['path']);
+                    $resourceType->getMapping()->patch('add', $operation['value'], $resourceObject, ParserParser::parse($operation['path'] ?? null));
                     break;
 
                 case "remove":
                     if (isset($operation['path'])) {
-                        $resourceType->getMapping()->remove($operation['value'], $resourceObject, $operation['path']);
+                        $resourceType->getMapping()->patch('remove', $operation['value'], $resourceObject, ParserParser::parse($operation['path'] ?? null));
                     } else {
                         throw new SCIMException('You MUST provide a "Path"');
                     }
@@ -227,7 +227,7 @@ class ResourceController extends Controller
         $sortBy = null;
 
         if ($request->input('sortBy')) {
-            $sortBy = Helper::getEloquentSortAttribute($resourceType, $request->input('sortBy'));
+            $sortBy = $resourceType->getMapping()->getSortAttributeByPath(\ArieTimmerman\Laravel\SCIMServer\Parser\Parser::parse($request->input('sortBy')));
         }
 
         $resourceObjectsBase = $query->when(

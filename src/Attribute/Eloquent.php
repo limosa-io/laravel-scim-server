@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Model;
 class Eloquent extends Attribute
 {
     protected $attribute;
+    public $relationship;
 
     public function __construct($name, $attribute = null, $schemaNode = false)
     {
@@ -23,7 +24,7 @@ class Eloquent extends Attribute
         $value = $object->{$this->attribute};
 
         if ($value instanceof \Carbon\Carbon) {
-                $value = $value->format('c');
+            $value = $value->format('c');
         }
         return $value;
     }
@@ -42,16 +43,45 @@ class Eloquent extends Attribute
 
     public function patch($operation, $value, Model &$object, ?Path $path = null)
     {
-        if($path->isNotEmpty()){
+        if ($path->isNotEmpty()) {
             throw new SCIMException('path operation not support for eloquent type attributes');
         }
 
-        if($operation == 'replace' || $operation == 'add'){
+        if ($operation == 'replace' || $operation == 'add') {
             $object->{$this->attribute} = $value;
             $this->dirty = true;
-        }else if ($operation == 'remove'){
+        } elseif ($operation == 'remove') {
             $object->{$this->attribute} = null;
             $this->dirty = true;
         }
+    }
+
+    public function getSortAttributeByPath(Path $path)
+    {
+        if ($path->getValuePath() != null) {
+            throw new SCIMException('Incorrect sortBy parameter');
+        }
+
+        return $this->attribute;
+    }
+
+    public function applyWhereCondition(&$query, $operator, $value)
+    {
+        if ($this->relationship != null) {
+            $query->whereHas(
+                $this->relationship,
+                fn ($query) => $this->applyWhereConditionDirect($this->attribute, $query, $operator, $value)
+            )->get();
+        } else {
+            $this->applyWhereConditionDirect($this->attribute, $query, $operator, $value);
+        }
+    }
+
+
+    public function setRelationship($relationship)
+    {
+        $this->relationship = $relationship;
+
+        return $this;
     }
 }

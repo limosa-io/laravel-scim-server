@@ -4,7 +4,6 @@ namespace ArieTimmerman\Laravel\SCIMServer;
 
 use ArieTimmerman\Laravel\SCIMServer\Attribute\Attribute;
 use Illuminate\Support\Arr;
-use ArieTimmerman\Laravel\SCIMServer\Attribute\AttributeMapping;
 
 class ResourceType
 {
@@ -69,28 +68,5 @@ class ResourceType
     public static function user()
     {
         return new ResourceType('Users', resolve(SCIMConfig::class)->getUserConfig());
-    }
-
-    public function getAllAttributeConfigs($mapping = -1)
-    {
-        $result = [];
-
-        if ($mapping == -1) {
-            $mapping = $this->getMapping();
-        }
-
-        foreach ($mapping as $key => $value) {
-            if ($value instanceof AttributeMapping && $value != null) {
-                $result[] = $value;
-            } elseif (is_array($value)) {
-                $extra = $this->getAllAttributeConfigs($value);
-
-                if (!empty($extra)) {
-                    $result = array_merge($result, $extra);
-                }
-            }
-        }
-
-        return $result;
     }
 }

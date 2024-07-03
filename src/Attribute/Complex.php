@@ -50,7 +50,7 @@ class Complex extends Attribute
     public function patch($operation, $value, Model &$object, Path $path = null, $removeIfNotSet = false)
     {
         $this->dirty = true;
-        
+
         if ($path != null && $path->isNotEmpty()) {
             $attributeNames = $path->getValuePathAttributes();
 
@@ -146,5 +146,33 @@ class Complex extends Attribute
     public function remove($value, Model &$object, string $path = null)
     {
         // TODO: implement
+    }
+
+    public function getSortAttributeByPath(Path $path)
+    {
+        if ($path->getValuePath() != null) {
+            throw new SCIMException('Incorrect sortBy parameter');
+        }
+
+        $attributeNames = $path->getAttributePathAttributes();
+
+        if (empty($attributeNames)) {
+            throw new SCIMException('Incorrect sortBy parameter. No attributes.');
+        }
+
+        $result = null;
+
+        // TODO: search for schema node
+        $attribute = $this->getSubNode($attributeNames[0]);
+        if ($attribute != null) {
+            $result = $attribute->getSortAttributeByPath($path->shiftAttributePathAttributes());
+        } elseif ($this->parent == null) {
+            // pass the unchanged path object to the schema node
+            $result = $this->getSchemaNode()->getSortAttributeByPath($path);
+        } else {
+            throw new SCIMException('Unknown path: ' . (string)$path . ", in object: " . $this->getFullKey());
+        }
+
+        return $result;
     }
 }

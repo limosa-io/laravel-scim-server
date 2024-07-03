@@ -28,8 +28,6 @@ class Attribute
     /** @var Attribute */
     public $parent = null;
 
-    public $eloquentAttributes = [];
-    public $relationship;
     public $schemaNode = false;
     public $validations = [];
     public $filter;
@@ -87,45 +85,6 @@ class Attribute
     public function read(&$object)
     {
         throw new SCIMException(sprintf('Read is not implemented for "%s"', $this->getFullKey()));
-    }
-
-    public function disableWrite(): Attribute
-    {
-        $this->add = $this->replace = $this->remove = function ($value, &$object) {
-            throw (new SCIMException(sprintf('Write to "%s" is not supported', $this->getFullKey())))->setCode(500)->setScimType('mutability');
-        };
-
-        $this->writeEnabled = false;
-
-        return $this;
-    }
-
-    public function ignoreWrite()
-    {
-        $this->add = $this->replace = $this->remove = function ($value, &$object) {
-            //ignore
-        };
-
-        return $this;
-    }
-
-    public function disableRead()
-    {
-        $this->read = function (&$object) {
-            // throw new SCIMException('Read is not supported for ' . $parent->getFullKey());
-            return null; //"disabled!!";
-        };
-
-        $this->readEnabled = false;
-
-        return $this;
-    }
-
-    public function setRelationship($relationship)
-    {
-        $this->relationship = $relationship;
-
-        return $this;
     }
 
     public function getFullKey()
@@ -246,11 +205,6 @@ class Attribute
         return $this;
     }
 
-    public function getEloquentAttributes()
-    {
-        return $this->eloquentAttributes;
-    }
-
     public function applyWhereConditionDirect($attribute, &$query, $operator, $value)
     {
         switch ($operator) {
@@ -291,24 +245,7 @@ class Attribute
 
     public function applyWhereCondition(&$query, $operator, $value)
     {
-
-        //only filter on OWN eloquent attributes
-        if (empty($this->eloquentAttributes)) {
-            throw new SCIMException("Can't filter on . " . $this->getFullKey());
-        }
-
-        $attribute = $this->eloquentAttributes[0];
-
-        if ($this->relationship != null) {
-            $query->whereHas(
-                $this->relationship,
-                function ($query) use ($attribute, $operator, $value) {
-                    $this->applyWhereConditionDirect($attribute, $query, $operator, $value);
-                }
-            )->get();
-        } else {
-            $this->applyWhereConditionDirect($attribute, $query, $operator, $value);
-        }
+        throw new SCIMException(sprintf('Filtering is not implemented for "%s"', $this->getFullKey()));
     }
 
     public function add($value, Model &$object)
@@ -345,6 +282,11 @@ class Attribute
         }
 
         return $this->sortAttribute;
+    }
+
+    public function getSortAttributeByPath(Path $path)
+    {
+        throw new SCIMException(sprintf('Sort is not implemented for "%s"', $this->getFullKey()));
     }
 
     public function isDirty()

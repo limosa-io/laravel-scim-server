@@ -9,7 +9,9 @@ use ArieTimmerman\Laravel\SCIMServer\Attribute\Collection;
 use ArieTimmerman\Laravel\SCIMServer\Attribute\Complex;
 use ArieTimmerman\Laravel\SCIMServer\Attribute\Constant;
 use ArieTimmerman\Laravel\SCIMServer\Attribute\Eloquent;
+use ArieTimmerman\Laravel\SCIMServer\Attribute\MutableCollection;
 use ArieTimmerman\Laravel\SCIMServer\Exceptions\SCIMException;
+use ArieTimmerman\Laravel\SCIMServer\Tests\Model\Group;
 use Illuminate\Database\Eloquent\Model;
 
 function a($name = null, $schemaNode = false): Attribute
@@ -34,6 +36,8 @@ class SCIMConfig
     {
         if ($name == 'Users') {
             return $this->getUserConfig();
+        } elseif ($name == 'Groups') {
+            return $this->getGroupConfig();
         } else {
             $result = $this->getConfig();
             return @$result[$name];
@@ -159,10 +163,100 @@ class SCIMConfig
         ];
     }
 
+    public function getGroupConfig()
+    {
+        return [
+
+            'class' => Group::class,
+            'validations' => [
+               'urn:ietf:params:scim:schemas:core:2\.0:Group:displayName' => 'nullable',
+                'urn:ietf:params:scim:schemas:core:2\.0:Group:name' => ['required','min:3',function ($attribute, $value, $fail) {
+                    // check if group does not exist or if it exists, it is the same group
+                    $group = Group::where('name', $value)->first();
+                    if ($group && (request()->route('resourceObject') == null || $group->id != request()->route('resourceObject')->id)) {
+                        $fail('The name has already been taken.');
+                    }
+                }],
+                'urn:ietf:params:scim:schemas:core:2\.0:Group:members' => 'nullable|array',
+
+                // Check for existing in the functions itself. More effecient due to 'whereIn' searches
+                'urn:ietf:params:scim:schemas:core:2\.0:Group:members.*.value' => 'required',
+            ],
+
+            'singular' => 'Group',
+            'schema' => [
+                Schema::SCHEMA_GROUP,
+                // 'example:name:space'
+            ],
+
+            //eager loading
+            'withRelations' => [],
+            'description' => 'Group',
+
+            'map' => complex()->withSubAttributes(
+                new class ('schemas', [
+                    "urn:ietf:params:scim:schemas:core:2.0:Group",
+                ]) extends Constant {
+                    public function replace($value, &$object, $path = null)
+                    {
+                        // do nothing
+                        $this->dirty = true;
+                    }
+                },
+                (new class ('id', null) extends Constant {
+                    public function read(&$object)
+                    {
+                        return (string)$object->id;
+                    }
+                }
+                ),
+                complex('meta')->withSubAttributes(
+                    eloquent('created'),
+                    eloquent('lastModified'),
+                    (new class ('location') extends Eloquent {
+                        public function read(&$object)
+                        {
+                            return route(
+                                'scim.resource',
+                                [
+                                'resourceType' => 'Groups',
+                                'resourceObject' => $object->id
+                                ]
+                            );
+                        }
+                    }),
+                    new Constant('resourceType', 'User')
+                ),
+                complex(Schema::SCHEMA_GROUP, true)->withSubAttributes(
+                    eloquent('name')->ensure('required'),
+                    eloquent('displayName')->ensure('required'),
+
+                    (new MutableCollection('members'))->withSubAttributes(
+                        eloquent('value', 'id'),
+                        (new class ('$ref') extends Eloquent {
+                            public function read(&$object)
+                            {
+                                return route(
+                                    'scim.resource',
+                                    [
+                                    'resourceType' => 'Users',
+                                    'resourceObject' => $object->id
+                                    ]
+                                );
+                            }
+                        }),
+                        eloquent('display', 'name')
+                    ),
+                )
+            ),
+        ];
+    }
+
     public function getConfig()
     {
         return [
-            'Users' => $this->getUserConfig()
+            'Users' => $this->getUserConfig(),
+            'Groups' => $this->getGroupConfig(),
         ];
     }
 }

@@ -58,8 +58,7 @@ class Collection extends Attribute
             throw new SCIMException('No attribute path attributes found. Could not apply comparison in ' . $this->getFullKey());
         }
 
-        $attributeNames = $path->getAttributePathAttributes()[0];
-        $attribute = $this->getSubNode($attributeNames);    
+        $attribute = $this->getSubNode($path->getAttributePathAttributes()[0]);    
 
         $query->whereHas(
             $this->attribute,

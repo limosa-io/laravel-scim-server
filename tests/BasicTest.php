@@ -83,13 +83,41 @@ class BasicTest extends TestCase
     }
 
     public function testFilterByGroup(){
-        // First get a username to search for
-        $response = $this->get('/scim/v2/Users?startIndex=30&count=1');
-        $groupValue = $response->json('Resources')[0]['urn:ietf:params:scim:schemas:core:2.0:User']['groups'][0]['value'];
+        // Find a group
+        $response = $this->get('/scim/v2/Groups?startIndex=30&count=1');
+        $groupValue = $response->json('Resources')[0]['id'];
 
         // Now search for this username
-        $response = $this->get('/scim/v2/Users?filter=groups.value eq "'.$groupValue.'"');
+        $response = $this->get('/scim/v2/Users?startIndex=30&count=1');
+        $userValue = $response->json('Resources')[0]['id'];
+
+        // SCIM Patch request
+        $response = $this->patch('/scim/v2/Groups/' . $groupValue, [
+            "schemas" => [
+                "urn:ietf:params:scim:api:messages:2.0:PatchOp",
+            ],
+            "Operations" => [[
+                "op" => "add",
+                "path" => "members",
+                "value" => [
+                    [
+                        "value" => $userValue
+                    ]
+                ]
+            ]]
+        ]);
+
         $response->assertStatus(200);
+    }
+
+    public function testGroupAssignment(){
+        // First get a username to search for
+        $response = $this->get('/scim/v2/Users?startIndex=20&count=1');
+        $groupValue = $response->json('Resources')[0]['urn:ietf:params:scim:schemas:core:2.0:User']['groups'][0]['value'];
+
+        // find user id
+
+        // (3) assign user to group via group endpoitn
 
         $this->assertTrue(count($response->json('Resources')) >= 1);
     }

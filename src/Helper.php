@@ -7,16 +7,11 @@ use Tmilos\ScimFilterParser\Ast\ComparisonExpression;
 use Tmilos\ScimFilterParser\Ast\Negation;
 use Tmilos\ScimFilterParser\Ast\Conjunction;
 use Tmilos\ScimFilterParser\Ast\Disjunction;
-use Tmilos\ScimFilterParser\Parser;
-use Tmilos\ScimFilterParser\Mode;
-use Tmilos\ScimFilterParser\Ast\Path;
-use Tmilos\ScimFilterParser\Ast\AttributePath;
 use ArieTimmerman\Laravel\SCIMServer\Exceptions\SCIMException;
 use ArieTimmerman\Laravel\SCIMServer\Parser\Path as ParserPath;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Arr;
-use Illuminate\Support\Facades\DB;
 use Tmilos\ScimFilterParser\Ast\Factor;
 use Tmilos\ScimFilterParser\Ast\ValuePath;
 

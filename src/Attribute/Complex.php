@@ -28,7 +28,7 @@ class Complex extends AbstractComplex
      */
     public function getSchemas()
     {
-        return $this->getSchemaNodes()->map(fn ($element) => $element->name)->values()->toArray();
+        return collect($this->getSchemaNodes())->map(fn ($element) => $element->name)->values()->toArray();
     }
 
     

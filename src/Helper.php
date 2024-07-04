@@ -52,9 +52,12 @@ class Helper
         return $result;
     }
 
-    // TODO: Auto map eloquent attributes with scim naming to the correct attributes
     public static function objectToSCIMArray($object, ResourceType $resourceType = null)
     {
+        if($resourceType == null){
+            return $object;
+        }
+        
         $mapping = $resourceType->getMapping();
         $result = $mapping->read($object);
 

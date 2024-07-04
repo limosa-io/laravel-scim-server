@@ -6,7 +6,6 @@ use ArieTimmerman\Laravel\SCIMServer\SCIM\ListResponse;
 use Illuminate\Http\Request;
 use ArieTimmerman\Laravel\SCIMServer\Helper;
 use ArieTimmerman\Laravel\SCIMServer\Exceptions\SCIMException;
-use Tmilos\ScimFilterParser\Mode;
 use ArieTimmerman\Laravel\SCIMServer\ResourceType;
 use Illuminate\Database\Eloquent\Model;
 use ArieTimmerman\Laravel\SCIMServer\Events\Delete;
@@ -15,10 +14,8 @@ use ArieTimmerman\Laravel\SCIMServer\Events\Create;
 use ArieTimmerman\Laravel\SCIMServer\Events\Replace;
 use ArieTimmerman\Laravel\SCIMServer\Events\Patch;
 use ArieTimmerman\Laravel\SCIMServer\Parser\Parser as ParserParser;
-use ArieTimmerman\Laravel\SCIMServer\SCIM\Schema;
 use ArieTimmerman\Laravel\SCIMServer\PolicyDecisionPoint;
 use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\Validator;
 
 class ResourceController extends Controller
@@ -163,8 +160,6 @@ class ResourceController extends Controller
                     } else {
                         throw new SCIMException('You MUST provide a "Path"');
                     }
-
-
                     break;
 
                 case "replace":

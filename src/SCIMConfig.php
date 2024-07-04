@@ -11,7 +11,6 @@ use ArieTimmerman\Laravel\SCIMServer\Attribute\Constant;
 use ArieTimmerman\Laravel\SCIMServer\Attribute\Eloquent;
 use ArieTimmerman\Laravel\SCIMServer\Attribute\MutableCollection;
 use ArieTimmerman\Laravel\SCIMServer\Attribute\Schema as AttributeSchema;
-use ArieTimmerman\Laravel\SCIMServer\Exceptions\SCIMException;
 use ArieTimmerman\Laravel\SCIMServer\Tests\Model\Group;
 use Illuminate\Database\Eloquent\Model;
 

@@ -39,4 +39,13 @@ abstract class AbstractComplex extends Attribute
     {
         return collect($this->subAttributes)->first(fn ($element) => $element->name == $key);
     }
+
+    public function generateSchema()
+    {
+        $base = parent::generateSchema();
+
+        $base['subAttributes'] = collect($this->subAttributes)->map(fn ($element) => $element->generateSchema())->toArray();
+
+        return $base;
+    }
 }

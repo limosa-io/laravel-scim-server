@@ -118,25 +118,17 @@ class ResourceController extends Controller
     public function replace(Request $request, PolicyDecisionPoint $pdp, ResourceType $resourceType, Model $resourceObject, $isMe = false)
     {
         $originalRaw = Helper::objectToSCIMArray($resourceObject, $resourceType);
-        // $original = Helper::flatten($originalRaw, $resourceType->getSchema());
-
-        //TODO: get flattend from $resourceObject
-        // $flattened = Helper::flatten($request->input(), $resourceType->getSchema());
-        // $flattened = $this->validateScim($resourceType, $flattened, $resourceObject);
-
-        // $updated = [];
-
-        // foreach ($flattened as $key => $value) {
-        //     if (!isset($original[$key]) || json_encode($original[$key]) != json_encode($flattened[$key])) {
-        //         $updated[$key] = $flattened[$key];
-        //     }
-        // }
-
-        // if (!self::isAllowed($pdp, $request, PolicyDecisionPoint::OPERATION_PUT, $updated, $resourceType, null)) {
-        //     throw new SCIMException('This is not allowed');
-        // }
-
+        
         $resourceType->getMapping()->replace($request->input(), $resourceObject, null, true);
+
+        $newObject = Helper::flatten(Helper::objectToSCIMArray($resourceObject, $resourceType), $resourceType->getSchema());
+
+        $flattened = $this->validateScim($resourceType, $newObject, $resourceObject);
+
+        if (!self::isAllowed($pdp, $request, PolicyDecisionPoint::OPERATION_PATCH, $flattened, $resourceType, null)) {
+            throw new SCIMException('This is not allowed');
+        }
+
         $resourceObject->save();
 
         event(new Replace($resourceObject, $resourceType, $isMe, $request->input(), $originalRaw));
@@ -186,7 +178,6 @@ class ResourceController extends Controller
 
         $dirty = $resourceObject->getDirty();
 
-        // TODO: prevent something from getten written before ...
         $newObject = Helper::flatten(Helper::objectToSCIMArray($resourceObject, $resourceType), $resourceType->getSchema());
 
         $flattened = $this->validateScim($resourceType, $newObject, $resourceObject);

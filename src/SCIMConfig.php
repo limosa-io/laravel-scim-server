@@ -10,6 +10,7 @@ use ArieTimmerman\Laravel\SCIMServer\Attribute\Complex;
 use ArieTimmerman\Laravel\SCIMServer\Attribute\Constant;
 use ArieTimmerman\Laravel\SCIMServer\Attribute\Eloquent;
 use ArieTimmerman\Laravel\SCIMServer\Attribute\MutableCollection;
+use ArieTimmerman\Laravel\SCIMServer\Attribute\Schema as AttributeSchema;
 use ArieTimmerman\Laravel\SCIMServer\Exceptions\SCIMException;
 use ArieTimmerman\Laravel\SCIMServer\Tests\Model\Group;
 use Illuminate\Database\Eloquent\Model;
@@ -32,16 +33,15 @@ function eloquent($name, $attribute = null, $schemaNode = false): Attribute
 
 class SCIMConfig
 {
+
+    public function __construct()
+    {
+    }
+
     public function getConfigForResource($name)
     {
-        if ($name == 'Users') {
-            return $this->getUserConfig();
-        } elseif ($name == 'Groups') {
-            return $this->getGroupConfig();
-        } else {
-            $result = $this->getConfig();
-            return @$result[$name];
-        }
+        $result = $this->getConfig();
+        return @$result[$name];
     }
 
     public function getUserConfig()
@@ -90,7 +90,7 @@ class SCIMConfig
                     }),
                     new Constant('resourceType', 'User')
                 ),
-                complex(Schema::SCHEMA_USER, true)->withSubAttributes(
+                (new AttributeSchema(Schema::SCHEMA_USER, true))->withSubAttributes(
                     eloquent('userName', 'name')->ensure('required'),
                     complex('name')->withSubAttributes(eloquent('formatted', 'name')),
                     eloquent('password')->ensure('nullable'),
@@ -136,7 +136,7 @@ class SCIMConfig
                         eloquent('display', 'name')
                     ),
                 ),
-                complex('urn:ietf:params:scim:schemas:extension:enterprise:2.0:User', true)->withSubAttributes(
+                (new AttributeSchema('urn:ietf:params:scim:schemas:extension:enterprise:2.0:User', true))->withSubAttributes(
                     eloquent('employeeNumber')->ensure('nullable')
                 )
             ),
@@ -188,7 +188,7 @@ class SCIMConfig
                     }),
                     new Constant('resourceType', 'User')
                 ),
-                complex(Schema::SCHEMA_GROUP, true)->withSubAttributes(
+                (new AttributeSchema(Schema::SCHEMA_GROUP, true))->withSubAttributes(
                     eloquent('name')->ensure('required', 'min:3', function ($attribute, $value, $fail) {
                         // check if group does not exist or if it exists, it is the same group
                         $group = Group::where('name', $value)->first();

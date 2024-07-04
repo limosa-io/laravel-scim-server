@@ -9,48 +9,29 @@ use ArieTimmerman\Laravel\SCIMServer\SCIMConfig;
 
 class SchemaController extends Controller
 {
-    private $schemas = null;
-
     public function getSchemas()
     {
-
-        $this->generateSchema();
-        if ($this->schemas != null) {
-            return $this->schemas;
-        }
-
         $config = resolve(SCIMConfig::class)->getConfig();
 
+        $schemaNodes = [];
         $schemas = [];
 
         foreach ($config as $key => $value) {
-            if ($key != 'Users' && $key != 'Groups') {
-                continue;
-            }
+            $value['map']->generateSchema();
 
-
-            foreach ($value['schema'] as $s) {
-                $schema = (new SchemaBuilderV2())->get($s);
-
-                if ($schema == null) {
-                    continue;
-                    throw new SCIMException("Schema not found");
-                }
-
-                $schema->getMeta()->setLocation(route('scim.schemas', ['id' => $schema->getId()]));
-
-                $schemas[] = $schema->serializeObject();
-            }
+            $schemaNodes = array_merge($schemaNodes, $value['map']->getSchemaNodes());
         }
 
-        $this->schemas = collect($schemas);
+        foreach ($schemaNodes as $schemaNode) {
+            $schemas[] = $schemaNode->generateSchema();
+        }
 
-        return $this->schemas;
+        return $schemas;
     }
 
     public function show($id)
     {
-        $result = $this->getSchemas()->first(
+        $result = collect($this->getSchemas())->first(
             function ($value, $key) use ($id) {
                 return $value['id'] == $id;
             }
@@ -65,28 +46,7 @@ class SchemaController extends Controller
 
     public function index()
     {
-        return new ListResponse($this->getSchemas(), 1, $this->getSchemas()->count());
-    }
-
-    public function generateSchemaPart($value)
-    {
-    }
-
-    public function generateSchema()
-    {
-        $config = resolve(SCIMConfig::class)->getConfig();
-
-        $schemas = [];
-
-        foreach ($config as $key => $value) {
-            foreach ($value['mapping'] as $k => $v) {
-                // $key contains :
-                if (strpos($k, ':') !== false) {
-                    foreach ($v as $attribute => $value) {
-                        var_dump($attribute);
-                    }
-                }
-            }
-        }
+        $schemas = collect($this->getSchemas());
+        return new ListResponse($schemas, 1, $schemas->count());
     }
 }

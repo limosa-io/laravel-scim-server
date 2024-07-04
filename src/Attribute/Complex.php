@@ -19,12 +19,16 @@ class Complex extends AbstractComplex
         return collect($this->subAttributes)->first(fn ($element) => $element->schemaNode);
     }
 
+    public function getSchemaNodes(){
+        return collect($this->subAttributes)->filter(fn ($element) => $element->schemaNode)->values()->toArray();
+    }
+
     /**
      * @return string[]
      */
     public function getSchemas()
     {
-        return collect($this->subAttributes)->filter(fn ($element) => $element->schemaNode)->map(fn ($element) => $element->name)->values()->toArray();
+        return $this->getSchemaNodes()->map(fn ($element) => $element->name)->values()->toArray();
     }
 
     

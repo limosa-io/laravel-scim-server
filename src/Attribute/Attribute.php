@@ -36,6 +36,8 @@ class Attribute
 
     protected $multiValued = false;
     protected $mutability = 'readOnly';
+    protected $type = 'string';
+    protected $description = null;
 
     public $dirty = false;
 
@@ -64,8 +66,8 @@ class Attribute
     public function generateSchema(){
         return [
             'name' => $this->name,
-            'type' => 'string',
-            'mutability' => 'readWrite',
+            'type' => $this->type,
+            'mutability' => $this->mutability,
             'returned' => 'default',
             'uniqueness' => 'server',
             'required' => $this->isRequired(),

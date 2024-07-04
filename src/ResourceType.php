@@ -2,7 +2,7 @@
 
 namespace ArieTimmerman\Laravel\SCIMServer;
 
-use ArieTimmerman\Laravel\SCIMServer\Attribute\Attribute;
+use ArieTimmerman\Laravel\SCIMServer\Attribute\Complex;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Arr;
 
@@ -22,7 +22,7 @@ class ResourceType
         return $this->configuration;
     }
 
-    public function getMapping(): Attribute
+    public function getMapping(): Complex
     {
         return $this->configuration['map'];
     }
@@ -34,7 +34,7 @@ class ResourceType
 
     public function getSchema()
     {
-        return $this->configuration['schema'];
+        return $this->getMapping()->getSchemas();
     }
 
     public function getClass()
@@ -58,7 +58,7 @@ class ResourceType
 
     public function getValidations()
     {
-        return $this->configuration['validations'];
+        return $this->getMapping()->getValidations();
     }
 
     public function getWithRelations()

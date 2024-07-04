@@ -34,9 +34,10 @@ class Attribute
     public $filter;
     public $sortAttribute;
 
+    protected $multiValued = false;
+    protected $mutability = 'readOnly';
+
     public $dirty = false;
-
-
 
     public function __construct($name = null, $schemaNode = false)
     {
@@ -44,6 +45,46 @@ class Attribute
         $this->schemaNode = $schemaNode;
     }
 
+    public function getValidations()
+    {
+        $key = addcslashes($this->getFullKey(), '.');
+
+        if ($this->parent != null && $this->parent->getMultiValued()) {
+            $key = addcslashes($this->parent->getFullKey(), '.') . '.*.' . $this->name;
+        }
+
+        return [
+            $key => $this->validations
+        ];
+    }
+
+    /**
+     * Return SCIM schema for this attribute
+     */
+    public function generateSchema(){
+        return [
+            'name' => $this->name,
+            'type' => 'string',
+            'mutability' => 'readWrite',
+            'returned' => 'default',
+            'uniqueness' => 'server',
+            'required' => $this->isRequired(),
+            'multiValued' => $this->getMultiValued(),
+            'caseExact' => false
+        ];
+    }
+
+    public function setMultiValued($multiValued)
+    {
+        $this->multiValued = $multiValued;
+
+        return $this;
+    }
+
+    public function getMultiValued()
+    {
+        return $this->multiValued;
+    }
 
     public function ensure(...$validations)
     {
@@ -206,7 +247,8 @@ class Attribute
         return $this;
     }
 
-    public function applyComparison(Builder &$query, Path $path, $parentAttribute = null){
+    public function applyComparison(Builder &$query, Path $path, $parentAttribute = null)
+    {
         throw new SCIMException(sprintf('Comparison is not implemented for "%s"', $this->getFullKey()));
     }
 

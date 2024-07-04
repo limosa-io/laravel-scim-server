@@ -50,28 +50,7 @@ class SCIMConfig
 
             // Set to 'null' to make use of auth.providers.users.model (App\User::class)
             'class' => Helper::getAuthUserClass(),
-
-            // Set to 'null' to make use of $class::query()
-            'query' => null,
-
-            // Set to 'null' to make use new $class()
-            'factory' => null,
-
-            'validations' => [
-                'urn:ietf:params:scim:schemas:core:2\.0:User:userName' => 'required',
-                'urn:ietf:params:scim:schemas:core:2\.0:User:password' => 'nullable',
-                'urn:ietf:params:scim:schemas:core:2\.0:User:active' => 'boolean',
-                'urn:ietf:params:scim:schemas:core:2\.0:User:emails' => 'required|array',
-                'urn:ietf:params:scim:schemas:core:2\.0:User:emails.*.value' => 'required|email',
-                'urn:ietf:params:scim:schemas:core:2\.0:User:roles' => 'nullable|array',
-                'urn:ietf:params:scim:schemas:core:2\.0:User:roles.*.value' => 'required',
-            ],
-
             'singular' => 'User',
-            'schema' => [
-                Schema::SCHEMA_USER,
-                // 'example:name:space'
-            ],
 
             //eager loading
             'withRelations' => [],
@@ -138,7 +117,8 @@ class SCIMConfig
                         eloquent('value', 'email')->ensure('required', 'email'),
                         new Constant('type', 'other'),
                         new Constant('primary', true)
-                    )->ensure('required', 'array'),
+                    )->ensure('required', 'array')
+                    ->setMultiValued(true),
                     (new Collection('groups'))->withSubAttributes(
                         eloquent('value', 'id'),
                         (new class ('$ref') extends Eloquent {
@@ -168,26 +148,7 @@ class SCIMConfig
         return [
 
             'class' => Group::class,
-            'validations' => [
-               'urn:ietf:params:scim:schemas:core:2\.0:Group:displayName' => 'nullable',
-                'urn:ietf:params:scim:schemas:core:2\.0:Group:name' => ['required','min:3',function ($attribute, $value, $fail) {
-                    // check if group does not exist or if it exists, it is the same group
-                    $group = Group::where('name', $value)->first();
-                    if ($group && (request()->route('resourceObject') == null || $group->id != request()->route('resourceObject')->id)) {
-                        $fail('The name has already been taken.');
-                    }
-                }],
-                'urn:ietf:params:scim:schemas:core:2\.0:Group:members' => 'nullable|array',
-
-                // Check for existing in the functions itself. More effecient due to 'whereIn' searches
-                'urn:ietf:params:scim:schemas:core:2\.0:Group:members.*.value' => 'required',
-            ],
-
             'singular' => 'Group',
-            'schema' => [
-                Schema::SCHEMA_GROUP,
-                // 'example:name:space'
-            ],
 
             //eager loading
             'withRelations' => [],
@@ -228,11 +189,16 @@ class SCIMConfig
                     new Constant('resourceType', 'User')
                 ),
                 complex(Schema::SCHEMA_GROUP, true)->withSubAttributes(
-                    eloquent('name')->ensure('required'),
-                    eloquent('displayName')->ensure('required'),
-
+                    eloquent('name')->ensure('required', 'min:3', function ($attribute, $value, $fail) {
+                        // check if group does not exist or if it exists, it is the same group
+                        $group = Group::where('name', $value)->first();
+                        if ($group && (request()->route('resourceObject') == null || $group->id != request()->route('resourceObject')->id)) {
+                            $fail('The name has already been taken.');
+                        }
+                    }),
+                    eloquent('displayName')->ensure('nullable'),
                     (new MutableCollection('members'))->withSubAttributes(
-                        eloquent('value', 'id'),
+                        eloquent('value', 'id')->ensure('required'),
                         (new class ('$ref') extends Eloquent {
                             public function read(&$object)
                             {
@@ -246,7 +212,7 @@ class SCIMConfig
                             }
                         }),
                         eloquent('display', 'name')
-                    ),
+                    )->ensure('nullable', 'array')
                 )
             ),
         ];

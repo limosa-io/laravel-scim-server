@@ -6,27 +6,16 @@ use ArieTimmerman\Laravel\SCIMServer\Exceptions\SCIMException;
 use ArieTimmerman\Laravel\SCIMServer\Parser\Path;
 use Illuminate\Database\Eloquent\Builder;
 
-class Collection extends Attribute
+class Collection extends AbstractComplex
 {
     protected $attribute;
-    protected $subAttributes;
+    protected $multiValued = true;
 
     public function __construct($name, $attribute = null, $schemaNode = false)
     {
         parent::__construct($name, $schemaNode);
 
         $this->attribute = $attribute ?? $name;
-    }
-
-    public function withSubAttributes(...$subAttributes)
-    {
-        foreach ($subAttributes as $attribute) {
-            $attribute->setParent($this);
-        }
-
-        $this->subAttributes = $subAttributes;
-
-        return $this;
     }
 
     public function read(&$object)
@@ -47,10 +36,7 @@ class Collection extends Attribute
         return $result;
     }
 
-    public function getSubNode(string $key): ?Attribute
-    {
-        return collect($this->subAttributes)->first(fn ($element) => $element->name == $key);
-    }
+    
 
     public function applyComparison(Builder &$query, Path $path, $parentAttribute = null){
 

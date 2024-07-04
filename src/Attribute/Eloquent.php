@@ -11,6 +11,7 @@ class Eloquent extends Attribute
 {
     protected $attribute;
     public $relationship;
+    protected $mutability = 'readWrite';
 
     public function __construct($name, $attribute = null, $schemaNode = false)
     {

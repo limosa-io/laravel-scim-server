@@ -2,10 +2,13 @@
 
 namespace ArieTimmerman\Laravel\SCIMServer\Tests;
 
+use ArieTimmerman\Laravel\SCIMServer\ResourceType;
+use ArieTimmerman\Laravel\SCIMServer\SCIMConfig;
 use Illuminate\Support\Arr;
 
 class BasicTest extends TestCase
 {
+
     public function testGet()
     {
         $response = $this->get('/scim/v2/Users');

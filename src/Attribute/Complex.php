@@ -7,18 +7,9 @@ use ArieTimmerman\Laravel\SCIMServer\Parser\Path;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 
-class Complex extends Attribute
+class Complex extends AbstractComplex
 {
-    /**
-     * @var Attribute[]
-     */
-    public $subAttributes = [];
-
-    public function getSubNode(string $key): ?Attribute
-    {
-        return collect($this->subAttributes)->first(fn ($element) => $element->name == $key);
-    }
-
+    
     public function getSchemaNode(): ?Attribute
     {
         if ($this->parent != null) {
@@ -28,17 +19,15 @@ class Complex extends Attribute
         return collect($this->subAttributes)->first(fn ($element) => $element->schemaNode);
     }
 
-    public function withSubAttributes(...$subAttributes)
+    /**
+     * @return string[]
+     */
+    public function getSchemas()
     {
-        foreach ($subAttributes as $attribute) {
-            $attribute->setParent($this);
-        }
-
-        $this->subAttributes = $subAttributes;
-
-        return $this;
+        return collect($this->subAttributes)->filter(fn ($element) => $element->schemaNode)->map(fn ($element) => $element->name)->values()->toArray();
     }
 
+    
     public function read(&$object)
     {
         $result = [];

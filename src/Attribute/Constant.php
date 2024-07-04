@@ -3,6 +3,8 @@
 namespace ArieTimmerman\Laravel\SCIMServer\Attribute;
 
 use ArieTimmerman\Laravel\SCIMServer\Exceptions\SCIMException;
+use Illuminate\Database\Eloquent\Model;
+use ArieTimmerman\Laravel\SCIMServer\Parser\Path;
 
 class Constant extends Attribute
 {
@@ -22,7 +24,7 @@ class Constant extends Attribute
 
     public function add($value, &$object)
     {
-        throw (new SCIMException(sprintf('Write to "%s" is not supported', $this->getFullKey())))->setCode(500)->setScimType('mutability');
+        return $this->replace($value, $object);
     }
 
     public function replace($value, &$object, $path = null)
@@ -32,5 +34,10 @@ class Constant extends Attribute
         }
 
         $this->dirty = true;
+    }
+
+    public function patch($operation, $value, Model &$object, ?Path $path = null)
+    {
+        throw new SCIMException('Patch operation not supported for constant attributes');
     }
 }

@@ -5,6 +5,7 @@ namespace ArieTimmerman\Laravel\SCIMServer\Attribute;
 use ArieTimmerman\Laravel\SCIMServer\Exceptions\SCIMException;
 use ArieTimmerman\Laravel\SCIMServer\Parser\Path;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Model;
 
 class Collection extends AbstractComplex
 {
@@ -23,10 +24,9 @@ class Collection extends AbstractComplex
         $result = [];
 
         foreach ($object->{$this->attribute} as $o) {
-
             $element = [];
 
-            foreach($this->subAttributes as $attribute){
+            foreach ($this->subAttributes as $attribute) {
                 $element[$attribute->name] = $attribute->read($o);
             }
 
@@ -36,15 +36,13 @@ class Collection extends AbstractComplex
         return $result;
     }
 
-    
-
-    public function applyComparison(Builder &$query, Path $path, $parentAttribute = null){
-
-        if($path == null || empty($path->getAttributePathAttributes())){
+    public function applyComparison(Builder &$query, Path $path, $parentAttribute = null)
+    {
+        if ($path == null || empty($path->getAttributePathAttributes())) {
             throw new SCIMException('No attribute path attributes found. Could not apply comparison in ' . $this->getFullKey());
         }
 
-        $attribute = $this->getSubNode($path->getAttributePathAttributes()[0]);    
+        $attribute = $this->getSubNode($path->getAttributePathAttributes()[0]);
 
         $query->whereHas(
             $this->attribute,
@@ -52,4 +50,8 @@ class Collection extends AbstractComplex
         )->get();
     }
 
+    public function replace($value, Model &$object, Path $path = null)
+    {
+        // ignore replace actions
+    }
 }

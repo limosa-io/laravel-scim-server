@@ -45,6 +45,11 @@ class Complex extends AbstractComplex
     {
         $this->dirty = true;
 
+        if($this->mutability == 'readOnly'){
+            // silently ignore
+            return;
+        }
+
         if ($path != null && $path->isNotEmpty()) {
             $attributeNames = $path->getValuePathAttributes();
 
@@ -105,6 +110,11 @@ class Complex extends AbstractComplex
         $match = false;
         $this->dirty = true;
 
+        if($this->mutability == 'readOnly'){
+            // silently ignore
+            return;
+        }
+
         // if there is no path, keys of value are attribute names
         foreach ($value as $key => $v) {
             if (is_numeric($key)) {
@@ -139,6 +149,10 @@ class Complex extends AbstractComplex
 
     public function remove($value, Model &$object, string $path = null)
     {
+        if($this->mutability == 'readOnly'){
+            // silently ignore
+            return;
+        }
         // TODO: implement
     }
 

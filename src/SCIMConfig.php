@@ -73,7 +73,7 @@ class SCIMConfig
                     }
                 }
                 ),
-                complex('meta')->withSubAttributes(
+                complex('meta')->setMutability('readOnly')->withSubAttributes(
                     eloquent('created'),
                     eloquent('lastModified'),
                     (new class ('location') extends Eloquent {

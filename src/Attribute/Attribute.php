@@ -35,7 +35,7 @@ class Attribute
     public $sortAttribute;
 
     protected $multiValued = false;
-    protected $mutability = 'readOnly';
+    protected $mutability = 'readWrite';
     protected $type = 'string';
     protected $description = null;
 
@@ -86,6 +86,13 @@ class Attribute
     public function getMultiValued()
     {
         return $this->multiValued;
+    }
+
+    public function setMutability($mutability)
+    {
+        $this->mutability = $mutability;
+
+        return $this;
     }
 
     public function ensure(...$validations)

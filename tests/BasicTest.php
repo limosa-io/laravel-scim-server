@@ -8,7 +8,6 @@ use Illuminate\Support\Arr;
 
 class BasicTest extends TestCase
 {
-
     public function testGet()
     {
         $response = $this->get('/scim/v2/Users');
@@ -40,7 +39,6 @@ class BasicTest extends TestCase
                 ]
             ]
         ]);
-
     }
 
     public function testPagination()
@@ -73,7 +71,8 @@ class BasicTest extends TestCase
         $this->assertEquals(Arr::sort($formattedNames), $formattedNames);
     }
 
-    public function testFilter(){
+    public function testFilter()
+    {
         // First get a username to search for
         $response = $this->get('/scim/v2/Users?startIndex=30&count=1');
         $userName = $response->json('Resources')[0]['urn:ietf:params:scim:schemas:core:2.0:User']['userName'];
@@ -85,7 +84,8 @@ class BasicTest extends TestCase
         $this->assertEquals(1, count($response->json('Resources')));
     }
 
-    public function testFilterByGroup(){
+    public function testFilterByGroup()
+    {
         // Find a group
         $response = $this->get('/scim/v2/Groups?startIndex=30&count=1');
         $groupValue = $response->json('Resources')[0]['id'];
@@ -113,7 +113,8 @@ class BasicTest extends TestCase
         $response->assertStatus(200);
     }
 
-    public function testGroupAssignment(){
+    public function testGroupAssignment()
+    {
         // First get a username to search for
         $response = $this->get('/scim/v2/Users?startIndex=20&count=1');
         $groupValue = $response->json('Resources')[0]['urn:ietf:params:scim:schemas:core:2.0:User']['groups'][0]['value'];
@@ -129,6 +130,12 @@ class BasicTest extends TestCase
     {
         $response = $this->put('/scim/v2/Users/1', [
             "id" => "1",
+            "meta" => [
+                "resourceType" => "User",
+                "created" => "2010-01-23T04:56:22Z",
+                "lastModified" => "2011-05-13T04:42:34Z",
+                "version" => "W\/\"3694e05e9dff594\""
+            ],
             "schemas" => [
                 "urn:ietf:params:scim:schemas:core:2.0:User",
             ],
@@ -139,6 +146,11 @@ class BasicTest extends TestCase
                         "value" => "johndoe@bailey.org",
                         "type" => "other",
                         "primary" => true
+                    ]
+                ],
+                "groups" => [
+                    [
+                        "value" => "1"
                     ]
                 ]
             ]

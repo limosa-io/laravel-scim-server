@@ -8,7 +8,7 @@ jobs:
     continue-on-error: true
     strategy:
       matrix:
-        php: [7.3, 7.4, 8.0, 8.1, 8.2]
+        php: [8.0, 8.1, 8.2]
         laravel: [7.*, 8.*, 9.*, 10.*, 11.*]
         exclude:
           - laravel: 7.*

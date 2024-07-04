@@ -15,9 +15,6 @@ class ResourceTypesTest extends TestCase
     public function testGet()
     {
         $response = $this->get('/scim/v2/ResourceTypes');
- 
-        var_dump(json_encode($response->json()));
-
         $response->assertStatus(200);
     }
 

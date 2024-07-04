@@ -36,9 +36,6 @@ class SchemaTest extends TestCase
     public function testGet()
     {
         $response = $this->get('/scim/v2/Schemas');
-
-        var_dump(json_encode($response->json()));
-
         $response->assertStatus(200);
     }
 

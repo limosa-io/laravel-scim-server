@@ -57,7 +57,7 @@ class Helper
         if($resourceType == null){
             return $object;
         }
-        
+
         $mapping = $resourceType->getMapping();
         $result = $mapping->read($object);
 
@@ -101,8 +101,6 @@ class Helper
     /**
      * See https://tools.ietf.org/html/rfc7644#section-3.4.2.2
      *
-     * @param  unknown $query
-     * @param  unknown $node
      * @throws SCIMException
      */
     public static function scimFilterToLaravelQuery(ResourceType $resourceType, Builder &$query, ParserPath $path)
@@ -118,7 +116,7 @@ class Helper
             foreach ($node->getFactors() as $factor) {
                 $query->where(
                     function ($query) use ($factor, $resourceType) {
-                        Helper::scimFilterToLaravelQuery($resourceType, $query, $factor);
+                        Helper::scimFilterToLaravelQuery($resourceType, $query, new ParserPath($factor, $factor->dump()));
                     }
                 );
             }
@@ -126,33 +124,14 @@ class Helper
             foreach ($node->getTerms() as $term) {
                 $query->orWhere(
                     function ($query) use ($term, $resourceType) {
-                        Helper::scimFilterToLaravelQuery($resourceType, $query, $term);
+                        Helper::scimFilterToLaravelQuery($resourceType, $query, new ParserPath($term, $term->dump()));
                     }
                 );
             }
         } elseif ($node instanceof ValuePath) {
-            // ->filer
-            $getAttributePath = function () {
-                return $this->attributePath;
-            };
-
-            $getFilter = function () {
-                return $this->filter;
-            };
-
-            $query->whereExists(
-                function ($query) {
-                    $query->select(DB::raw(1))
-                        ->from('users AS users2')
-                        ->whereRaw('users.id = users2.id');
-                }
-            );
-
-
-        //$node->
+            throw new SCIMException('ValuePath not supported');
         } elseif ($node instanceof Factor) {
-            var_dump($node);
-            die("Not ok hier!\n");
+            throw new SCIMException('Unknown filter not supported');
         }
     }
 

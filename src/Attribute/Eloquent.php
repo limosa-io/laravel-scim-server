@@ -4,6 +4,7 @@ namespace ArieTimmerman\Laravel\SCIMServer\Attribute;
 
 use ArieTimmerman\Laravel\SCIMServer\Exceptions\SCIMException;
 use ArieTimmerman\Laravel\SCIMServer\Parser\Path;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 
 class Eloquent extends Attribute
@@ -65,15 +66,51 @@ class Eloquent extends Attribute
         return $this->attribute;
     }
 
-    public function applyWhereCondition(&$query, $operator, $value)
+    public function applyComparison(Builder &$query, Path $path, $parentAttribute = null)
     {
-        if ($this->relationship != null) {
-            $query->whereHas(
-                $this->relationship,
-                fn ($query) => $this->applyWhereConditionDirect($this->attribute, $query, $operator, $value)
-            )->get();
-        } else {
-            $this->applyWhereConditionDirect($this->attribute, $query, $operator, $value);
+        $attribute = $this->attribute;
+
+        // FIXME: ugly and perhaps incorrect.
+        if($parentAttribute != null){
+            $attribute = $parentAttribute . '.' . $attribute;
+        }
+
+        $operator = $path->node->operator;
+        $value = $path->node->compareValue;
+
+        switch ($operator) {
+            case "eq":
+                $query->where($attribute, $value);
+                break;
+            case "ne":
+                $query->where($attribute, '<>', $value);
+                break;
+            case "co":
+                $query->where($attribute, 'like', '%' . addcslashes($value, '%_') . '%');
+                break;
+            case "sw":
+                $query->where($attribute, 'like', addcslashes($value, '%_') . '%');
+                break;
+            case "ew":
+                $query->where($attribute, 'like', '%' . addcslashes($value, '%_'));
+                break;
+            case "pr":
+                $query->whereNotNull($attribute);
+                break;
+            case "gt":
+                $query->where($attribute, '>', $value);
+                break;
+            case "ge":
+                $query->where($attribute, '>=', $value);
+                break;
+            case "lt":
+                $query->where($attribute, '<', $value);
+                break;
+            case "le":
+                $query->where($attribute, '<=', $value);
+                break;
+            default:
+                throw new SCIMException("Unknown operator " . $operator);
         }
     }
 

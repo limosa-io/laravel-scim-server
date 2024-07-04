@@ -6,7 +6,6 @@ use ArieTimmerman\Laravel\SCIMServer\SCIM\ListResponse;
 use Illuminate\Http\Request;
 use ArieTimmerman\Laravel\SCIMServer\Helper;
 use ArieTimmerman\Laravel\SCIMServer\Exceptions\SCIMException;
-use Tmilos\ScimFilterParser\Parser;
 use Tmilos\ScimFilterParser\Mode;
 use ArieTimmerman\Laravel\SCIMServer\ResourceType;
 use Illuminate\Database\Eloquent\Model;
@@ -18,6 +17,7 @@ use ArieTimmerman\Laravel\SCIMServer\Events\Patch;
 use ArieTimmerman\Laravel\SCIMServer\Parser\Parser as ParserParser;
 use ArieTimmerman\Laravel\SCIMServer\SCIM\Schema;
 use ArieTimmerman\Laravel\SCIMServer\PolicyDecisionPoint;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\Validator;
 
@@ -232,13 +232,11 @@ class ResourceController extends Controller
 
         $resourceObjectsBase = $query->when(
             $filter = $request->input('filter'),
-            function ($query) use ($filter, $resourceType) {
-                $parser = new Parser(Mode::FILTER());
+            function (Builder $query) use ($filter, $resourceType) {
 
                 try {
-                    $node = $parser->parse($filter);
 
-                    Helper::scimFilterToLaravelQuery($resourceType, $query, $node);
+                    Helper::scimFilterToLaravelQuery($resourceType, $query, ParserParser::parseFilter($filter));
                 } catch (\Tmilos\ScimFilterParser\Error\FilterException $e) {
                     throw (new SCIMException($e->getMessage()))->setCode(400)->setScimType('invalidFilter');
                 }

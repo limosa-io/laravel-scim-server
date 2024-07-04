@@ -17,6 +17,27 @@ class BasicTest extends TestCase
             'itemsPerPage' => 10,
             'startIndex' => 1
         ]);
+
+        $response->assertJsonStructure([
+            'Resources' => [
+                '*' => [
+                    'id',
+                    'schemas',
+                    'meta',
+                    'urn:ietf:params:scim:schemas:core:2.0:User' => [
+                        'userName',
+                        'name',
+                        'emails',
+                        'groups' => [
+                            '*' => [
+                                'value',
+                            ]
+                        ]
+                    ]
+                ]
+            ]
+        ]);
+
     }
 
     public function testPagination()
@@ -59,6 +80,18 @@ class BasicTest extends TestCase
         $response->assertStatus(200);
 
         $this->assertEquals(1, count($response->json('Resources')));
+    }
+
+    public function testFilterByGroup(){
+        // First get a username to search for
+        $response = $this->get('/scim/v2/Users?startIndex=30&count=1');
+        $groupValue = $response->json('Resources')[0]['urn:ietf:params:scim:schemas:core:2.0:User']['groups'][0]['value'];
+
+        // Now search for this username
+        $response = $this->get('/scim/v2/Users?filter=groups.value eq "'.$groupValue.'"');
+        $response->assertStatus(200);
+
+        $this->assertTrue(count($response->json('Resources')) >= 1);
     }
 
     public function testPut()

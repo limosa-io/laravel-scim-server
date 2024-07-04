@@ -5,6 +5,7 @@ namespace ArieTimmerman\Laravel\SCIMServer\Attribute;
 use ArieTimmerman\Laravel\SCIMServer\Exceptions\SCIMException;
 use ArieTimmerman\Laravel\SCIMServer\Parser\Path;
 use ArieTimmerman\Laravel\SCIMServer\SCIM\Schema;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Tmilos\ScimFilterParser\Ast\AttributePath;
 use Tmilos\ScimFilterParser\Ast\ComparisonExpression;
@@ -205,47 +206,8 @@ class Attribute
         return $this;
     }
 
-    public function applyWhereConditionDirect($attribute, &$query, $operator, $value)
-    {
-        switch ($operator) {
-            case "eq":
-                $query->where($attribute, $value);
-                break;
-            case "ne":
-                $query->where($attribute, '<>', $value);
-                break;
-            case "co":
-                $query->where($attribute, 'like', '%' . addcslashes($value, '%_') . '%');
-                break;
-            case "sw":
-                $query->where($attribute, 'like', addcslashes($value, '%_') . '%');
-                break;
-            case "ew":
-                $query->where($attribute, 'like', '%' . addcslashes($value, '%_'));
-                break;
-            case "pr":
-                $query->whereNotNull($attribute);
-                break;
-            case "gt":
-                $query->where($attribute, '>', $value);
-                break;
-            case "ge":
-                $query->where($attribute, '>=', $value);
-                break;
-            case "lt":
-                $query->where($attribute, '<', $value);
-                break;
-            case "le":
-                $query->where($attribute, '<=', $value);
-                break;
-            default:
-                throw new SCIMException("Unknown operator " . $operator);
-        }
-    }
-
-    public function applyWhereCondition(&$query, $operator, $value)
-    {
-        throw new SCIMException(sprintf('Filtering is not implemented for "%s"', $this->getFullKey()));
+    public function applyComparison(Builder &$query, Path $path, $parentAttribute = null){
+        throw new SCIMException(sprintf('Comparison is not implemented for "%s"', $this->getFullKey()));
     }
 
     public function add($value, Model &$object)

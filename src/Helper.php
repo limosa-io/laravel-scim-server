@@ -12,6 +12,8 @@ use Tmilos\ScimFilterParser\Mode;
 use Tmilos\ScimFilterParser\Ast\Path;
 use Tmilos\ScimFilterParser\Ast\AttributePath;
 use ArieTimmerman\Laravel\SCIMServer\Exceptions\SCIMException;
+use ArieTimmerman\Laravel\SCIMServer\Parser\Path as ParserPath;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
@@ -100,18 +102,15 @@ class Helper
      * @param  unknown $node
      * @throws SCIMException
      */
-    public static function scimFilterToLaravelQuery(ResourceType $resourceType, &$query, $node)
+    public static function scimFilterToLaravelQuery(ResourceType $resourceType, Builder &$query, ParserPath $path)
     {
+        $node = $path->node;
         if ($node instanceof Negation) {
             $filter = $node->getFilter();
 
             throw (new SCIMException('Negation filters not supported'))->setCode(400)->setScimType('invalidFilter');
         } elseif ($node instanceof ComparisonExpression) {
-            $operator = strtolower($node->operator);
-
-            $attributeConfig = $resourceType->getMapping()->getSubNodeWithPath($node);
-
-            $attributeConfig->applyWhereCondition($query, $operator, $node->compareValue);
+            $resourceType->getMapping()->applyComparison($query, $path);
         } elseif ($node instanceof Conjunction) {
             foreach ($node->getFactors() as $factor) {
                 $query->where(

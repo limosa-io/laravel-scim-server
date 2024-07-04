@@ -134,7 +134,23 @@ class SCIMConfig
                         eloquent('value', 'email')->ensure('required', 'email'),
                         new Constant('type', 'other'),
                         new Constant('primary', true)
-                    )->ensure('required', 'array')
+                    )->ensure('required', 'array'),
+                    (new Collection('groups'))->withSubAttributes(
+                        eloquent('value', 'id'),
+                        (new class ('$ref') extends Eloquent {
+                            public function read(&$object)
+                            {
+                                return route(
+                                    'scim.resource',
+                                    [
+                                    'resourceType' => 'Group',
+                                    'resourceObject' => $object->id
+                                    ]
+                                );
+                            }
+                        }),
+                        eloquent('display', 'name')
+                    ),
                 ),
                 complex('urn:ietf:params:scim:schemas:extension:enterprise:2.0:User', true)->withSubAttributes(
                     eloquent('employeeNumber')->ensure('nullable')

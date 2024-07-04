@@ -2,6 +2,7 @@
 
 namespace ArieTimmerman\Laravel\SCIMServer\Parser;
 
+use Tmilos\ScimFilterParser\Ast\Factor;
 
 class Path {
     public $node;
@@ -23,7 +24,7 @@ class Path {
 
         //value path
         $getValuePath = function () {
-            return $this->valuePath;
+            return $this instanceof Factor ? null : $this->valuePath;
         };
 
         $valuePath = $getValuePath->call($this->node);

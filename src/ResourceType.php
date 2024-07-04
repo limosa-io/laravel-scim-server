@@ -3,6 +3,7 @@
 namespace ArieTimmerman\Laravel\SCIMServer;
 
 use ArieTimmerman\Laravel\SCIMServer\Attribute\Attribute;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Arr;
 
 class ResourceType
@@ -50,7 +51,7 @@ class ResourceType
         };
     }
 
-    public function getQuery()
+    public function getQuery(): Builder
     {
         return Arr::get($this->configuration, 'query') ?? $this->getClass()::query();
     }

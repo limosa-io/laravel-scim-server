@@ -4,6 +4,7 @@ namespace ArieTimmerman\Laravel\SCIMServer\Attribute;
 
 use ArieTimmerman\Laravel\SCIMServer\Exceptions\SCIMException;
 use ArieTimmerman\Laravel\SCIMServer\Parser\Path;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 
 class Complex extends Attribute
@@ -174,5 +175,45 @@ class Complex extends Attribute
         }
 
         return $result;
+    }
+
+    public function applyComparison(Builder &$query, Path $path, $parentAttribute = null){
+        
+        if ($path != null && $path->isNotEmpty()) {
+            $attributeNames = $path->getValuePathAttributes();
+
+            if (!empty($attributeNames)) {
+                // TODO: search for schema node
+                $attribute = $this->getSubNode($attributeNames[0]);
+                if ($attribute != null) {
+                    // ($operation, $value, $object, $path->shiftValuePathAttributes());
+                    $attribute->applyComparison($query, $path->shiftValuePathAttributes());
+                } elseif ($this->parent == null) {
+                    // pass the unchanged path object to the schema node
+                    $this->getSchemaNode()->applyComparison($query, $path);
+                } else {
+                    throw new SCIMException('Unknown path: ' . (string)$path . ", in object: " . $this->getFullKey());
+                }
+            } elseif ($path->getValuePathFilter() != null) {
+                // apply filtering here, for each match, call replace with updated path
+                throw new \Exception('Filtering not implemented for this complex attribute');
+            } elseif ($path->getAttributePath() != null) {
+                $attributeNames = $path?->getAttributePath()?->getAttributeNames() ?? [];
+
+                if (!empty($attributeNames)) {
+                    $attribute = $this->getSubNode($attributeNames[0]);
+                    if ($attribute != null) {
+                        $attribute->applyComparison($query, $path->shiftAttributePathAttributes());
+                    } elseif ($this->parent == null) {
+                        // this is the root node, check within the first (the default) schema node
+                        // pass the unchanged path object
+                        $this->getSchemaNode()->applyComparison($query, $path);
+                    } else {
+                        throw new SCIMException('Unknown path: ' . (string)$path . ", in object: " . $this->getFullKey());
+                    }
+                }
+            }
+        }
+
     }
 }

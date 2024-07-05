@@ -246,7 +246,15 @@ class ResourceController extends Controller
 
         $resourceObjects = $resourceObjects->get();
 
-        $attributes = [];
+        // TODO: splitting the attributes parameters by dot and comma is not correct, but works in most cases
+        $attributes = $request->input('attributes') ? preg_split('/[,.]/', $request->input('attributes')) : [];
+
+        if(!empty($attributes)){
+            $attributes[] = 'id';
+            $attributes[] = 'meta';
+            $attributes[] = 'schemas';
+        }
+
         $excludedAttributes = [];
 
         return new ListResponse($resourceObjects, $startIndex, $totalResults, $attributes, $excludedAttributes, $resourceType);

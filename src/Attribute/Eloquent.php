@@ -21,7 +21,7 @@ class Eloquent extends Attribute
         $this->setSortAttribute($this->attribute);
     }
 
-    public function read(&$object)
+    protected function doRead(&$object, $attributes = [])
     {
         $value = $object->{$this->attribute};
 

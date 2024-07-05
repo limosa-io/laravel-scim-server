@@ -15,7 +15,7 @@ class ListResponse implements Jsonable
     private $excludedAttributes;
     private $resourceType = null;
 
-    public function __construct($resourceObjects, $startIndex = 1, $totalResults = 10, $attributes = [], $excludedAttributes = [], ResourceType $resourceType = null)
+    public function __construct($resourceObjects, $startIndex = 1, $totalResults = 10, array $attributes = [], $excludedAttributes = [], ResourceType $resourceType = null)
     {
         $this->resourceType = $resourceType;
         $this->resourceObjects = $resourceObjects;
@@ -39,7 +39,7 @@ class ListResponse implements Jsonable
             "schemas" => [
                 "urn:ietf:params:scim:api:messages:2.0:ListResponse"
             ],
-            'Resources' => Helper::prepareReturn($this->resourceObjects, $this->resourceType),
+            'Resources' => Helper::prepareReturn($this->resourceObjects, $this->resourceType, $this->attributes),
         ];
     }
 }

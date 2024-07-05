@@ -133,7 +133,21 @@ class Attribute
         return $this;
     }
 
-    public function read(&$object)
+    protected function isRequested($attributes){
+        return empty($attributes) || in_array($this->name, $attributes) || in_array($this->getFullKey(), $attributes) || ($this->parent != null && $this->parent->isRequested($attributes));
+    }
+
+    public function read(&$object, array $attributes = []): ?AttributeValue
+    {
+        // check if name or getFullKey is in attributes
+        if (!$this->isRequested($attributes)) {
+            return null;
+        }
+
+        return new AttributeValue($this->doRead($object, $attributes));
+    }
+
+    protected function doRead(&$object, $attributes = [])
     {
         throw new SCIMException(sprintf('Read is not implemented for "%s"', $this->getFullKey()));
     }

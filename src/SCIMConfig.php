@@ -66,17 +66,17 @@ class SCIMConfig
                     }
                 },
                 (new class ('id', null) extends Constant {
-                    public function read(&$object)
+                    protected function doRead(&$object, $attributes = [])
                     {
                         return (string)$object->id;
                     }
                 }
                 ),
                 complex('meta')->setMutability('readOnly')->withSubAttributes(
-                    eloquent('created'),
-                    eloquent('lastModified'),
+                    eloquent('created', 'created_at'),
+                    eloquent('lastModified', 'updated_at'),
                     (new class ('location') extends Eloquent {
-                        public function read(&$object)
+                        protected function doRead(&$object, $attributes = [])
                         {
                             return route(
                                 'scim.resource',
@@ -94,7 +94,7 @@ class SCIMConfig
                     complex('name')->withSubAttributes(eloquent('formatted', 'name')),
                     eloquent('password')->ensure('nullable'),
                     (new class ('emails') extends Complex {
-                        public function read(&$object)
+                        protected function doRead(&$object, $attributes = [])
                         {
                             return collect([$object->email])->map(function ($email) {
                                 return [
@@ -121,7 +121,7 @@ class SCIMConfig
                     (new Collection('groups'))->withSubAttributes(
                         eloquent('value', 'id'),
                         (new class ('$ref') extends Eloquent {
-                            public function read(&$object)
+                            protected function doRead(&$object, $attributes = [])
                             {
                                 return route(
                                     'scim.resource',
@@ -164,7 +164,7 @@ class SCIMConfig
                     }
                 },
                 (new class ('id', null) extends Constant {
-                    public function read(&$object)
+                    protected function doRead(&$object, $attributes = [])
                     {
                         return (string)$object->id;
                     }
@@ -174,7 +174,7 @@ class SCIMConfig
                     eloquent('created'),
                     eloquent('lastModified'),
                     (new class ('location') extends Eloquent {
-                        public function read(&$object)
+                        protected function doRead(&$object, $attributes = [])
                         {
                             return route(
                                 'scim.resource',
@@ -199,7 +199,7 @@ class SCIMConfig
                     (new MutableCollection('members'))->withSubAttributes(
                         eloquent('value', 'id')->ensure('required'),
                         (new class ('$ref') extends Eloquent {
-                            public function read(&$object)
+                            protected function doRead(&$object, $attributes = [])
                             {
                                 return route(
                                     'scim.resource',

@@ -32,11 +32,23 @@ class Complex extends AbstractComplex
     }
 
     
-    public function read(&$object)
+    public function read(&$object, array $attributes = []): ?AttributeValue
+    {   
+        if (!$this->schemaNode && $this->parent != null && !empty($attributes) && !in_array($this->name, $attributes) && !in_array($this->getFullKey(), $attributes)) {
+            return null;
+        }
+
+        $result = $this->doRead($object, $attributes);
+        return !empty($result) ? new AttributeValue($result) : null;
+    }
+
+    protected function doRead(&$object, $attributes = [])
     {
         $result = [];
         foreach ($this->subAttributes as $attribute) {
-            $result[$attribute->name] = $attribute->read($object);
+            if(($r = $attribute->read($object, $attributes)) != null){
+                $result[$attribute->name] = $r->value;
+            }
         }
         return $result;
     }

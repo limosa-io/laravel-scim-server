@@ -26,7 +26,7 @@ class Helper
      *
      * @param unknown $object
      */
-    public static function prepareReturn(Arrayable $object, ResourceType $resourceType = null)
+    public static function prepareReturn(Arrayable $object, ResourceType $resourceType = null, array $attributes = [])
     {
         $result = null;
 
@@ -35,7 +35,7 @@ class Helper
                 $result = [];
 
                 foreach ($object as $key => $value) {
-                    $result[] = self::objectToSCIMArray($value, $resourceType);
+                    $result[] = self::objectToSCIMArray($value, $resourceType, $attributes);
                 }
             }
         }
@@ -47,14 +47,14 @@ class Helper
         return $result;
     }
 
-    public static function objectToSCIMArray($object, ResourceType $resourceType = null)
+    public static function objectToSCIMArray($object, ResourceType $resourceType = null, array $attributes = [])
     {
         if($resourceType == null){
             return $object;
         }
 
         $mapping = $resourceType->getMapping();
-        $result = $mapping->read($object);
+        $result = $mapping->read($object, $attributes)->value;
 
         if (config('scim.omit_main_schema_in_return')) {
             $defaultSchema = collect($mapping->getDefaultSchema())->first();

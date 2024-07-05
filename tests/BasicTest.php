@@ -41,6 +41,23 @@ class BasicTest extends TestCase
         ]);
     }
 
+    public function testGetAttributes()
+    {
+        $response = $this->get('/scim/v2/Users?attributes=userName,name.formatted,groups');
+
+        $response->assertStatus(200);
+        $response->assertJsonCount(10, 'Resources');
+        $response->assertJsonStructure([
+            'Resources' => [
+                '*' => [
+                    'urn:ietf:params:scim:schemas:core:2.0:User' => [
+                        'userName',
+                    ]
+                ]
+            ]
+        ]);
+    }
+
     public function testPagination()
     {
         $response = $this->get('/scim/v2/Users?startIndex=21&count=20');

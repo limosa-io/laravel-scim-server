@@ -19,7 +19,18 @@ class Collection extends AbstractComplex
         $this->attribute = $attribute ?? $name;
     }
 
-    public function read(&$object)
+    public function read(&$object, array $attributes = []): ?AttributeValue
+    {
+        if (!empty($attributes) && !in_array($this->name, $attributes) && !in_array($this->getFullKey(), $attributes)) {
+            return null;
+        }
+
+        $result = $this->doRead($object, $attributes);
+
+        return new AttributeValue($result);
+    }
+
+    protected function doRead(&$object, $attributes = [])
     {
         $result = [];
 
@@ -27,7 +38,9 @@ class Collection extends AbstractComplex
             $element = [];
 
             foreach ($this->subAttributes as $attribute) {
-                $element[$attribute->name] = $attribute->read($o);
+                if (($r = $attribute->read($o)) != null) {
+                    $element[$attribute->name] = $r->value;
+                }
             }
 
             $result[] = $element;

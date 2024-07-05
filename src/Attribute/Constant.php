@@ -17,7 +17,7 @@ class Constant extends Attribute
         $this->value = $value;
     }
 
-    public function read(&$object)
+    protected function doRead(&$object, $attributes = [])
     {
         return $this->value;
     }
@@ -29,8 +29,10 @@ class Constant extends Attribute
 
     public function replace($value, &$object, $path = null)
     {
-        if (json_encode($value) != json_encode($this->read($object))) {
-            throw (new SCIMException(sprintf('Write to "%s" is not supported, tried to change "%s" to "%s"', $this->getFullKey(), json_encode($this->read($object)), json_encode($value))))->setCode(500)->setScimType('mutability');
+        $current = json_encode($this->read($object)?->value);
+
+        if (json_encode($value) != $current) {
+            throw (new SCIMException(sprintf('Write to "%s" is not supported, tried to change "%s" to "%s"', $this->getFullKey(), $current, json_encode($value))))->setCode(500)->setScimType('mutability');
         }
 
         $this->dirty = true;

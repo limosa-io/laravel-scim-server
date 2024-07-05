@@ -2,7 +2,7 @@
 
 namespace ArieTimmerman\Laravel\SCIMServer\Tests;
 
-use ArieTimmerman\Laravel\SCIMServer\Attribute\AttributeMapping;
+use ArieTimmerman\Laravel\SCIMServer\Attribute\Attribute;
 use ArieTimmerman\Laravel\SCIMServer\SCIMConfig;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
@@ -17,7 +17,7 @@ class CustomSCIMConfig extends SCIMConfig
         $config['validations']['urn:ietf:params:scim:schemas:extension:enterprise:2\.0:User:employeeNumber'] = 'nullable';
 
         $config['mapping']['urn:ietf:params:scim:schemas:extension:enterprise:2.0:User'] = [
-            'employeeNumber' => AttributeMapping::eloquent("employeeNumber")
+            'employeeNumber' => new Attribute("employeeNumber")
         ];
 
         return $config;
@@ -45,7 +45,7 @@ class CustomSchemaTest extends TestCase
     public function testPost()
     {
         $response = $this->post('/scim/v2/Users', [
-            "id" => 1,
+            // "id" => 1,
             "schemas" => [
                 "urn:ietf:params:scim:schemas:core:2.0:User",
                 'urn:ietf:params:scim:schemas:extension:enterprise:2.0:User'

@@ -4,181 +4,193 @@ namespace ArieTimmerman\Laravel\SCIMServer;
 
 use ArieTimmerman\Laravel\SCIMServer\SCIM\Schema;
 use ArieTimmerman\Laravel\SCIMServer\Helper;
-use ArieTimmerman\Laravel\SCIMServer\Attribute\AttributeMapping;
-use Illuminate\Support\Facades\Auth;
+use ArieTimmerman\Laravel\SCIMServer\Attribute\Attribute;
+use ArieTimmerman\Laravel\SCIMServer\Attribute\Collection;
+use ArieTimmerman\Laravel\SCIMServer\Attribute\Complex;
+use ArieTimmerman\Laravel\SCIMServer\Attribute\Constant;
+use ArieTimmerman\Laravel\SCIMServer\Attribute\Eloquent;
+use ArieTimmerman\Laravel\SCIMServer\Attribute\Meta;
+use ArieTimmerman\Laravel\SCIMServer\Attribute\MutableCollection;
+use ArieTimmerman\Laravel\SCIMServer\Attribute\Schema as AttributeSchema;
+use ArieTimmerman\Laravel\SCIMServer\Tests\Model\Group;
+use Illuminate\Database\Eloquent\Model;
+
+function a($name = null): Attribute
+{
+    return new Attribute($name);
+}
+
+function complex($name = null): Complex
+{
+    return new Complex($name);
+}
+
+function eloquent($name, $attribute = null): Attribute
+{
+    return new Eloquent($name, $attribute);
+}
+
 
 class SCIMConfig
 {
+
+    public function __construct()
+    {
+    }
+
     public function getConfigForResource($name)
     {
-        if ($name == 'Users') {
-            return $this->getUserConfig();
-        } else {
-            $result = $this->getConfig();
-            return @$result[$name];
-        }
+        $result = $this->getConfig();
+        return @$result[$name];
     }
 
     public function getUserConfig()
     {
         return [
-                
+
             // Set to 'null' to make use of auth.providers.users.model (App\User::class)
             'class' => Helper::getAuthUserClass(),
-            
-            // Set to 'null' to make use of $class::query()
-            'query' => null,
-
-            // Set to 'null' to make use new $class()
-            'factory' => null,
-            
-            'validations' => [
-    
-                'urn:ietf:params:scim:schemas:core:2\.0:User:userName' => 'required',
-                'urn:ietf:params:scim:schemas:core:2\.0:User:password' => 'nullable',
-                'urn:ietf:params:scim:schemas:core:2\.0:User:active' => 'boolean',
-                'urn:ietf:params:scim:schemas:core:2\.0:User:emails' => 'required|array',
-                'urn:ietf:params:scim:schemas:core:2\.0:User:emails.*.value' => 'required|email',
-                'urn:ietf:params:scim:schemas:core:2\.0:User:roles' => 'nullable|array',
-                'urn:ietf:params:scim:schemas:core:2\.0:User:roles.*.value' => 'required',
-    
-            ],
-    
             'singular' => 'User',
-            'schema' => [
-                Schema::SCHEMA_USER,
-                'example:name:space'
-            ],
-    
+
             //eager loading
             'withRelations' => [],
-            'map_unmapped' => true,
-            'unmapped_namespace' => 'urn:ietf:params:scim:schemas:laravel:unmapped',
             'description' => 'User Account',
-            
-            // Map a SCIM attribute to an attribute of the object.
-            'mapping' => [
-                
-                'id' => (new AttributeMapping())->setRead(
-                    function (&$object) {
+
+            'map' => complex()->withSubAttributes(
+                new class ('schemas', [
+                    "urn:ietf:params:scim:schemas:core:2.0:User",
+                ]) extends Constant {
+                    public function replace($value, &$object, $path = null)
+                    {
+                        // do nothing
+                        $this->dirty = true;
+                    }
+                },
+                (new class ('id', null) extends Constant {
+                    protected function doRead(&$object, $attributes = [])
+                    {
                         return (string)$object->id;
                     }
-                )->disableWrite(),
-                
-                'externalId' => null,
-                
-                'meta' => [
-                    'created' => AttributeMapping::eloquent("created_at")->disableWrite(),
-                    'lastModified' => AttributeMapping::eloquent("updated_at")->disableWrite(),
-                    
-                    'location' => (new AttributeMapping())->setRead(
-                        function ($object) {
-                            return route(
-                                'scim.resource',
-                                [
-                                'resourceType' => 'Users',
-                                'resourceObject' => $object->id
-                                ]
-                            );
+                }
+                ),
+                new Meta('Users'),
+                (new AttributeSchema(Schema::SCHEMA_USER, true))->withSubAttributes(
+                    eloquent('userName', 'name')->ensure('required'),
+                    complex('name')->withSubAttributes(eloquent('formatted', 'name')),
+                    eloquent('password')->ensure('nullable'),
+                    (new class ('emails') extends Complex {
+                        protected function doRead(&$object, $attributes = [])
+                        {
+                            return collect([$object->email])->map(function ($email) {
+                                return [
+                                    'value' => $email,
+                                    'type' => 'other',
+                                    'primary' => true
+                                ];
+                            })->toArray();
                         }
-                    )->disableWrite(),
-                    
-                    'resourceType' => AttributeMapping::constant("User")
-                ],
-                
-                'example:name:space' => [
-                    'cityPrefix' => AttributeMapping::eloquent('cityPrefix')
-                ],
-                
-                'urn:ietf:params:scim:schemas:core:2.0:User' => [
-                    
-                    'userName' => AttributeMapping::eloquent("name"),
-                    
-                    'name' => [
-                        'formatted' => AttributeMapping::eloquent("name"),
-                        'familyName' => null,
-                        'givenName' => null,
-                        'middleName' => null,
-                        'honorificPrefix' => null,
-                        'honorificSuffix' => null
-                    ],
-                    
-                    'displayName' => null,
-                    'nickName' => null,
-                    'profileUrl' => null,
-                    'title' => null,
-                    'userType' => null,
-                    'preferredLanguage' => null, // Section 5.3.5 of [RFC7231]
-                    'locale' => null, // see RFC5646
-                    'timezone' => null, // see RFC6557
-                    'active' => null,
-                    
-                    'password' => AttributeMapping::eloquent('password')->disableRead(),
-                    
-                    // Multi-Valued Attributes
-                    'emails' => [[
-                            "value" => AttributeMapping::eloquent("email"),
-                            "display" => null,
-                            "type" => AttributeMapping::constant("other")->ignoreWrite(),
-                            "primary" => AttributeMapping::constant(true)->ignoreWrite()
-                    ],[
-                            "value" => AttributeMapping::eloquent("email"),
-                            "display" => null,
-                            "type" => AttributeMapping::constant("work")->ignoreWrite(),
-                            "primary" => AttributeMapping::constant(true)->ignoreWrite()
-                    ]],
-                    
-                    'phoneNumbers' => [[
-                        "value" => null,
-                        "display" => null,
-                        "type" => null,
-                        "primary" => null
-                    ]],
-                    
-                    'ims' => [[
-                        "value" => null,
-                        "display" => null,
-                        "type" => null,
-                        "primary" => null
-                    ]], // Instant messaging addresses for the User
-                    
-                    'photos' => [[
-                        "value" => null,
-                        "display" => null,
-                        "type" => null,
-                        "primary" => null
-                    ]],
-                    
-                    'addresses' => [[
-                        'formatted' => null,
-                        'streetAddress' => null,
-                        'locality' => null,
-                        'region' => null,
-                        'postalCode' => null,
-                        'country' => null
-                    ]],
-                    
-                    'groups' => [[
-                        'value' => null,
-                        '$ref' => null,
-                        'display' => null,
-                        'type' => null,
-                        'type' => null
-                    ]],
-                    
-                    'entitlements' => null,
-                    'roles' => null,
-                    'x509Certificates' => null
-                ],
-                            
-            ]
-            ];
+                        public function add($value, Model &$object)
+                        {
+                            $object->email = $value[0]['value'];
+                        }
+                        public function replace($value, Model &$object, $path = null, $removeIfNotSet = false)
+                        {
+                            $object->email = $value[0]['value'];
+                        }
+                    })->withSubAttributes(
+                        eloquent('value', 'email')->ensure('required', 'email'),
+                        new Constant('type', 'other'),
+                        new Constant('primary', true)
+                    )->ensure('required', 'array')
+                    ->setMultiValued(true),
+                    (new Collection('groups'))->withSubAttributes(
+                        eloquent('value', 'id'),
+                        (new class ('$ref') extends Eloquent {
+                            protected function doRead(&$object, $attributes = [])
+                            {
+                                return route(
+                                    'scim.resource',
+                                    [
+                                    'resourceType' => 'Group',
+                                    'resourceObject' => $object->id ?? "not-saved"
+                                    ]
+                                );
+                            }
+                        }),
+                        eloquent('display', 'name')
+                    ),
+                ),
+                (new AttributeSchema('urn:ietf:params:scim:schemas:extension:enterprise:2.0:User', true))->withSubAttributes(
+                    eloquent('employeeNumber')->ensure('nullable')
+                )
+            ),
+        ];
+    }
+
+    public function getGroupConfig()
+    {
+        return [
+
+            'class' => Group::class,
+            'singular' => 'Group',
+
+            //eager loading
+            'withRelations' => [],
+            'description' => 'Group',
+
+            'map' => complex()->withSubAttributes(
+                new class ('schemas', [
+                    "urn:ietf:params:scim:schemas:core:2.0:Group",
+                ]) extends Constant {
+                    public function replace($value, &$object, $path = null)
+                    {
+                        // do nothing
+                        $this->dirty = true;
+                    }
+                },
+                (new class ('id', null) extends Constant {
+                    protected function doRead(&$object, $attributes = [])
+                    {
+                        return (string)$object->id;
+                    }
+                }
+                ),
+                new Meta('Groups'),
+                (new AttributeSchema(Schema::SCHEMA_GROUP, true))->withSubAttributes(
+                    eloquent('name')->ensure('required', 'min:3', function ($attribute, $value, $fail) {
+                        // check if group does not exist or if it exists, it is the same group
+                        $group = Group::where('name', $value)->first();
+                        if ($group && (request()->route('resourceObject') == null || $group->id != request()->route('resourceObject')->id)) {
+                            $fail('The name has already been taken.');
+                        }
+                    }),
+                    eloquent('displayName')->ensure('nullable'),
+                    (new MutableCollection('members'))->withSubAttributes(
+                        eloquent('value', 'id')->ensure('required'),
+                        (new class ('$ref') extends Eloquent {
+                            protected function doRead(&$object, $attributes = [])
+                            {
+                                return route(
+                                    'scim.resource',
+                                    [
+                                    'resourceType' => 'Users',
+                                    'resourceObject' => $object->id ?? "not-saved"
+                                    ]
+                                );
+                            }
+                        }),
+                        eloquent('display', 'name')
+                    )->ensure('nullable', 'array')
+                )
+            ),
+        ];
     }
 
     public function getConfig()
     {
         return [
-            'Users' => $this->getUserConfig()
+            'Users' => $this->getUserConfig(),
+            'Groups' => $this->getGroupConfig(),
         ];
     }
 }

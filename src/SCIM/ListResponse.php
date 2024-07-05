@@ -15,13 +15,13 @@ class ListResponse implements Jsonable
     private $excludedAttributes;
     private $resourceType = null;
 
-    public function __construct($resourceObjects, $startIndex = 1, $totalResults = 10, $attributes = [], $excludedAttributes = [], ResourceType $resourceType = null)
+    public function __construct($resourceObjects, $startIndex = 1, $totalResults = 10, array $attributes = [], $excludedAttributes = [], ResourceType $resourceType = null)
     {
         $this->resourceType = $resourceType;
         $this->resourceObjects = $resourceObjects;
         $this->startIndex = $startIndex;
         $this->totalResults = $totalResults;
-        $this->attribtues = $attributes;
+        $this->attributes = $attributes;
         $this->excludedAttributes = $excludedAttributes;
     }
 
@@ -29,7 +29,7 @@ class ListResponse implements Jsonable
     {
         return json_encode($this->toSCIMArray(), $options);
     }
-    
+
     public function toSCIMArray()
     {
         return [
@@ -39,7 +39,7 @@ class ListResponse implements Jsonable
             "schemas" => [
                 "urn:ietf:params:scim:api:messages:2.0:ListResponse"
             ],
-            'Resources' => Helper::prepareReturn($this->resourceObjects, $this->resourceType),
+            'Resources' => Helper::prepareReturn($this->resourceObjects, $this->resourceType, $this->attributes),
         ];
     }
 }

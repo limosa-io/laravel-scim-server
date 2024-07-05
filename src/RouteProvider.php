@@ -1,9 +1,6 @@
 <?php
 namespace ArieTimmerman\Laravel\SCIMServer;
 
-use Illuminate\Support\Facades\Auth;
-use ArieTimmerman\Laravel\SCIMServer\Exceptions\SCIMException;
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
 /**

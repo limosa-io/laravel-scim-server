@@ -5,7 +5,6 @@
 
 namespace ArieTimmerman\Laravel\SCIMServer;
 
-use Illuminate\Support\Facades\Route;
 use ArieTimmerman\Laravel\SCIMServer\Exceptions\SCIMException;
 
 class ServiceProvider extends \Illuminate\Support\ServiceProvider

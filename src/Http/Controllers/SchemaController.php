@@ -9,43 +9,29 @@ use ArieTimmerman\Laravel\SCIMServer\SCIMConfig;
 
 class SchemaController extends Controller
 {
-    private $schemas = null;
-
     public function getSchemas()
     {
-        if ($this->schemas != null) {
-            return $this->schemas;
-        }
-
         $config = resolve(SCIMConfig::class)->getConfig();
 
+        $schemaNodes = [];
         $schemas = [];
 
         foreach ($config as $key => $value) {
-            if ($key != 'Users' && $key != 'Groups') {
-                continue;
-            }
+            $value['map']->generateSchema();
 
-            // TODO: FIX THIS. Schema is now an array but should be a string
-            $schema = (new SchemaBuilderV2())->get($value['schema'][0]);
-
-            if ($schema == null) {
-                throw new SCIMException("Schema not found");
-            }
-
-            $schema->getMeta()->setLocation(route('scim.schemas', ['id' => $schema->getId()]));
-
-            $schemas[] = $schema->serializeObject();
+            $schemaNodes = array_merge($schemaNodes, $value['map']->getSchemaNodes());
         }
 
-        $this->schemas = collect($schemas);
+        foreach ($schemaNodes as $schemaNode) {
+            $schemas[] = $schemaNode->generateSchema();
+        }
 
-        return $this->schemas;
+        return $schemas;
     }
 
     public function show($id)
     {
-        $result = $this->getSchemas()->first(
+        $result = collect($this->getSchemas())->first(
             function ($value, $key) use ($id) {
                 return $value['id'] == $id;
             }
@@ -60,6 +46,7 @@ class SchemaController extends Controller
 
     public function index()
     {
-        return new ListResponse($this->getSchemas(), 1, $this->getSchemas()->count());
+        $schemas = collect($this->getSchemas());
+        return new ListResponse($schemas, 1, $schemas->count());
     }
 }

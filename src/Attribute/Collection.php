@@ -3,246 +3,68 @@
 namespace ArieTimmerman\Laravel\SCIMServer\Attribute;
 
 use ArieTimmerman\Laravel\SCIMServer\Exceptions\SCIMException;
+use ArieTimmerman\Laravel\SCIMServer\Parser\Path;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Model;
 
-class Collection extends AttributeMapping
+class Collection extends AbstractComplex
 {
-    protected $collection = null;
+    protected $attribute;
+    protected $multiValued = true;
 
-    public function setStaticCollection($collection)
+    public function __construct($name, $attribute = null)
     {
-        $this->collection = $collection;
+        parent::__construct($name);
 
-        return $this;
+        $this->attribute = $attribute ?? $name;
     }
 
-    public function add($value, &$object)
+    public function read(&$object, array $attributes = []): ?AttributeValue
     {
+        if (!empty($attributes) && !in_array($this->name, $attributes) && !in_array($this->getFullKey(), $attributes)) {
+            return null;
+        }
 
-        //only for creation requests
-        if ($object->id == null) {
-            foreach ($value as $key => $v) {
-                $this->getSubNode($key)->add($v, $object);
-            }
-        } else {
-            foreach ($value as $key => $v) {
-                if ($this->getSubNode($key) != null) {
-                    $this->getSubNode($key)->add($v, $object);
-                } else {
-                    //TODO: log ignore
+        $result = $this->doRead($object, $attributes);
+
+        return new AttributeValue($result);
+    }
+
+    protected function doRead(&$object, $attributes = [])
+    {
+        $result = [];
+
+        foreach ($object->{$this->attribute} as $o) {
+            $element = [];
+
+            foreach ($this->subAttributes as $attribute) {
+                if (($r = $attribute->read($o)) != null) {
+                    $element[$attribute->name] = $r->value;
                 }
             }
 
-            // throw (new SCIMException('Add is not implemented for updates of ' . $this->getFullKey()))->setCode(501);
-        }
-    }
-
-    public function remove($value, &$object)
-    {
-        // throw (new SCIMException('Remove is not implemented for ' . $this->getFullKey()))->setCode(501);
-
-        foreach ($this->collection as $c) {
-            foreach ($c as $k => $v) {
-                $mapping = AttributeMapping::ensureAttributeMappingObject($v);
-
-                if ($mapping->isWriteSupported()) {
-                    $mapping->remove($value, $object);
-                }
-            }
-        }
-    }
-
-    public function replace($value, &$object)
-    {
-        $this->remove($value, $object);
-
-        $this->add($value, $object);
-
-        // var_dump(json_encode($object));exit;
-        // throw (new SCIMException('Replace is not implemented for ' . $this->getFullKey()))->setCode(501);
-    }
-
-    public function getEloquentAttributes()
-    {
-        $result = $this->eloquentAttributes;
-
-        foreach ($this->collection as $value) {
-            $result = array_merge($result, AttributeMapping::ensureAttributeMappingObject($value)->getEloquentAttributes());
+            $result[] = $element;
         }
 
         return $result;
     }
 
-    public function getSubNode($key, $schema = null)
+    public function applyComparison(Builder &$query, Path $path, $parentAttribute = null)
     {
-        if ($key == null) {
-            return $this;
+        if ($path == null || empty($path->getAttributePathAttributes())) {
+            throw new SCIMException('No attribute path attributes found. Could not apply comparison in ' . $this->getFullKey());
         }
 
-        if (!empty($this->collection) && is_array($this->collection[0]) && array_key_exists($key, $this->collection[0])) {
-            $parent = $this;
+        $attribute = $this->getSubNode($path->getAttributePathAttributes()[0]);
 
-            return (new CollectionValue())
-                ->setEloquentAttributes($this->collection[0][$key]->getEloquentAttributes())
-                ->setKey($key)
-                ->setParent($this)
-                ->setAdd(function ($value, &$object) use ($key, $parent) {
-                    $collection = Collection::filterCollection($parent->filter, collect($parent->collection), $object);
-
-                    $result = [];
-
-                    foreach ($collection as $o) {
-                        $o[$key]->add($value, $object);
-                    }
-                })
-                ->setReplace(function ($value, &$object) use ($key, $parent) {
-                    $collection = Collection::filterCollection($parent->filter, collect($parent->collection), $object);
-
-                    $result = [];
-
-                    foreach ($collection as $o) {
-                        $o[$key]->add($value, $object);
-                    }
-                })
-                ->setRead(function (&$object) use ($key, $parent) {
-                    $collection = Collection::filterCollection($parent->filter, collect($parent->collection), $object);
-
-                    $result = [];
-
-                    foreach ($collection as $o) {
-                        $result = AttributeMapping::ensureAttributeMappingObject($o);
-                    }
-
-                    return $result;
-                })
-                ->setSchema($schema);
-        }
+        $query->whereHas(
+            $this->attribute,
+            fn (Builder $query) => $attribute->applyComparison($query, $path->shiftAttributePathAttributes(), $this->attribute)
+        )->get();
     }
 
-    public static function filterCollection($scimFilter, $collection, $resourceObject)
+    public function replace($value, Model &$object, Path $path = null)
     {
-        if ($scimFilter == null) {
-            return $collection;
-        }
-
-        $attribute = $scimFilter->attributePath->attributeNames[0];
-        $operator = $scimFilter->operator;
-        $compareValue = $scimFilter->compareValue;
-
-        $result = [];
-
-        foreach ($collection->toArray() as $value) {
-            $result[] = AttributeMapping::ensureAttributeMappingObject($value)->read($resourceObject);
-        }
-
-        $collectionOriginal = $collection;
-
-        $collection = collect($result);
-
-        switch ($operator) {
-            case "eq":
-                /**
-                 * @var $collection Coll
-                */
-                $result = $collection->where($attribute, '==', $compareValue);
-                break;
-            case "ne":
-                $result = $collection->where($attribute, '<>', $compareValue);
-                break;
-            case "co":
-                throw (new SCIMException(sprintf('"co" is not supported for attribute "%s"', $this->getFullKey())))->setCode(501);
-                    break;
-            case "sw":
-                throw (new SCIMException(sprintf('"sw" is not supported for attribute "%s"', $this->getFullKey())))->setCode(501);
-                    break;
-            case "ew":
-                throw (new SCIMException(sprintf('"ew" is not supported for attribute "%s"', $this->getFullKey())))->setCode(501);
-                    break;
-            case "pr":
-                $result = $collection->where($attribute, '!=', null);
-                break;
-            case "gt":
-                $result = $collection->where($attribute, '>', $compareValue);
-                break;
-            case "ge":
-                $result = $collection->where($attribute, '>=', $compareValue);
-                break;
-            case "lt":
-                $result = $collection->where($attribute, '<', $compareValue);
-                break;
-            case "le":
-                $result = $collection->where($attribute, '<=', $compareValue);
-                break;
-            default:
-                die("Not supported!!");
-                    break;
-
-        }
-
-        foreach ($collectionOriginal->keys()->all() as $key) {
-            if (!in_array($key, (array)$result->keys()->all())) {
-                unset($collectionOriginal[$key]);
-            }
-        }
-
-        return $collectionOriginal;
-    }
-
-    /**
-     * Get an operator checker callback.
-     *
-     * @param  string $key
-     * @param  string $operator
-     * @param  mixed  $value
-     * @return \Closure
-     */
-    protected function operatorForWhere($key, $operator, $value = null)
-    {
-        if (func_num_args() == 2) {
-            $value = $operator;
-
-            $operator = '=';
-        }
-
-        return function ($item) use ($key, $operator, $value) {
-            $retrieved = data_get($item, $key);
-
-            $strings = array_filter(
-                [$retrieved, $value],
-                function ($value) {
-                    return is_string($value) || (is_object($value) && method_exists($value, '__toString'));
-                }
-            );
-
-            if (count($strings) < 2 && count(array_filter([$retrieved, $value], 'is_object')) == 1) {
-                return in_array($operator, ['!=', '<>', '!==']);
-            }
-
-            switch ($operator) {
-                default:
-                case '=':
-                case '==':
-                    return $retrieved == $value;
-                case '!=':
-                case '<>':
-                    return $retrieved != $value;
-                case '<':
-                    return $retrieved < $value;
-                case '>':
-                    return $retrieved > $value;
-                case '<=':
-                    return $retrieved <= $value;
-                case '>=':
-                    return $retrieved >= $value;
-                case '===':
-                    return $retrieved === $value;
-                case '!==':
-                    return $retrieved !== $value;
-            }
-        };
-    }
-
-    public function applyWhereCondition(&$query, $operator, $value)
-    {
-        throw (new SCIMException(sprintf('Filter is not supported for attribute "%s"', $this->getFullKey())))->setCode(501);
+        // ignore replace actions
     }
 }

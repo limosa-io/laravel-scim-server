@@ -268,4 +268,37 @@ class BasicTest extends TestCase
         $this->assertEquals('mariejo@example.com', $json['urn:ietf:params:scim:schemas:core:2.0:User']['emails'][0]['value']);
         $this->assertEquals('Dr. Marie Jo', $json['urn:ietf:params:scim:schemas:core:2.0:User']['userName']);
     }
+
+    public function testPostTopLevel()
+    {
+        $response = $this->post('/scim/v2/Users', [
+            // "id" => 1,
+            "schemas" => [
+                "urn:ietf:params:scim:schemas:core:2.0:User",
+            ],
+
+            "userName" => "Dr. Marie Jo",
+            "password" => "Password123",
+            "emails" => [
+                [
+                    "value" => "mariejo@example.com",
+                    "type" => "primary",
+                    "primary" => true
+                ]
+            ]
+
+        ]);
+
+        $this->assertEquals(
+            201,
+            $response->baseResponse->getStatusCode(),
+            'Wrong status: ' . $response->baseResponse->content()
+        );
+
+        $json = $response->json();
+
+        $this->assertArrayHasKey('urn:ietf:params:scim:schemas:core:2.0:User', $json);
+        $this->assertEquals('mariejo@example.com', $json['urn:ietf:params:scim:schemas:core:2.0:User']['emails'][0]['value']);
+        $this->assertEquals('Dr. Marie Jo', $json['urn:ietf:params:scim:schemas:core:2.0:User']['userName']);
+    }
 }

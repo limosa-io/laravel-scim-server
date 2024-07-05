@@ -9,6 +9,19 @@ abstract class AbstractComplex extends Attribute
      */
     public $subAttributes = [];
 
+    public function getSchemaNode(): ?Schema
+    {
+        if ($this->parent != null) {
+            return null;
+        }
+
+        return collect($this->subAttributes)->first(fn ($element) => $element instanceof Schema);
+    }
+
+    public function getSchemaNodes(){
+        return collect($this->subAttributes)->filter(fn ($element) => $element instanceof Schema)->values()->toArray();
+    }
+
     public function getValidations()
     {
         $result = [
@@ -37,7 +50,14 @@ abstract class AbstractComplex extends Attribute
 
     public function getSubNode(string $key): ?Attribute
     {
-        return collect($this->subAttributes)->first(fn ($element) => $element->name == $key);
+        $result = collect($this->subAttributes)->first(fn ($element) => $element->name == $key);
+
+        // if this is the root node, search for a subNode in one of the default schema nodes
+        if($result == null){
+            $result = $this->getSchemaNode()?->getSubNode($key);
+        }
+
+        return $result;
     }
 
     public function generateSchema()

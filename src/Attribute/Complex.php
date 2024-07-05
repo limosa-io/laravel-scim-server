@@ -10,19 +10,6 @@ use Illuminate\Database\Eloquent\Model;
 class Complex extends AbstractComplex
 {
     
-    public function getSchemaNode(): ?Attribute
-    {
-        if ($this->parent != null) {
-            return null;
-        }
-
-        return collect($this->subAttributes)->first(fn ($element) => $element->schemaNode);
-    }
-
-    public function getSchemaNodes(){
-        return collect($this->subAttributes)->filter(fn ($element) => $element->schemaNode)->values()->toArray();
-    }
-
     /**
      * @return string[]
      */

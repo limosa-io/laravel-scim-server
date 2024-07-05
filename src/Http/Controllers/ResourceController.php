@@ -62,6 +62,12 @@ class ResourceController extends Controller
         $resourceObject = $resourceType->getFactory()();
 
         $resourceType->getMapping()->replace($input, $resourceObject);
+
+        //validate
+        $newObject = Helper::flatten(Helper::objectToSCIMArray($resourceObject, $resourceType), $resourceType->getSchema());
+
+        $flattened = self::validateScim($resourceType, $newObject, $resourceObject);
+
         $resourceObject->save();
 
         return $resourceObject;

@@ -2,8 +2,7 @@
 
 namespace ArieTimmerman\Laravel\SCIMServer\Tests;
 
-use ArieTimmerman\Laravel\SCIMServer\Attribute\Attribute;
-use ArieTimmerman\Laravel\SCIMServer\SCIMConfig;
+use ArieTimmerman\Laravel\SCIMServer\Tests\Model\Group;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
@@ -52,16 +51,66 @@ class GroupsTest extends TestCase
     public function testCreate(){
         $response = $this->post('/scim/v2/Groups', [
             'schemas' => ['urn:ietf:params:scim:schemas:core:2.0:Group'], // Required
-            'name' => 'testgroup1',
-            'displayName' => 'TestGroup'
+            'urn:ietf:params:scim:schemas:core:2.0:Group' => [
+                'name' => 'testgroup1',
+                'displayName' => 'TestGroup'
+            ]
         ]);
 
         $response->assertJsonStructure([
             'id',
             'urn:ietf:params:scim:schemas:core:2.0:Group' => [
+                'name',
                 'displayName'
             ]
-            
         ]);
+
+        $this->assertNotNull(Group::find($response->json('id')));
+        $this->assertNotNull(Group::where('name', 'testgroup1')->first());
+
+    }
+
+    public function testBulk(){
+        $response = $this->post('/scim/v2/Bulk', [
+            'schemas' => ['urn:ietf:params:scim:api:messages:2.0:BulkRequest'], // Required
+            'Operations' => [
+                [
+                    'method' => 'POST',
+                    'path' => '/Groups',
+                    'data' => [
+                        'schemas' => ['urn:ietf:params:scim:schemas:core:2.0:Group'], // Required
+                        'urn:ietf:params:scim:schemas:core:2.0:Group' => [
+                            'name' => 'testgroup1',
+                            'displayName' => 'TestGroup'
+                        ]
+                    ]
+                ],
+                [
+                    'method' => 'POST',
+                    'path' => '/Groups',
+                    'data' => [
+                        'schemas' => ['urn:ietf:params:scim:schemas:core:2.0:Group'], // Required
+                        'urn:ietf:params:scim:schemas:core:2.0:Group' => [
+                            'name' => 'testgroup2',
+                            'displayName' => 'TestGroup2'
+                        ]
+                    ]
+                ]
+            ]
+        ]);
+
+        $response->assertJsonStructure([
+            'schemas',
+            'Operations' => [
+                '*' => [
+                    'method',
+                    'location',
+                    'status'
+                ]
+            ]
+        ]);
+
+        // confirm testgroup1 exists
+        $this->assertNotNull(Group::where('name', 'testgroup2')->first());
     }
 }

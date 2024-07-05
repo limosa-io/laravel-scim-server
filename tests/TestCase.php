@@ -27,6 +27,7 @@ abstract class TestCase extends BaseTestCase
             // timestamp columns
             $table->timestamps();
             $table->string('name')->nullable();
+            $table->string('displayName')->nullable();
         });
 
         Schema::create('group_user', function (Blueprint $table) {

@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "08f1170fee904936c4acd85558b56b82",
+    "content-hash": "fb62d318d31349824c54ec79f06ffab4",
     "packages": [
         {
             "name": "brick/math",
@@ -61,6 +61,67 @@
                 }
             ],
             "time": "2022-08-10T22:54:19+00:00"
+        },
+        {
+            "name": "cloudstek/scim-filter-parser",
+            "version": "v3.0.0",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/Cloudstek/scim-filter-parser.git",
+                "reference": "f1329a8664ca972abc6f2c544dc39d123612ed6a"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/Cloudstek/scim-filter-parser/zipball/f1329a8664ca972abc6f2c544dc39d123612ed6a",
+                "reference": "f1329a8664ca972abc6f2c544dc39d123612ed6a",
+                "shasum": ""
+            },
+            "require": {
+                "nette/tokenizer": "^3.1",
+                "php": "^8.1"
+            },
+            "require-dev": {
+                "php-coveralls/php-coveralls": "^2.2",
+                "phpunit/phpunit": "^9.0",
+                "squizlabs/php_codesniffer": "^3.5",
+                "vimeo/psalm": "^4.22"
+            },
+            "type": "library",
+            "autoload": {
+                "psr-4": {
+                    "Cloudstek\\SCIM\\FilterParser\\": "src/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "Maarten de Boer",
+                    "email": "maarten@cloudstek.nl"
+                }
+            ],
+            "description": "Parser for the SCIM (IETF RFC 7644, System for Cross-domain Identity Management) filter syntax.",
+            "keywords": [
+                "RFC7644",
+                "Users",
+                "cross-domain",
+                "groups",
+                "identity",
+                "ietf",
+                "lexer",
+                "management",
+                "parser",
+                "protocol",
+                "scim",
+                "sync"
+            ],
+            "support": {
+                "issues": "https://github.com/Cloudstek/scim-filter-parser/issues",
+                "source": "https://github.com/Cloudstek/scim-filter-parser/tree/v3.0.0"
+            },
+            "time": "2022-03-22T00:13:03+00:00"
         },
         {
             "name": "dflydev/dot-access-data",
@@ -1331,6 +1392,63 @@
                 "source": "https://github.com/nette/schema/tree/v1.2.3"
             },
             "time": "2022-10-13T01:24:26+00:00"
+        },
+        {
+            "name": "nette/tokenizer",
+            "version": "v3.1.1",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/nette/tokenizer.git",
+                "reference": "370c5e4e2e10eb4d3e406d3a90526f821de98190"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/nette/tokenizer/zipball/370c5e4e2e10eb4d3e406d3a90526f821de98190",
+                "reference": "370c5e4e2e10eb4d3e406d3a90526f821de98190",
+                "shasum": ""
+            },
+            "require": {
+                "php": ">=7.1"
+            },
+            "require-dev": {
+                "nette/tester": "~2.0",
+                "phpstan/phpstan": "^0.12",
+                "tracy/tracy": "^2.3"
+            },
+            "type": "library",
+            "extra": {
+                "branch-alias": {
+                    "dev-master": "3.0-dev"
+                }
+            },
+            "autoload": {
+                "classmap": [
+                    "src/"
+                ]
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "BSD-3-Clause",
+                "GPL-2.0-only",
+                "GPL-3.0-only"
+            ],
+            "authors": [
+                {
+                    "name": "David Grudl",
+                    "homepage": "https://davidgrudl.com"
+                },
+                {
+                    "name": "Nette Community",
+                    "homepage": "https://nette.org/contributors"
+                }
+            ],
+            "description": "Nette Tokenizer",
+            "homepage": "https://nette.org",
+            "support": {
+                "source": "https://github.com/nette/tokenizer/tree/v3.1.1"
+            },
+            "abandoned": true,
+            "time": "2022-02-09T22:28:54+00:00"
         },
         {
             "name": "nette/utils",

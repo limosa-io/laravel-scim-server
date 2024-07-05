@@ -82,7 +82,7 @@ class SCIMConfig
                                 'scim.resource',
                                 [
                                 'resourceType' => 'Users',
-                                'resourceObject' => $object->id
+                                'resourceObject' => $object->id ?? "not-saved"
                                 ]
                             );
                         }
@@ -127,7 +127,7 @@ class SCIMConfig
                                     'scim.resource',
                                     [
                                     'resourceType' => 'Group',
-                                    'resourceObject' => $object->id
+                                    'resourceObject' => $object->id ?? "not-saved"
                                     ]
                                 );
                             }
@@ -180,7 +180,7 @@ class SCIMConfig
                                 'scim.resource',
                                 [
                                 'resourceType' => 'Groups',
-                                'resourceObject' => $object->id
+                                'resourceObject' => $object->id ?? "not-saved"
                                 ]
                             );
                         }
@@ -205,7 +205,7 @@ class SCIMConfig
                                     'scim.resource',
                                     [
                                     'resourceType' => 'Users',
-                                    'resourceObject' => $object->id
+                                    'resourceObject' => $object->id ?? "not-saved"
                                     ]
                                 );
                             }

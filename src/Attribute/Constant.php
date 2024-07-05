@@ -10,9 +10,9 @@ class Constant extends Attribute
 {
     protected $value;
 
-    public function __construct($name, $value, $schemaNode = false)
+    public function __construct($name, $value)
     {
-        parent::__construct($name, $schemaNode);
+        parent::__construct($name);
 
         $this->value = $value;
     }

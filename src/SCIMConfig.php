@@ -15,19 +15,19 @@ use ArieTimmerman\Laravel\SCIMServer\Attribute\Schema as AttributeSchema;
 use ArieTimmerman\Laravel\SCIMServer\Tests\Model\Group;
 use Illuminate\Database\Eloquent\Model;
 
-function a($name = null, $schemaNode = false): Attribute
+function a($name = null): Attribute
 {
-    return new Attribute($name, $schemaNode);
+    return new Attribute($name);
 }
 
-function complex($name = null, $schemaNode = false): Complex
+function complex($name = null): Complex
 {
-    return new Complex($name, $schemaNode);
+    return new Complex($name);
 }
 
-function eloquent($name, $attribute = null, $schemaNode = false): Attribute
+function eloquent($name, $attribute = null): Attribute
 {
-    return new Eloquent($name, $attribute, $schemaNode);
+    return new Eloquent($name, $attribute);
 }
 
 

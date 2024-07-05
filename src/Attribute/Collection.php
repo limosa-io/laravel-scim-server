@@ -12,9 +12,9 @@ class Collection extends AbstractComplex
     protected $attribute;
     protected $multiValued = true;
 
-    public function __construct($name, $attribute = null, $schemaNode = false)
+    public function __construct($name, $attribute = null)
     {
-        parent::__construct($name, $schemaNode);
+        parent::__construct($name);
 
         $this->attribute = $attribute ?? $name;
     }

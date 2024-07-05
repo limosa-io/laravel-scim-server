@@ -13,9 +13,9 @@ class Eloquent extends Attribute
     public $relationship;
     protected $mutability = 'readWrite';
 
-    public function __construct($name, $attribute = null, $schemaNode = false)
+    public function __construct($name, $attribute = null)
     {
-        parent::__construct($name, $schemaNode);
+        parent::__construct($name);
 
         $this->attribute = $attribute ?? $name;
         $this->setSortAttribute($this->attribute);

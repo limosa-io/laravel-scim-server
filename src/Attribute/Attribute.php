@@ -2,6 +2,7 @@
 
 namespace ArieTimmerman\Laravel\SCIMServer\Attribute;
 
+use ArieTimmerman\Laravel\SCIMServer\Attribute\Schema as AttributeSchema;
 use ArieTimmerman\Laravel\SCIMServer\Exceptions\SCIMException;
 use ArieTimmerman\Laravel\SCIMServer\Parser\Path;
 use ArieTimmerman\Laravel\SCIMServer\SCIM\Schema;
@@ -29,7 +30,6 @@ class Attribute
     /** @var Attribute */
     public $parent = null;
 
-    public $schemaNode = false;
     public $validations = [];
     public $filter;
     public $sortAttribute;
@@ -41,10 +41,9 @@ class Attribute
 
     public $dirty = false;
 
-    public function __construct($name = null, $schemaNode = false)
+    public function __construct($name = null)
     {
         $this->name = $name;
-        $this->schemaNode = $schemaNode;
     }
 
     public function getValidations()
@@ -155,7 +154,7 @@ class Attribute
     public function getFullKey()
     {
         if ($this->parent != null && $this->parent->name != null) {
-            $seperator = $this->parent->schemaNode ? ':' : '.';
+            $seperator = $this->parent instanceof AttributeSchema ? ':' : '.';
             return $this->parent->getFullKey() . $seperator . $this->name;
         } else {
             return $this->name;
@@ -170,7 +169,7 @@ class Attribute
 
     public function getSchema()
     {
-        if ($this->schemaNode) {
+        if ($this instanceof AttributeSchema) {
             return $this->name;
         } else {
             return $this->parent?->getSchema();

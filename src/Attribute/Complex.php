@@ -21,7 +21,7 @@ class Complex extends AbstractComplex
     
     public function read(&$object, array $attributes = []): ?AttributeValue
     {   
-        if (!$this->schemaNode && $this->parent != null && !empty($attributes) && !in_array($this->name, $attributes) && !in_array($this->getFullKey(), $attributes)) {
+        if (!($this instanceof Schema) && $this->parent != null && !empty($attributes) && !in_array($this->name, $attributes) && !in_array($this->getFullKey(), $attributes)) {
             return null;
         }
 
@@ -130,7 +130,7 @@ class Complex extends AbstractComplex
         // if this is the root, we may also check the schema nodes
         if (!$match && $this->parent == null) {
             foreach ($this->subAttributes as $attribute) {
-                if ($attribute->schemaNode) {
+                if ($attribute instanceof Schema) {
                     $attribute->replace($value, $object, $path);
                 }
             }

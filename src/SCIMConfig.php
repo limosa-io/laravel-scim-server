@@ -9,6 +9,7 @@ use ArieTimmerman\Laravel\SCIMServer\Attribute\Collection;
 use ArieTimmerman\Laravel\SCIMServer\Attribute\Complex;
 use ArieTimmerman\Laravel\SCIMServer\Attribute\Constant;
 use ArieTimmerman\Laravel\SCIMServer\Attribute\Eloquent;
+use ArieTimmerman\Laravel\SCIMServer\Attribute\Meta;
 use ArieTimmerman\Laravel\SCIMServer\Attribute\MutableCollection;
 use ArieTimmerman\Laravel\SCIMServer\Attribute\Schema as AttributeSchema;
 use ArieTimmerman\Laravel\SCIMServer\Tests\Model\Group;
@@ -72,23 +73,7 @@ class SCIMConfig
                     }
                 }
                 ),
-                complex('meta')->setMutability('readOnly')->withSubAttributes(
-                    eloquent('created', 'created_at'),
-                    eloquent('lastModified', 'updated_at'),
-                    (new class ('location') extends Eloquent {
-                        protected function doRead(&$object, $attributes = [])
-                        {
-                            return route(
-                                'scim.resource',
-                                [
-                                'resourceType' => 'Users',
-                                'resourceObject' => $object->id ?? "not-saved"
-                                ]
-                            );
-                        }
-                    }),
-                    new Constant('resourceType', 'User')
-                ),
+                new Meta('Users'),
                 (new AttributeSchema(Schema::SCHEMA_USER, true))->withSubAttributes(
                     eloquent('userName', 'name')->ensure('required'),
                     complex('name')->withSubAttributes(eloquent('formatted', 'name')),
@@ -170,23 +155,7 @@ class SCIMConfig
                     }
                 }
                 ),
-                complex('meta')->withSubAttributes(
-                    eloquent('created'),
-                    eloquent('lastModified'),
-                    (new class ('location') extends Eloquent {
-                        protected function doRead(&$object, $attributes = [])
-                        {
-                            return route(
-                                'scim.resource',
-                                [
-                                'resourceType' => 'Groups',
-                                'resourceObject' => $object->id ?? "not-saved"
-                                ]
-                            );
-                        }
-                    }),
-                    new Constant('resourceType', 'User')
-                ),
+                new Meta('Groups'),
                 (new AttributeSchema(Schema::SCHEMA_GROUP, true))->withSubAttributes(
                     eloquent('name')->ensure('required', 'min:3', function ($attribute, $value, $fail) {
                         // check if group does not exist or if it exists, it is the same group

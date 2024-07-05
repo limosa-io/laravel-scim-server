@@ -219,7 +219,6 @@ class ResourceController extends Controller
         $resourceObjectsBase = $query->when(
             $filter = $request->input('filter'),
             function (Builder $query) use ($filter, $resourceType) {
-
                 try {
 
                     Helper::scimFilterToLaravelQuery($resourceType, $query, ParserParser::parseFilter($filter));
@@ -231,9 +230,13 @@ class ResourceController extends Controller
 
         $totalResults = $resourceObjectsBase->count();
 
-        $resourceObjects = $resourceObjectsBase->skip($startIndex - 1)->take($count);
-
-        $resourceObjects = $resourceObjects->with($resourceType->getWithRelations());
+        /**
+         * @var \Illuminate\Database\Query\Builder $resourceObjects
+         */
+        $resourceObjects = $resourceObjectsBase
+            ->skip($startIndex - 1)
+            ->take($count)
+            ->with($resourceType->getWithRelations());
 
         if ($sortBy != null) {
             $direction = $request->input('sortOrder') == 'descending' ? 'desc' : 'asc';
@@ -242,7 +245,6 @@ class ResourceController extends Controller
         }
 
         $resourceObjects = $resourceObjects->get();
-
 
         $attributes = [];
         $excludedAttributes = [];

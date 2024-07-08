@@ -76,11 +76,11 @@ class Helper
         if (method_exists($object, "getSCIMVersion")) {
             $version = $object->getSCIMVersion();
         } else {
-            $version = sha1($object->getKey() . $object->updated_at . $object->created_at);
+            $version = sprintf('W/"%s"', sha1($object->getKey() . $object->updated_at . $object->created_at));
         }
 
         // Entity tags uniquely representing the requested resources. They are a string of ASCII characters placed between double quotes
-        return sprintf('W/"%s"', $version);
+        return $version;
     }
 
     /**
@@ -90,7 +90,7 @@ class Helper
      */
     public static function objectToSCIMResponse(Model $object, ResourceType $resourceType = null)
     {
-        return response(self::objectToSCIMArray($object, $resourceType))->setEtag(self::getResourceObjectVersion($object));
+        return response(self::objectToSCIMArray($object, $resourceType))->header('ETag', self::getResourceObjectVersion($object));
     }
 
     /**

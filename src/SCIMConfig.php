@@ -12,6 +12,7 @@ use ArieTimmerman\Laravel\SCIMServer\Attribute\Eloquent;
 use ArieTimmerman\Laravel\SCIMServer\Attribute\Meta;
 use ArieTimmerman\Laravel\SCIMServer\Attribute\MutableCollection;
 use ArieTimmerman\Laravel\SCIMServer\Attribute\Schema as AttributeSchema;
+use ArieTimmerman\Laravel\SCIMServer\Attribute\SimpleMutableCollection;
 use ArieTimmerman\Laravel\SCIMServer\Tests\Model\Group;
 use Illuminate\Database\Eloquent\Model;
 
@@ -53,7 +54,9 @@ class SCIMConfig
             'singular' => 'User',
 
             //eager loading
-            'withRelations' => [],
+            'withRelations' => [
+                'roles'
+            ],
             'description' => 'User Account',
 
             'map' => complex()->withSubAttributes(
@@ -119,6 +122,10 @@ class SCIMConfig
                         }),
                         eloquent('display', 'name')
                     ),
+                    (new SimpleMutableCollection('roles'))->withSubAttributes(
+                        eloquent('value')->ensure('required'),
+                        eloquent('display')
+                    ),
                 ),
                 (new AttributeSchema('urn:ietf:params:scim:schemas:extension:enterprise:2.0:User', true))->withSubAttributes(
                     eloquent('employeeNumber')->ensure('nullable')
@@ -157,14 +164,13 @@ class SCIMConfig
                 ),
                 new Meta('Groups'),
                 (new AttributeSchema(Schema::SCHEMA_GROUP, true))->withSubAttributes(
-                    eloquent('name')->ensure('required', 'min:3', function ($attribute, $value, $fail) {
+                    eloquent('displayName')->ensure('required', 'min:3', function ($attribute, $value, $fail) {
                         // check if group does not exist or if it exists, it is the same group
                         $group = Group::where('name', $value)->first();
                         if ($group && (request()->route('resourceObject') == null || $group->id != request()->route('resourceObject')->id)) {
                             $fail('The name has already been taken.');
                         }
                     }),
-                    eloquent('displayName')->ensure('nullable'),
                     (new MutableCollection('members'))->withSubAttributes(
                         eloquent('value', 'id')->ensure('required'),
                         (new class ('$ref') extends Eloquent {

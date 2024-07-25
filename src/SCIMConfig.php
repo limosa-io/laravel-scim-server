@@ -12,7 +12,6 @@ use ArieTimmerman\Laravel\SCIMServer\Attribute\Eloquent;
 use ArieTimmerman\Laravel\SCIMServer\Attribute\Meta;
 use ArieTimmerman\Laravel\SCIMServer\Attribute\MutableCollection;
 use ArieTimmerman\Laravel\SCIMServer\Attribute\Schema as AttributeSchema;
-use ArieTimmerman\Laravel\SCIMServer\Attribute\SimpleMutableCollection;
 use ArieTimmerman\Laravel\SCIMServer\Tests\Model\Group;
 use Illuminate\Database\Eloquent\Model;
 
@@ -54,9 +53,7 @@ class SCIMConfig
             'singular' => 'User',
 
             //eager loading
-            'withRelations' => [
-                'roles'
-            ],
+            'withRelations' => [],
             'description' => 'User Account',
 
             'map' => complex()->withSubAttributes(
@@ -121,10 +118,6 @@ class SCIMConfig
                             }
                         }),
                         eloquent('display', 'name')
-                    ),
-                    (new SimpleMutableCollection('roles'))->withSubAttributes(
-                        eloquent('value')->ensure('required'),
-                        eloquent('display')
                     ),
                 ),
                 (new AttributeSchema('urn:ietf:params:scim:schemas:extension:enterprise:2.0:User', true))->withSubAttributes(

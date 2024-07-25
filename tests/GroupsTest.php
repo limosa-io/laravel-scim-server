@@ -52,7 +52,6 @@ class GroupsTest extends TestCase
         $response = $this->post('/scim/v2/Groups', [
             'schemas' => ['urn:ietf:params:scim:schemas:core:2.0:Group'], // Required
             'urn:ietf:params:scim:schemas:core:2.0:Group' => [
-                'name' => 'testgroup1',
                 'displayName' => 'TestGroup'
             ]
         ]);
@@ -60,13 +59,12 @@ class GroupsTest extends TestCase
         $response->assertJsonStructure([
             'id',
             'urn:ietf:params:scim:schemas:core:2.0:Group' => [
-                'name',
                 'displayName'
             ]
         ]);
 
         $this->assertNotNull(Group::find($response->json('id')));
-        $this->assertNotNull(Group::where('name', 'testgroup1')->first());
+        $this->assertNotNull(Group::where('displayName', 'TestGroup')->first());
 
     }
 
@@ -80,7 +78,6 @@ class GroupsTest extends TestCase
                     'data' => [
                         'schemas' => ['urn:ietf:params:scim:schemas:core:2.0:Group'], // Required
                         'urn:ietf:params:scim:schemas:core:2.0:Group' => [
-                            'name' => 'testgroup1',
                             'displayName' => 'TestGroup'
                         ]
                     ]
@@ -91,7 +88,6 @@ class GroupsTest extends TestCase
                     'data' => [
                         'schemas' => ['urn:ietf:params:scim:schemas:core:2.0:Group'], // Required
                         'urn:ietf:params:scim:schemas:core:2.0:Group' => [
-                            'name' => 'testgroup2',
                             'displayName' => 'TestGroup2'
                         ]
                     ]
@@ -111,6 +107,6 @@ class GroupsTest extends TestCase
         ]);
 
         // confirm testgroup1 exists
-        $this->assertNotNull(Group::where('name', 'testgroup2')->first());
+        $this->assertNotNull(Group::where('displayName', 'TestGroup2')->first());
     }
 }

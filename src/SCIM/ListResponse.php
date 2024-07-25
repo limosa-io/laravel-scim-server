@@ -29,7 +29,7 @@ class ListResponse implements Jsonable
 
     public function toSCIMArray()
     {
-        $result = array_filter([
+        return array_filter([
             'totalResults' => $this->totalResults,
             "itemsPerPage" => count($this->resourceObjects->toArray()),
 
@@ -43,7 +43,5 @@ class ListResponse implements Jsonable
             ],
             'Resources' => Helper::prepareReturn($this->resourceObjects, $this->resourceType, $this->attributes),
         ]);
-
-        return $result;
-    }
+        }
 }

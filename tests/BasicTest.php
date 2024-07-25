@@ -58,6 +58,37 @@ class BasicTest extends TestCase
         ]);
     }
 
+    public function testCursorPagination()
+    {
+        $response1 = $this->get('/scim/v2/Users?count=60&cursor');
+
+        $response1->assertStatus(200);
+        $response1->assertJsonCount(60, 'Resources');
+        $response1->assertJson([
+            'totalResults' => 100,
+            'itemsPerPage' => 60
+        ]);
+
+        $response2 = $this->get('/scim/v2/Users?count=60&cursor=' . $response1->json('nextCursor'));
+        $response2->assertStatus(200);
+        $response2->assertJsonCount(40, 'Resources');
+        $response2->assertJson([
+            'totalResults' => 100,
+            'itemsPerPage' => 40
+        ]);
+
+        // assert the list of items in response 1 and 2 are different, compare the id of the user items
+        $this->assertNotEquals(
+            collect($response1->json('Resources'))->pluck('id')->toArray(),
+            collect($response2->json('Resources'))->pluck('id')->toArray()
+        );
+
+        // assert the nextCursor is missing in response2
+        $this->assertNull($response2->json('nextCursor'));
+        $this->assertNotNull($response2->json('previousCursor'));
+        $this->assertNull($response2->json('startIndex'));
+    }
+
     public function testPagination()
     {
         $response = $this->get('/scim/v2/Users?startIndex=21&count=20');
@@ -69,6 +100,9 @@ class BasicTest extends TestCase
             'itemsPerPage' => 20,
             'startIndex' => 21
         ]);
+
+        $this->assertNull($response->json('nextCursor'));
+        $this->assertNull($response->json('previousCursor'));
     }
 
     public function testSort()

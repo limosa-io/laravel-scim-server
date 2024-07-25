@@ -15,6 +15,7 @@ use ArieTimmerman\Laravel\SCIMServer\Events\Replace;
 use ArieTimmerman\Laravel\SCIMServer\Events\Patch;
 use ArieTimmerman\Laravel\SCIMServer\Parser\Parser as ParserParser;
 use ArieTimmerman\Laravel\SCIMServer\PolicyDecisionPoint;
+use Illuminate\Contracts\Pagination\CursorPaginator;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Validator;
 
@@ -121,7 +122,7 @@ class ResourceController extends Controller
     public function replace(Request $request, PolicyDecisionPoint $pdp, ResourceType $resourceType, Model $resourceObject, $isMe = false)
     {
         $originalRaw = Helper::objectToSCIMArray($resourceObject, $resourceType);
-        
+
         $resourceType->getMapping()->replace($request->input(), $resourceObject, null, true);
 
         $newObject = Helper::flatten(Helper::objectToSCIMArray($resourceObject, $resourceType), $resourceType->getSchema());
@@ -210,12 +211,15 @@ class ResourceController extends Controller
     {
         $query = $resourceType->getQuery();
 
-        // The 1-based index of the first query result. A value less than 1 SHALL be interpreted as 1.
-        $startIndex = max(1, intVal($request->input('startIndex', 0)));
+        // if both cursor and startIndex are present, throw an exception
+        if ($request->has('cursor') && $request->has('startIndex')) {
+            throw (new SCIMException('Both cursor and startIndex are present. Only one of them is allowed.'))->setCode(400);
+        }
 
         // Non-negative integer. Specifies the desired maximum number of query results per page, e.g., 10. A negative value SHALL be interpreted as "0". A value of "0" indicates that no resource results are to be returned except for "totalResults".
-        $count = max(0, intVal($request->input('count', 10)));
+        $count = min(max(0, intVal($request->input('count', 10))), 100);
 
+        $startIndex = null;
         $sortBy = null;
 
         if ($request->input('sortBy')) {
@@ -240,8 +244,6 @@ class ResourceController extends Controller
          * @var \Illuminate\Database\Query\Builder $resourceObjects
          */
         $resourceObjects = $resourceObjectsBase
-            ->skip($startIndex - 1)
-            ->take($count)
             ->with($resourceType->getWithRelations());
 
         if ($sortBy != null) {
@@ -250,12 +252,31 @@ class ResourceController extends Controller
             $resourceObjects = $resourceObjects->orderBy($sortBy, $direction);
         }
 
-        $resourceObjects = $resourceObjects->get();
+        $resources = null;
+        if ($request->has('cursor')) {
+            if($sortBy == null){
+                $resourceObjects = $resourceObjects->orderBy('id');
+            }
+
+            $resourceObjects = $resourceObjects->cursorPaginate(
+                $count,
+                cursor: $request->input('cursor')
+            );
+            $resources = collect($resourceObjects->items());
+
+            
+        } else {
+            // The 1-based index of the first query result. A value less than 1 SHALL be interpreted as 1.
+            $startIndex = max(1, intVal($request->input('startIndex', 0)));
+
+            $resourceObjects = $resourceObjects->skip($startIndex - 1)->take($count);
+            $resources = $resourceObjects->get();
+        }
 
         // TODO: splitting the attributes parameters by dot and comma is not correct, but works in most cases
         $attributes = $request->input('attributes') ? preg_split('/[,.]/', $request->input('attributes')) : [];
 
-        if(!empty($attributes)){
+        if (!empty($attributes)) {
             $attributes[] = 'id';
             $attributes[] = 'meta';
             $attributes[] = 'schemas';
@@ -263,6 +284,15 @@ class ResourceController extends Controller
 
         $excludedAttributes = [];
 
-        return new ListResponse($resourceObjects, $startIndex, $totalResults, $attributes, $excludedAttributes, $resourceType);
+        return new ListResponse(
+            $resources,
+            $startIndex,
+            $totalResults,
+            $attributes,
+            $excludedAttributes,
+            $resourceType,
+            ($resourceObjects instanceof CursorPaginator) ? $resourceObjects->nextCursor()?->encode() : null,
+            ($resourceObjects instanceof CursorPaginator) ? $resourceObjects->previousCursor()?->encode() : null
+        );
     }
 }

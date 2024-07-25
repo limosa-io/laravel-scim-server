@@ -26,7 +26,6 @@ abstract class TestCase extends BaseTestCase
             $table->increments('id');
             // timestamp columns
             $table->timestamps();
-            $table->string('name')->nullable();
             $table->string('displayName')->nullable();
         });
 

@@ -6,6 +6,6 @@ use Faker\Generator;
 $factory->define(Group::class, function (Generator $faker) {
     return [
        // 'username' => $faker->userName,
-        'name' => $faker->company
+        'displayName' => $faker->company
     ];
 });

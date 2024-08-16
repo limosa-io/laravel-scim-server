@@ -24,6 +24,7 @@ class GroupsTest extends TestCase
 
     public function testGet()
     {
+        config(['scim.omit_null_values' => false]);
         $response = $this->get('/scim/v2/Groups');
         $response->assertStatus(200);
 

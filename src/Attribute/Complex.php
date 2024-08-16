@@ -34,6 +34,9 @@ class Complex extends AbstractComplex
         $result = [];
         foreach ($this->subAttributes as $attribute) {
             if(($r = $attribute->read($object, $attributes)) != null){
+                if(config('scim.omit_null_values') && $r->value == null){
+                    continue;
+                }
                 $result[$attribute->name] = $r->value;
             }
         }

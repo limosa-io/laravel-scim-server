@@ -59,7 +59,9 @@ class Helper
         if (config('scim.omit_main_schema_in_return')) {
             $defaultSchema = collect($mapping->getDefaultSchema())->first();
 
-            $main = $result[$defaultSchema];
+            // Move main schema to the top. It may not be defined, for example when only specific attributes are requested.
+            $main = $result[$defaultSchema] ?? [];
+            
             unset($result[$defaultSchema]);
 
             $result = array_merge($result, $main);

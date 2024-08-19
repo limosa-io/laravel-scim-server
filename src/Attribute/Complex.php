@@ -225,4 +225,14 @@ class Complex extends AbstractComplex
         }
 
     }
+
+    /**
+     * Return the default (core) schema. Assume it is the first one.
+     * TODO: This method is only relevant for the top-level complex attribute.
+     * @return string
+     */
+    public function getDefaultSchema()
+    {
+        return collect($this->subAttributes)->first(fn ($element) => $element instanceof Schema)->name;
+    }
 }

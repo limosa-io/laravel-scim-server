@@ -161,12 +161,6 @@ class Attribute
         }
     }
 
-    public function getDefaultSchema()
-    {
-        // TODO: why this?
-        return Schema::SCHEMA_USER;
-    }
-
     public function getSchema()
     {
         if ($this instanceof AttributeSchema) {

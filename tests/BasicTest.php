@@ -58,6 +58,22 @@ class BasicTest extends TestCase
         ]);
     }
 
+    public function testGetGroupsAttribute()
+    {
+        config(['scim.omit_main_schema_in_return' => true]);
+        $response = $this->get('/scim/v2/Users?attributes=groups');
+
+        $response->assertStatus(200);
+        $response->assertJsonCount(10, 'Resources');
+        $response->assertJsonStructure([
+            'Resources' => [
+                '*' => [
+                    
+                ]
+            ]
+        ]);
+    }
+
     public function testCursorPagination()
     {
         $response1 = $this->get('/scim/v2/Users?count=60&cursor');

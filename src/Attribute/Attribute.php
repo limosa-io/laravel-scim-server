@@ -38,6 +38,7 @@ class Attribute
     protected $mutability = 'readWrite';
     protected $type = 'string';
     protected $description = null;
+    protected $defaultValue = null;
 
     public $dirty = false;
 
@@ -101,6 +102,12 @@ class Attribute
         return $this;
     }
 
+    public function default($value){
+        $this->defaultValue = $value;
+
+        return $this;
+    }
+
     public function isRequired()
     {
         return in_array('required', $this->validations);
@@ -143,7 +150,7 @@ class Attribute
             return null;
         }
 
-        return new AttributeValue($this->doRead($object, $attributes));
+        return new AttributeValue($this->doRead($object, $attributes) ?? $this->defaultValue);
     }
 
     protected function doRead(&$object, $attributes = [])

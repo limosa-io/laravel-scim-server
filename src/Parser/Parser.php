@@ -6,7 +6,7 @@ use Tmilos\ScimFilterParser\Mode;
 use Tmilos\ScimFilterParser\Parser as ScimFilterParserParser;
 
 class Parser {
-    public static function parse($input): Path {
+    public static function parse($input): ?Path {
         if($input == null){
             return null;
         }
@@ -19,7 +19,7 @@ class Parser {
         );
     }
 
-    public static function parseFilter($input): Path {
+    public static function parseFilter($input): ?Path {
         if($input == null){
             return null;
         }

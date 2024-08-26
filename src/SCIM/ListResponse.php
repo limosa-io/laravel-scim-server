@@ -29,7 +29,7 @@ class ListResponse implements Jsonable
 
     public function toSCIMArray()
     {
-        return array_filter([
+        return [
             'totalResults' => $this->totalResults,
             "itemsPerPage" => count($this->resourceObjects->toArray()),
 
@@ -42,6 +42,6 @@ class ListResponse implements Jsonable
                 "urn:ietf:params:scim:api:messages:2.0:ListResponse"
             ],
             'Resources' => Helper::prepareReturn($this->resourceObjects, $this->resourceType, $this->attributes),
-        ]);
-        }
+        ];
+    }
 }

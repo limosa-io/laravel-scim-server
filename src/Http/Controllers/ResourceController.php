@@ -170,7 +170,13 @@ class ResourceController extends Controller
                     break;
 
                 case "replace":
-                    $resourceType->getMapping()->patch('replace', $operation['value'], $resourceObject, ParserParser::parse($operation['path'] ?? null));
+                    if (is_array($operation['value'])) {
+                        foreach ($operation['value'] as $key => $value) {
+                            $resourceType->getMapping()->patch('replace', $value, $resourceObject, ParserParser::parse($key ?? null));
+                        }
+                    } else{
+                        $resourceType->getMapping()->patch('replace', $operation['value'], $resourceObject, ParserParser::parse($operation['path'] ?? null));
+                    }
                     break;
 
                 default:

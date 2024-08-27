@@ -29,19 +29,22 @@ class ListResponse implements Jsonable
 
     public function toSCIMArray()
     {
-        return [
-            'totalResults' => $this->totalResults,
-            "itemsPerPage" => count($this->resourceObjects->toArray()),
+        return array_filter(
+            [
+               'totalResults' => $this->totalResults,
+               "itemsPerPage" => count($this->resourceObjects->toArray()),
 
-            "startIndex" => $this->startIndex,
+               "startIndex" => $this->startIndex,
 
-            "nextCursor" => $this->nextCursor,
-            "previousCursor" => $this->previousCursor,
+               "nextCursor" => $this->nextCursor,
+               "previousCursor" => $this->previousCursor,
 
-            "schemas" => [
-                "urn:ietf:params:scim:api:messages:2.0:ListResponse"
-            ],
-            'Resources' => Helper::prepareReturn($this->resourceObjects, $this->resourceType, $this->attributes),
-        ];
+               "schemas" => [
+                   "urn:ietf:params:scim:api:messages:2.0:ListResponse"
+               ],
+               'Resources' => Helper::prepareReturn($this->resourceObjects, $this->resourceType, $this->attributes),
+        ],
+            fn ($value) => $value !== null
+        );
     }
 }

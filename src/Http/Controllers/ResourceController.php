@@ -17,6 +17,7 @@ use ArieTimmerman\Laravel\SCIMServer\Parser\Parser as ParserParser;
 use ArieTimmerman\Laravel\SCIMServer\PolicyDecisionPoint;
 use Illuminate\Contracts\Pagination\CursorPaginator;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Validator;
 
 class ResourceController extends Controller
@@ -28,9 +29,17 @@ class ResourceController extends Controller
 
     protected static function validateScim(ResourceType $resourceType, $flattened, ?Model $resourceObject)
     {
-        $validations = $resourceType->getValidations();
+        $validations = array_map(function ($value) {
+            return Arr::flatten($value);
+        }, $resourceType->getValidations());
 
         foreach ($validations as $key => $value) {
+            if (is_array($value)) {
+                $validations[$key] = array_map(function ($rule) use ($resourceObject) {
+                    return $resourceObject ? preg_replace('/,\[OBJECT_ID\]/', ',' . $resourceObject->id, $rule) : str_replace(',[OBJECT_ID]', '', $rule);
+                }, $value);
+            }
+
             if (is_string($value)) {
                 $validations[$key] = $resourceObject ? preg_replace('/,\[OBJECT_ID\]/', ',' . $resourceObject->id, $value) : str_replace(',[OBJECT_ID]', '', $value);
             }
@@ -264,7 +273,7 @@ class ResourceController extends Controller
             );
             $resources = collect($resourceObjects->items());
 
-            
+
         } else {
             // The 1-based index of the first query result. A value less than 1 SHALL be interpreted as 1.
             $startIndex = max(1, intVal($request->input('startIndex', 0)));

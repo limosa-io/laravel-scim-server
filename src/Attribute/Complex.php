@@ -3,13 +3,14 @@
 namespace ArieTimmerman\Laravel\SCIMServer\Attribute;
 
 use ArieTimmerman\Laravel\SCIMServer\Exceptions\SCIMException;
+use ArieTimmerman\Laravel\SCIMServer\Parser\Parser;
 use ArieTimmerman\Laravel\SCIMServer\Parser\Path;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 
 class Complex extends AbstractComplex
 {
-    
+
     /**
      * @return string[]
      */
@@ -18,9 +19,9 @@ class Complex extends AbstractComplex
         return collect($this->getSchemaNodes())->map(fn ($element) => $element->name)->values()->toArray();
     }
 
-    
+
     public function read(&$object, array $attributes = []): ?AttributeValue
-    {   
+    {
         if (!($this instanceof Schema) && $this->parent != null && !empty($attributes) && !in_array($this->name, $attributes) && !in_array($this->getFullKey(), $attributes)) {
             return null;
         }
@@ -33,8 +34,8 @@ class Complex extends AbstractComplex
     {
         $result = [];
         foreach ($this->subAttributes as $attribute) {
-            if(($r = $attribute->read($object, $attributes)) != null){
-                if(config('scim.omit_null_values') && $r->value === null){
+            if (($r = $attribute->read($object, $attributes)) != null) {
+                if (config('scim.omit_null_values') && $r->value === null) {
                     continue;
                 }
                 $result[$attribute->name] = $r->value;
@@ -47,7 +48,7 @@ class Complex extends AbstractComplex
     {
         $this->dirty = true;
 
-        if($this->mutability == 'readOnly'){
+        if ($this->mutability == 'readOnly') {
             // silently ignore
             return;
         }
@@ -112,21 +113,44 @@ class Complex extends AbstractComplex
         $match = false;
         $this->dirty = true;
 
-        if($this->mutability == 'readOnly'){
+        if ($this->mutability == 'readOnly') {
             // silently ignore
             return;
         }
 
-        // if there is no path, keys of value are attribute names
+        // if there is no path, keys of value are attribute paths
         foreach ($value as $key => $v) {
             if (is_numeric($key)) {
                 throw new SCIMException('Invalid key: ' . $key . ' for complex object ' . $this->getFullKey());
             }
 
-            $attribute = $this->getSubNode($key);
-            if ($attribute != null) {
-                $attribute->replace($v, $object, $path);
+            $subNode = null;
+
+            // if path contains : it is a schema node
+            if (strpos($key, ':') !== false) {
+                $subNode = $this->getSubNode($key);
                 $match = true;
+            } else {
+                $path = Parser::parse($key);
+
+                if ($path->isNotEmpty()) {
+                    $attributeNames = $path->getAttributePathAttributes();
+                    $path = $path->shiftAttributePathAttributes();
+                    $sub = $attributeNames[0] ?? $path->getAttributePath()?->path?->schema;
+                    $subNode = $this->getSubNode($attributeNames[0] ?? $path->getAttributePath()?->path?->schema);
+                    $match = true;
+                }
+            }
+
+            if ($match) {
+                $newValue = $v;
+                if ($path->isNotEmpty()) {
+                    $newValue = [
+                        implode('.', $path->getAttributePathAttributes()) => $v
+                    ];
+                }
+
+                $subNode->replace($newValue, $object, $path);
             }
         }
 
@@ -148,10 +172,55 @@ class Complex extends AbstractComplex
         }
     }
 
+    public function add($value, Model &$object)
+    {
+        $match = false;
+        $this->dirty = true;
+
+        if ($this->mutability == 'readOnly') {
+            // silently ignore
+            return;
+        }
+
+        // keys of value are attribute names
+        foreach ($value as $key => $v) {
+            if (is_numeric($key)) {
+                throw new SCIMException('Invalid key: ' . $key . ' for complex object ' . $this->getFullKey());
+            }
+
+            $path = Parser::parse($key);
+
+            if ($path->isNotEmpty()) {
+                $attributeNames = $path->getAttributePathAttributes();
+                $path = $path->shiftAttributePathAttributes();
+                $subNode = $this->getSubNode($attributeNames[0]);
+                $match = true;
+
+                $newValue = $v;
+                if ($path->isNotEmpty()) {
+                    $newValue = [
+                        implode('.', $path->getAttributePathAttributes()) => $v
+                    ];
+                }
+
+                $subNode->add($newValue, $object);
+            }
+        }
+
+        // if this is the root, we may also check the schema nodes
+        if (!$match && $this->parent == null) {
+            foreach ($this->subAttributes as $attribute) {
+                if ($attribute instanceof Schema) {
+                    $attribute->add($value, $object);
+                }
+            }
+        }
+    }
+
 
     public function remove($value, Model &$object, string $path = null)
     {
-        if($this->mutability == 'readOnly'){
+        if ($this->mutability == 'readOnly') {
             // silently ignore
             return;
         }
@@ -186,8 +255,8 @@ class Complex extends AbstractComplex
         return $result;
     }
 
-    public function applyComparison(Builder &$query, Path $path, $parentAttribute = null){
-        
+    public function applyComparison(Builder &$query, Path $path, $parentAttribute = null)
+    {
         if ($path != null && $path->isNotEmpty()) {
             $attributeNames = $path->getValuePathAttributes();
 
@@ -223,7 +292,6 @@ class Complex extends AbstractComplex
                 }
             }
         }
-
     }
 
     /**

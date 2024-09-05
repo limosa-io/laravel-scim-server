@@ -277,7 +277,7 @@ class Attribute
 
     public function add($value, Model &$object)
     {
-        new SCIMException(sprintf('Write is not implemented for "%s"', $this->getFullKey()));
+        throw new SCIMException(sprintf('Write is not implemented for "%s"', $this->getFullKey()));
     }
 
     public function replace($value, Model &$object, Path $path = null)

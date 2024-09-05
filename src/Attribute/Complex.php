@@ -10,7 +10,7 @@ use Illuminate\Database\Eloquent\Model;
 
 class Complex extends AbstractComplex
 {
-    
+
     /**
      * @return string[]
      */
@@ -19,9 +19,9 @@ class Complex extends AbstractComplex
         return collect($this->getSchemaNodes())->map(fn ($element) => $element->name)->values()->toArray();
     }
 
-    
+
     public function read(&$object, array $attributes = []): ?AttributeValue
-    {   
+    {
         if (!($this instanceof Schema) && $this->parent != null && !empty($attributes) && !in_array($this->name, $attributes) && !in_array($this->getFullKey(), $attributes)) {
             return null;
         }
@@ -34,8 +34,8 @@ class Complex extends AbstractComplex
     {
         $result = [];
         foreach ($this->subAttributes as $attribute) {
-            if(($r = $attribute->read($object, $attributes)) != null){
-                if(config('scim.omit_null_values') && $r->value === null){
+            if (($r = $attribute->read($object, $attributes)) != null) {
+                if (config('scim.omit_null_values') && $r->value === null) {
                     continue;
                 }
                 $result[$attribute->name] = $r->value;
@@ -48,7 +48,7 @@ class Complex extends AbstractComplex
     {
         $this->dirty = true;
 
-        if($this->mutability == 'readOnly'){
+        if ($this->mutability == 'readOnly') {
             // silently ignore
             return;
         }
@@ -113,7 +113,7 @@ class Complex extends AbstractComplex
         $match = false;
         $this->dirty = true;
 
-        if($this->mutability == 'readOnly'){
+        if ($this->mutability == 'readOnly') {
             // silently ignore
             return;
         }
@@ -124,16 +124,27 @@ class Complex extends AbstractComplex
                 throw new SCIMException('Invalid key: ' . $key . ' for complex object ' . $this->getFullKey());
             }
 
-            $path = Parser::parse($key);
+            $subNode = null;
 
-            if($path->isNotEmpty()){
-                $attributeNames = $path->getAttributePathAttributes();
-                $path = $path->shiftAttributePathAttributes();
-                $subNode = $this->getSubNode($attributeNames[0]);
+            // if path contains : it is a schema node
+            if (strpos($key, ':') !== false) {
+                $subNode = $this->getSubNode($key);
                 $match = true;
+            } else {
+                $path = Parser::parse($key);
 
+                if ($path->isNotEmpty()) {
+                    $attributeNames = $path->getAttributePathAttributes();
+                    $path = $path->shiftAttributePathAttributes();
+                    $sub = $attributeNames[0] ?? $path->getAttributePath()?->path?->schema;
+                    $subNode = $this->getSubNode($attributeNames[0] ?? $path->getAttributePath()?->path?->schema);
+                    $match = true;
+                }
+            }
+
+            if ($match) {
                 $newValue = $v;
-                if($path->isNotEmpty()){
+                if ($path->isNotEmpty()) {
                     $newValue = [
                         implode('.', $path->getAttributePathAttributes()) => $v
                     ];
@@ -141,8 +152,6 @@ class Complex extends AbstractComplex
 
                 $subNode->replace($newValue, $object, $path);
             }
-
-
         }
 
         // if this is the root, we may also check the schema nodes
@@ -168,7 +177,7 @@ class Complex extends AbstractComplex
         $match = false;
         $this->dirty = true;
 
-        if($this->mutability == 'readOnly'){
+        if ($this->mutability == 'readOnly') {
             // silently ignore
             return;
         }
@@ -181,14 +190,14 @@ class Complex extends AbstractComplex
 
             $path = Parser::parse($key);
 
-            if($path->isNotEmpty()){
+            if ($path->isNotEmpty()) {
                 $attributeNames = $path->getAttributePathAttributes();
                 $path = $path->shiftAttributePathAttributes();
                 $subNode = $this->getSubNode($attributeNames[0]);
                 $match = true;
 
                 $newValue = $v;
-                if($path->isNotEmpty()){
+                if ($path->isNotEmpty()) {
                     $newValue = [
                         implode('.', $path->getAttributePathAttributes()) => $v
                     ];
@@ -211,7 +220,7 @@ class Complex extends AbstractComplex
 
     public function remove($value, Model &$object, string $path = null)
     {
-        if($this->mutability == 'readOnly'){
+        if ($this->mutability == 'readOnly') {
             // silently ignore
             return;
         }
@@ -246,8 +255,8 @@ class Complex extends AbstractComplex
         return $result;
     }
 
-    public function applyComparison(Builder &$query, Path $path, $parentAttribute = null){
-        
+    public function applyComparison(Builder &$query, Path $path, $parentAttribute = null)
+    {
         if ($path != null && $path->isNotEmpty()) {
             $attributeNames = $path->getValuePathAttributes();
 
@@ -283,7 +292,6 @@ class Complex extends AbstractComplex
                 }
             }
         }
-
     }
 
     /**

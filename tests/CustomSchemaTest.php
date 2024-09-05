@@ -56,7 +56,6 @@ class CustomSchemaTest extends TestCase
             "urn:ietf:params:scim:schemas:core:2.0:User" => [
                 "userName" => "Dr. Marie Jo",
                 "password" => "Password123",
-                'employeeNumber' => '123',
                 "emails" => [
                     [
                         "value" => "mariejo@example.com",

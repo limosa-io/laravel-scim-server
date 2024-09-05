@@ -173,7 +173,7 @@ class Complex extends AbstractComplex
             return;
         }
 
-        // if there is no path, keys of value are attribute names
+        // keys of value are attribute names
         foreach ($value as $key => $v) {
             if (is_numeric($key)) {
                 throw new SCIMException('Invalid key: ' . $key . ' for complex object ' . $this->getFullKey());

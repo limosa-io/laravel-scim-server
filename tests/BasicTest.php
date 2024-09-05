@@ -68,7 +68,7 @@ class BasicTest extends TestCase
         $response->assertJsonStructure([
             'Resources' => [
                 '*' => [
-                    
+
                 ]
             ]
         ]);
@@ -257,6 +257,30 @@ class BasicTest extends TestCase
 
         $this->assertArrayHasKey('urn:ietf:params:scim:schemas:core:2.0:User', $json);
         $this->assertEquals('something@example.com', $json['urn:ietf:params:scim:schemas:core:2.0:User']['emails'][0]['value']);
+    }
+
+    public function testPatchMultiple()
+    {
+        $response = $this->patch('/scim/v2/Users/2', [
+            "schemas" => [
+                "urn:ietf:params:scim:api:messages:2.0:PatchOp",
+            ],
+            "Operations" => [[
+                "op" => "add",
+                "value" => [
+                    "userName" => "johndoe9858",
+                    "name.formatted" => "John"
+                ]
+            ]]
+        ]);
+
+        $response->assertStatus(200);
+
+        $json = $response->json();
+
+        $this->assertArrayHasKey('urn:ietf:params:scim:schemas:core:2.0:User', $json);
+        $this->assertEquals('johndoe9858', $json['urn:ietf:params:scim:schemas:core:2.0:User']['userName']);
+        $this->assertEquals('John', $json['urn:ietf:params:scim:schemas:core:2.0:User']['name']['formatted']);
     }
 
     public function testPatchUsername()

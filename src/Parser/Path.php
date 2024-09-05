@@ -92,7 +92,7 @@ class Path {
     public function isNotEmpty(){
         return
             !empty($this->getAttributePathAttributes()) ||
-            !empty($this->getAttributePathAttributes()) ||
+            !empty($this->getValuePathAttributes()) ||
             $this->getValuePathFilter() != null;
     }
 }

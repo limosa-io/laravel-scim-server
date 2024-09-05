@@ -6,6 +6,7 @@ $factory->define(ArieTimmerman\Laravel\SCIMServer\Tests\Model\User::class, funct
     return [
        // 'username' => $faker->userName,
         'email' => $faker->unique()->email,
+        'formatted' => $faker->name,
         'name' => $faker->name,
         'password'=>'test'
     ];

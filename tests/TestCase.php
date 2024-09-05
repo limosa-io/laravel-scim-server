@@ -43,6 +43,10 @@ abstract class TestCase extends BaseTestCase
             $table->timestamps();
         });
 
+        Schema::table('users', function (Blueprint $table) {
+            $table->string('formatted')->nullable();
+        });
+
         $this->withFactories(realpath(dirname(__DIR__) . '/database/factories'));
 
         \ArieTimmerman\Laravel\SCIMServer\RouteProvider::routes();

@@ -3,6 +3,7 @@
 namespace ArieTimmerman\Laravel\SCIMServer\Attribute;
 
 use ArieTimmerman\Laravel\SCIMServer\Exceptions\SCIMException;
+use ArieTimmerman\Laravel\SCIMServer\Parser\Parser;
 use ArieTimmerman\Laravel\SCIMServer\Parser\Path;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
@@ -143,6 +144,51 @@ class Complex extends AbstractComplex
             foreach ($this->subAttributes as $attribute) {
                 if (!$attribute->isDirty()) {
                     $attribute->remove(null, $object);
+                }
+            }
+        }
+    }
+
+    public function add($value, Model &$object)
+    {
+        $match = false;
+        $this->dirty = true;
+
+        if($this->mutability == 'readOnly'){
+            // silently ignore
+            return;
+        }
+
+        // if there is no path, keys of value are attribute names
+        foreach ($value as $key => $v) {
+            if (is_numeric($key)) {
+                throw new SCIMException('Invalid key: ' . $key . ' for complex object ' . $this->getFullKey());
+            }
+
+            $path = Parser::parse($key);
+
+            if($path->isNotEmpty()){
+                $attributeNames = $path->getAttributePathAttributes();
+                $path = $path->shiftAttributePathAttributes();
+                $subNode = $this->getSubNode($attributeNames[0]);
+                $match = true;
+
+                $newValue = $v;
+                if($path->isNotEmpty()){
+                    $newValue = [
+                        implode('.', $path->getAttributePathAttributes()) => $v
+                    ];
+                }
+
+                $subNode->add($newValue, $object);
+            }
+        }
+
+        // if this is the root, we may also check the schema nodes
+        if (!$match && $this->parent == null) {
+            foreach ($this->subAttributes as $attribute) {
+                if ($attribute instanceof Schema) {
+                    $attribute->add($value, $object);
                 }
             }
         }

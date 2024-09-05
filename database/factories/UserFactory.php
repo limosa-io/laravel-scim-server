@@ -8,6 +8,7 @@ $factory->define(ArieTimmerman\Laravel\SCIMServer\Tests\Model\User::class, funct
         'email' => $faker->unique()->email,
         'formatted' => $faker->name,
         'name' => $faker->name,
-        'password'=>'test'
+        'password'=>'test',
+        'active' => false
     ];
 });

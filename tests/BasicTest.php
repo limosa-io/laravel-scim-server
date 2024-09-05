@@ -269,7 +269,8 @@ class BasicTest extends TestCase
                 "op" => "add",
                 "value" => [
                     "userName" => "johndoe9858",
-                    "name.formatted" => "John"
+                    "name.formatted" => "John",
+                    "active" => false
                 ]
             ]]
         ]);
@@ -281,6 +282,33 @@ class BasicTest extends TestCase
         $this->assertArrayHasKey('urn:ietf:params:scim:schemas:core:2.0:User', $json);
         $this->assertEquals('johndoe9858', $json['urn:ietf:params:scim:schemas:core:2.0:User']['userName']);
         $this->assertEquals('John', $json['urn:ietf:params:scim:schemas:core:2.0:User']['name']['formatted']);
+        $this->assertFalse($json['urn:ietf:params:scim:schemas:core:2.0:User']['active']);
+    }
+
+    public function testPatchMultipleReplace()
+    {
+        $response = $this->patch('/scim/v2/Users/2', [
+            "schemas" => [
+                "urn:ietf:params:scim:api:messages:2.0:PatchOp",
+            ],
+            "Operations" => [[
+                "op" => "replace",
+                "value" => [
+                    "userName" => "johndoe9858",
+                    "name.formatted" => "John",
+                    "active" => true
+                ]
+            ]]
+        ]);
+
+        $response->assertStatus(200);
+
+        $json = $response->json();
+
+        $this->assertArrayHasKey('urn:ietf:params:scim:schemas:core:2.0:User', $json);
+        $this->assertEquals('johndoe9858', $json['urn:ietf:params:scim:schemas:core:2.0:User']['userName']);
+        $this->assertEquals('John', $json['urn:ietf:params:scim:schemas:core:2.0:User']['name']['formatted']);
+        $this->assertTrue($json['urn:ietf:params:scim:schemas:core:2.0:User']['active']);
     }
 
     public function testPatchUsername()

@@ -118,17 +118,31 @@ class Complex extends AbstractComplex
             return;
         }
 
-        // if there is no path, keys of value are attribute names
+        // if there is no path, keys of value are attribute paths
         foreach ($value as $key => $v) {
             if (is_numeric($key)) {
                 throw new SCIMException('Invalid key: ' . $key . ' for complex object ' . $this->getFullKey());
             }
 
-            $attribute = $this->getSubNode($key);
-            if ($attribute != null) {
-                $attribute->replace($v, $object, $path);
+            $path = Parser::parse($key);
+
+            if($path->isNotEmpty()){
+                $attributeNames = $path->getAttributePathAttributes();
+                $path = $path->shiftAttributePathAttributes();
+                $subNode = $this->getSubNode($attributeNames[0]);
                 $match = true;
+
+                $newValue = $v;
+                if($path->isNotEmpty()){
+                    $newValue = [
+                        implode('.', $path->getAttributePathAttributes()) => $v
+                    ];
+                }
+
+                $subNode->replace($newValue, $object, $path);
             }
+
+
         }
 
         // if this is the root, we may also check the schema nodes

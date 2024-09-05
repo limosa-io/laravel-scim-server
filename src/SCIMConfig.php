@@ -76,7 +76,7 @@ class SCIMConfig
                 new Meta('Users'),
                 (new AttributeSchema(Schema::SCHEMA_USER, true))->withSubAttributes(
                     eloquent('userName', 'name')->ensure('required'),
-                    eloquent('active')->ensure('boolean'),
+                    eloquent('active')->ensure('boolean')->default(false),
                     complex('name')->withSubAttributes(eloquent('formatted')),
                     eloquent('password')->ensure('nullable'),
                     (new class ('emails') extends Complex {

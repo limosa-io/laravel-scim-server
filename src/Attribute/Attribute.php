@@ -290,7 +290,7 @@ class Attribute
         throw new SCIMException(sprintf('Patch is not implemented for "%s"', $this->getFullKey()));
     }
 
-    public function remove($value, Model &$object, string $path = null)
+    public function remove($value, Model &$object, Path $path = null)
     {
         throw new SCIMException(sprintf('Remove is not implemented for "%s"', $this->getFullKey()));
     }

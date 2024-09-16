@@ -218,7 +218,7 @@ class Complex extends AbstractComplex
     }
 
 
-    public function remove($value, Model &$object, string $path = null)
+    public function remove($value, Model &$object, Path $path = null)
     {
         if ($this->mutability == 'readOnly') {
             // silently ignore

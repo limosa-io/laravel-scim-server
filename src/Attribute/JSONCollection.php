@@ -32,12 +32,37 @@ class JSONCollection extends MutableCollection
         return $object->{$this->attribute}?->values()->all();
     }
 
-    public function remove($value, Model &$object, string $path = null)
+    public function remove($value, Model &$object, Path $path = null)
     {
-        foreach ($value as $v) {
-            $object->{$this->attribute} = collect($object->{$this->attribute})->filter(function ($item) use ($v) {
-                return !collect($item)->diffAssoc($v)->isEmpty();
+        if ($path?->getValuePathFilter()?->getComparisonExpression() != null) {
+            $attributes = $path?->getValuePathFilter()?->getComparisonExpression()?->attributePath?->attributeNames;
+            $operator = $path?->getValuePathFilter()?->getComparisonExpression()?->operator;
+            $compareValue = $path?->getValuePathFilter()?->getComparisonExpression()?->compareValue;
+
+            if ($value != null) {
+                throw new SCIMException('Non-null value is currently not supported for remove operation with filter');
+            }
+
+            if (count($attributes) != 1) {
+                throw new SCIMException('Only one attribute is currently supported for remove operation with filter');
+            }
+
+            $object->{$this->attribute} = collect($object->{$this->attribute})->filter(function ($item) use ($attributes, $operator, $compareValue) {
+                // check operator eq and ne
+                if ($operator == 'eq') {
+                    return !(isset($item[$attributes[0]]) && $item[$attributes[0]] == $compareValue);
+                } elseif ($operator == 'ne') {
+                    return !(!isset($item[$attributes[0]]) || $item[$attributes[0]] != $compareValue);
+                } else {
+                    throw new SCIMException('Unsupported operator for remove operation with filter');
+                }
             })->values()->all();
+        } else {
+            foreach ($value as $v) {
+                $object->{$this->attribute} = collect($object->{$this->attribute})->filter(function ($item) use ($v) {
+                    return !collect($item)->diffAssoc($v)->isEmpty();
+                })->values()->all();
+            }
         }
     }
 

@@ -68,7 +68,7 @@ class MutableCollection extends Collection
         } elseif ($operation == 'remove') {
             $this->remove($value, $object);
         } elseif ($operation == 'replace') {
-            $this->replace($value, $object);
+            $this->replace($value, $object, $path);
         } else {
             throw new SCIMException('Operation not supported: ' . $operation);
         }

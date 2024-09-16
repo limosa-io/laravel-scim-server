@@ -12,6 +12,13 @@ class JSONCollection extends MutableCollection
 {
     public function add($value, Model &$object)
     {
+        foreach ($value as $v) {
+            if (collect($object->{$this->attribute})->contains(
+                fn ($item) => collect($item)->diffAssoc($v)->isEmpty()
+            )) {
+                throw new SCIMException('Value already exists', 400);
+            }
+        }
         $object->{$this->attribute} = collect($object->{$this->attribute})->merge($value);
     }
 
@@ -27,12 +34,11 @@ class JSONCollection extends MutableCollection
 
     public function remove($value, Model &$object, string $path = null)
     {
-        foreach($value as $v){
+        foreach ($value as $v) {
             $object->{$this->attribute} = collect($object->{$this->attribute})->filter(function ($item) use ($v) {
                 return !collect($item)->diffAssoc($v)->isEmpty();
             })->values()->all();
         }
-        
     }
 
     public function applyComparison(Builder &$query, Path $path, Path $parentAttribute = null)

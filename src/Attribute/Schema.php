@@ -7,7 +7,7 @@ class Schema extends Complex
 
     public function generateSchema()
     {
-        return [
+        $result = [
             "schemas" => [
                 "urn:ietf:params:scim:schemas:core:2.0:Schema"
             ],
@@ -21,9 +21,14 @@ class Schema extends Complex
             ],
             // name is substring after last occurence of :
             "name" => substr($this->name, strrpos($this->name, ':') + 1),
-            "description" => $this->description,
             "attributes" => collect($this->subAttributes)->map(fn ($element) => $element->generateSchema())->toArray()
         ];
+
+        if($this->description !== null){
+            $result['description'] = $this->description;
+        }
+
+        return $result;
     }
 
 }

@@ -1,6 +1,13 @@
-FROM php:8.0-alpine
+FROM php:8.1-alpine
 
 RUN apk add --no-cache git jq moreutils
+RUN apk add --no-cache $PHPIZE_DEPS postgresql-dev \
+    && docker-php-ext-install pdo_pgsql \
+    && pecl install xdebug-3.1.5 \
+    && docker-php-ext-enable xdebug \
+    && echo "xdebug.mode=debug" >> /usr/local/etc/php/conf.d/docker-php-ext-xdebug.ini \
+    && echo "xdebug.client_host = 172.19.0.1" >> /usr/local/etc/php/conf.d/docker-php-ext-xdebug.ini
+
 RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
 RUN composer create-project --prefer-dist laravel/laravel example && \
     cd example

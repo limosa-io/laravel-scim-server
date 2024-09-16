@@ -3,6 +3,7 @@
 namespace ArieTimmerman\Laravel\SCIMServer\Attribute;
 
 use ArieTimmerman\Laravel\SCIMServer\Helper;
+use ArieTimmerman\Laravel\SCIMServer\Parser\Path;
 use Illuminate\Database\Eloquent\Model;
 
 class Meta extends Complex
@@ -41,7 +42,7 @@ class Meta extends Complex
         );
     }
 
-    public function remove($value, Model &$object, ?string $path = null)
+    public function remove($value, Model &$object, Path $path = null)
     {
         // ignore
     }

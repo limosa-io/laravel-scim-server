@@ -31,7 +31,7 @@ class MutableCollection extends Collection
         $object->load($this->attribute);
     }
 
-    public function remove($value, Model &$object, string $path = null)
+    public function remove($value, Model &$object, Path $path = null)
     {
         $values = collect($value)->pluck('value')->all();
 
@@ -66,9 +66,9 @@ class MutableCollection extends Collection
         if ($operation == 'add') {
             $this->add($value, $object);
         } elseif ($operation == 'remove') {
-            $this->remove($value, $object);
+            $this->remove($value, $object, $path);
         } elseif ($operation == 'replace') {
-            $this->replace($value, $object);
+            $this->replace($value, $object, $path);
         } else {
             throw new SCIMException('Operation not supported: ' . $operation);
         }

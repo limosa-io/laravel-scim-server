@@ -68,7 +68,8 @@ class Path {
         $this->getValuePath()->getAttributePath()->shiftAttributeName();
 
         if(empty($this->getValuePathAttributes())){
-            $this->setValuePath(null);
+            // The line below isp probably not needed
+            // $this->setValuePath(null);
         }
 
         return $this;

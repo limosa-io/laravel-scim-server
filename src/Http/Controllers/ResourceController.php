@@ -158,12 +158,12 @@ class ResourceController extends Controller
         foreach ($input['Operations'] as $operation) {
             switch (strtolower($operation['op'])) {
                 case "add":
-                    $resourceType->getMapping()->patch('add', $operation['value'], $resourceObject, ParserParser::parse($operation['path'] ?? null));
+                    $resourceType->getMapping()->patch('add', $operation['value'] ?? null, $resourceObject, ParserParser::parse($operation['path'] ?? null));
                     break;
 
                 case "remove":
                     if (isset($operation['path'])) {
-                        $resourceType->getMapping()->patch('remove', $operation['value'], $resourceObject, ParserParser::parse($operation['path'] ?? null));
+                        $resourceType->getMapping()->patch('remove', $operation['value'] ?? null, $resourceObject, ParserParser::parse($operation['path'] ?? null));
                     } else {
                         throw new SCIMException('You MUST provide a "Path"');
                     }

@@ -9,6 +9,7 @@ use ArieTimmerman\Laravel\SCIMServer\Attribute\Collection;
 use ArieTimmerman\Laravel\SCIMServer\Attribute\Complex;
 use ArieTimmerman\Laravel\SCIMServer\Attribute\Constant;
 use ArieTimmerman\Laravel\SCIMServer\Attribute\Eloquent;
+use ArieTimmerman\Laravel\SCIMServer\Attribute\JSONCollection;
 use ArieTimmerman\Laravel\SCIMServer\Attribute\Meta;
 use ArieTimmerman\Laravel\SCIMServer\Attribute\MutableCollection;
 use ArieTimmerman\Laravel\SCIMServer\Attribute\Schema as AttributeSchema;
@@ -33,7 +34,6 @@ function eloquent($name, $attribute = null): Attribute
 
 class SCIMConfig
 {
-
     public function __construct()
     {
     }
@@ -120,6 +120,12 @@ class SCIMConfig
                         }),
                         eloquent('display', 'name')
                     ),
+                    (new JSONCollection('roles'))->withSubAttributes(
+                        eloquent('value')->ensure('required', 'min:3', 'alpha_dash:ascii'),
+                        eloquent('display')->ensure('nullable', 'min:3', 'alpha_dash:ascii'),
+                        eloquent('type')->ensure('nullable', 'min:3', 'alpha_dash:ascii'),
+                        eloquent('primary')->ensure('boolean')->default(false)
+                    )->ensure('nullable', 'array', 'max:20')
                 ),
                 (new AttributeSchema('urn:ietf:params:scim:schemas:extension:enterprise:2.0:User', true))->withSubAttributes(
                     eloquent('employeeNumber')->ensure('nullable')
@@ -160,7 +166,7 @@ class SCIMConfig
                 (new AttributeSchema(Schema::SCHEMA_GROUP, true))->withSubAttributes(
                     eloquent('displayName')->ensure('required', 'min:3', function ($attribute, $value, $fail) {
                         // check if group does not exist or if it exists, it is the same group
-                        $group = Group::where('name', $value)->first();
+                        $group = Group::where('displayName', $value)->first();
                         if ($group && (request()->route('resourceObject') == null || $group->id != request()->route('resourceObject')->id)) {
                             $fail('The name has already been taken.');
                         }

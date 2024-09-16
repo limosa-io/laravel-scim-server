@@ -3,6 +3,11 @@ services:
   laravel-scim-server:
     build: .
     ports:
+    # forward xdebug ports
       - "127.0.0.1:18123:8000"
+    working_dir: /laravel-scim-server
+    environment:
+      - XDEBUG_MODE=debug
+      - XDEBUG_SESSION=1
     volumes:
       - .:/laravel-scim-server

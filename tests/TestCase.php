@@ -32,8 +32,8 @@ abstract class TestCase extends BaseTestCase
         Schema::create('group_user', function (Blueprint $table) {
             $table->increments('id');
 
-            $table->uuid('group_id');
-            $table->uuid('user_id');
+            $table->integer('group_id')->unsigned();
+            $table->integer('user_id')->unsigned();
 
             $table->foreign('user_id')->references('id')->on('users')->onDelete('cascade');
             $table->foreign('group_id')->references('id')->on('groups')->onDelete('cascade');
@@ -62,6 +62,12 @@ abstract class TestCase extends BaseTestCase
         });
     }
 
+    protected function beforeRefreshingDatabase(){
+        // Schema::dropIfExists('group_user');
+        // Schema::dropIfExists('groups');
+        // Schema::dropIfExists('users');
+    }
+
     protected function getEnvironmentSetUp($app)
     {
         $app ['config']->set('app.url', 'http://localhost');
@@ -79,5 +85,4 @@ abstract class TestCase extends BaseTestCase
             'prefix'   => '',
         ]);
     }
-
 }

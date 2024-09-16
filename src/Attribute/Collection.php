@@ -49,7 +49,7 @@ class Collection extends AbstractComplex
         return $result;
     }
 
-    public function applyComparison(Builder &$query, Path $path, $parentAttribute = null)
+    public function applyComparison(Builder &$query, Path $path, Path $parentAttribute = null)
     {
         if ($path == null || empty($path->getAttributePathAttributes())) {
             throw new SCIMException('No attribute path attributes found. Could not apply comparison in ' . $this->getFullKey());

@@ -270,7 +270,7 @@ class Attribute
         return $this;
     }
 
-    public function applyComparison(Builder &$query, Path $path, $parentAttribute = null)
+    public function applyComparison(Builder &$query, Path $path, Path $parentAttribute = null)
     {
         throw new SCIMException(sprintf('Comparison is not implemented for "%s"', $this->getFullKey()));
     }

@@ -50,7 +50,7 @@ class Helper
     public static function objectToSCIMArray($object, ResourceType $resourceType = null, array $attributes = [])
     {
         if($resourceType == null){
-            return $object;
+            return $object instanceof Arrayable ? $object->toArray() : $object;
         }
 
         $mapping = $resourceType->getMapping();

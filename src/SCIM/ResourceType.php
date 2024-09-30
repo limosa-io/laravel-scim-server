@@ -2,9 +2,10 @@
 
 namespace ArieTimmerman\Laravel\SCIMServer\SCIM;
 
+use Illuminate\Contracts\Support\Arrayable;
 use Illuminate\Contracts\Support\Jsonable;
 
-class ResourceType implements Jsonable
+class ResourceType implements Jsonable, Arrayable
 {
     public $id;
     

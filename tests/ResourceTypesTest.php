@@ -16,6 +16,26 @@ class ResourceTypesTest extends TestCase
     {
         $response = $this->get('/scim/v2/ResourceTypes');
         $response->assertStatus(200);
+
+        $response->assertJsonStructure([
+            'schemas',
+            'totalResults',
+            'Resources' => [
+                '*' => [
+                    'schemas',
+                    'id',
+                    'name',
+                    'endpoint',
+                    'description',
+                    'schema',
+                    'schemaExtensions',
+                    'meta' => [
+                        'location',
+                        'resourceType'
+                    ]
+                ]
+            ]
+        ]);
     }
 
     public function testGetOne(){

@@ -39,6 +39,7 @@ class Attribute
     protected $type = 'string';
     protected $description = null;
     protected $defaultValue = null;
+    protected $returned = 'default';
 
     public $dirty = false;
 
@@ -68,7 +69,7 @@ class Attribute
             'name' => $this->name,
             'type' => $this->type,
             'mutability' => $this->mutability,
-            'returned' => 'default',
+            'returned' => $this->returned,
             'uniqueness' => 'server',
             'required' => $this->isRequired(),
             'multiValued' => $this->getMultiValued(),
@@ -133,6 +134,11 @@ class Attribute
         return true;
     }
 
+    public function setReturned($returned){
+        $this->returned = $returned;
+        return $this;
+    }
+
     public function setParent($parent)
     {
         $this->parent = $parent;
@@ -147,6 +153,10 @@ class Attribute
     {
         // check if name or getFullKey is in attributes
         if (!$this->isRequested($attributes)) {
+            return null;
+        }
+
+        if($this->returned == 'never'){
             return null;
         }
 

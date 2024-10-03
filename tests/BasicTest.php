@@ -369,6 +369,7 @@ class BasicTest extends TestCase
         $this->assertArrayHasKey('urn:ietf:params:scim:schemas:core:2.0:User', $json);
         $this->assertEquals('mariejo@example.com', $json['urn:ietf:params:scim:schemas:core:2.0:User']['emails'][0]['value']);
         $this->assertEquals('Dr. Marie Jo', $json['urn:ietf:params:scim:schemas:core:2.0:User']['userName']);
+        $this->assertArrayNotHasKey('password', $json['urn:ietf:params:scim:schemas:core:2.0:User']);
     }
 
     public function testPostTopLevel()

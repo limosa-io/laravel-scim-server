@@ -78,7 +78,7 @@ class SCIMConfig
                     eloquent('userName', 'name')->ensure('required'),
                     eloquent('active')->ensure('boolean')->default(false),
                     complex('name')->withSubAttributes(eloquent('formatted')),
-                    eloquent('password')->ensure('nullable'),
+                    eloquent('password')->ensure('nullable')->setReturned('never'),
                     (new class ('emails') extends Complex {
                         protected function doRead(&$object, $attributes = [])
                         {

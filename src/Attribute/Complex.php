@@ -110,7 +110,6 @@ class Complex extends AbstractComplex
     */
     public function replace($value, Model &$object, Path $path = null, $removeIfNotSet = false)
     {
-        $match = false;
         $this->dirty = true;
 
         if ($this->mutability == 'readOnly') {
@@ -129,7 +128,6 @@ class Complex extends AbstractComplex
             // if path contains : it is a schema node
             if (strpos($key, ':') !== false) {
                 $subNode = $this->getSubNode($key);
-                $match = true;
             } else {
                 $path = Parser::parse($key);
 
@@ -138,11 +136,10 @@ class Complex extends AbstractComplex
                     $path = $path->shiftAttributePathAttributes();
                     $sub = $attributeNames[0] ?? $path->getAttributePath()?->path?->schema;
                     $subNode = $this->getSubNode($attributeNames[0] ?? $path->getAttributePath()?->path?->schema);
-                    $match = true;
                 }
             }
 
-            if ($match) {
+            if ($subNode != null) {
                 $newValue = $v;
                 if ($path->isNotEmpty()) {
                     $newValue = [
@@ -155,7 +152,7 @@ class Complex extends AbstractComplex
         }
 
         // if this is the root, we may also check the schema nodes
-        if (!$match && $this->parent == null) {
+        if ($subNode == null && $this->parent == null) {
             foreach ($this->subAttributes as $attribute) {
                 if ($attribute instanceof Schema) {
                     $attribute->replace($value, $object, $path);

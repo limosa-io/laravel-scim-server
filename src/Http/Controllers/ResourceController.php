@@ -54,9 +54,9 @@ class ResourceController extends Controller
         }
 
         $flattened = Helper::flatten($input, $input['schemas']);
-        $flattened = self::validateScim($resourceType, $flattened, null);
+        $flattened = static::validateScim($resourceType, $flattened, null);
 
-        if (!$allowAlways && !self::isAllowed($pdp, $request, PolicyDecisionPoint::OPERATION_POST, $flattened, $resourceType, null, $isMe)) {
+        if (!$allowAlways && !static::isAllowed($pdp, $request, PolicyDecisionPoint::OPERATION_POST, $flattened, $resourceType, null, $isMe)) {
             throw (new SCIMException('This is not allowed'))->setCode(403);
         }
 
@@ -67,7 +67,7 @@ class ResourceController extends Controller
         //validate
         $newObject = Helper::flatten(Helper::objectToSCIMArray($resourceObject, $resourceType), $resourceType->getSchema());
 
-        $flattened = self::validateScim($resourceType, $newObject, $resourceObject);
+        $flattened = static::validateScim($resourceType, $newObject, $resourceObject);
 
         $resourceObject->save();
 
@@ -81,7 +81,7 @@ class ResourceController extends Controller
     {
         $input = $request->input();
 
-        $resourceObject = self::createFromSCIM($resourceType, $input, $pdp, $request, false, $isMe);
+        $resourceObject = static::createFromSCIM($resourceType, $input, $pdp, $request, false, $isMe);
 
         event(new Create($resourceObject, $resourceType, $isMe, $request->input()));
 
@@ -129,7 +129,7 @@ class ResourceController extends Controller
 
         $flattened = $this->validateScim($resourceType, $newObject, $resourceObject);
 
-        if (!self::isAllowed($pdp, $request, PolicyDecisionPoint::OPERATION_PATCH, $flattened, $resourceType, null)) {
+        if (!static::isAllowed($pdp, $request, PolicyDecisionPoint::OPERATION_PATCH, $flattened, $resourceType, null)) {
             throw new SCIMException('This is not allowed');
         }
 
@@ -184,7 +184,7 @@ class ResourceController extends Controller
 
         $flattened = $this->validateScim($resourceType, $newObject, $resourceObject);
 
-        if (!self::isAllowed($pdp, $request, PolicyDecisionPoint::OPERATION_PATCH, $flattened, $resourceType, null)) {
+        if (!static::isAllowed($pdp, $request, PolicyDecisionPoint::OPERATION_PATCH, $flattened, $resourceType, null)) {
             throw new SCIMException('This is not allowed');
         }
 

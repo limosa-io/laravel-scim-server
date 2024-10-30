@@ -15,6 +15,7 @@ use ArieTimmerman\Laravel\SCIMServer\Events\Replace;
 use ArieTimmerman\Laravel\SCIMServer\Events\Patch;
 use ArieTimmerman\Laravel\SCIMServer\Parser\Parser as ParserParser;
 use ArieTimmerman\Laravel\SCIMServer\PolicyDecisionPoint;
+use ArieTimmerman\Laravel\SCIMServer\Tests\Model\User;
 use Illuminate\Contracts\Pagination\CursorPaginator;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Validator;
@@ -274,7 +275,12 @@ class ResourceController extends Controller
         }
 
         // TODO: splitting the attributes parameters by dot and comma is not correct, but works in most cases
-        $attributes = $request->input('attributes') ? preg_split('/[,.]/', $request->input('attributes')) : [];
+        // if body contains attributes and this is an array, use that, else use existing
+        if($request->json('attributes') && is_array($request->json('attributes'))){
+            $attributes = $request->json('attributes');
+        } else {
+            $attributes = $request->input('attributes') ? preg_split('/[,.]/', $request->input('attributes')) : [];
+        }
 
         if (!empty($attributes)) {
             $attributes[] = 'id';
@@ -282,6 +288,7 @@ class ResourceController extends Controller
             $attributes[] = 'schemas';
         }
 
+        // TODO: implement excludedAttributes
         $excludedAttributes = [];
 
         return new ListResponse(
@@ -294,5 +301,20 @@ class ResourceController extends Controller
             ($resourceObjects instanceof CursorPaginator) ? $resourceObjects->nextCursor()?->encode() : null,
             ($resourceObjects instanceof CursorPaginator) ? $resourceObjects->previousCursor()?->encode() : null
         );
+    }
+
+    public function search(Request $request, PolicyDecisionPoint $pdp, ResourceType $resourceType){
+
+        $input = $request->json()->all();
+
+        // ensure request post body is a scim SearchRequest
+        if (!is_array($input) || !isset($input['schemas']) || !in_array("urn:ietf:params:scim:api:messages:2.0:SearchRequest", $input['schemas'])) {
+            throw (new SCIMException('Invalid schema. MUST be "urn:ietf:params:scim:api:messages:2.0:SearchRequest"'))->setCode(400);
+        }
+
+        // ensure $request->input reads from payload/post only, not query parameters
+        $request->replace($request->json()->all());
+
+        return $this->index($request, $pdp, $resourceType);
     }
 }

@@ -56,6 +56,41 @@ class BasicTest extends TestCase
                 ]
             ]
         ]);
+
+        foreach ($response->json('Resources') as $resource) {
+            $this->assertArrayNotHasKey('emails', $resource['urn:ietf:params:scim:schemas:core:2.0:User']);
+        }
+    }
+
+    public function testGetAttributesSearch()
+    {
+        $response = $this->postJson(
+            '/scim/v2/Users/.search',
+            [
+                'schemas' => ['urn:ietf:params:scim:api:messages:2.0:SearchRequest'],
+                'attributes' => [
+                    'userName',
+                    'name.formatted',
+                    'groups'
+                ]
+            ]
+        );
+
+        $response->assertStatus(200);
+        $response->assertJsonCount(10, 'Resources');
+        $response->assertJsonStructure([
+            'Resources' => [
+                '*' => [
+                    'urn:ietf:params:scim:schemas:core:2.0:User' => [
+                        'userName',
+                    ]
+                ]
+            ]
+        ]);
+
+        foreach ($response->json('Resources') as $resource) {
+            $this->assertArrayNotHasKey('emails', $resource['urn:ietf:params:scim:schemas:core:2.0:User']);
+        }
     }
 
     public function testGetGroupsAttribute()
@@ -178,6 +213,24 @@ class BasicTest extends TestCase
         ]);
 
         $response->assertStatus(200);
+    }
+
+    public function testSearch()
+    {
+        // First get a username to search for
+        $response = $this->postJson('/scim/v2/Users/.search', [
+            'schemas' => ['urn:ietf:params:scim:api:messages:2.0:SearchRequest'],
+            "startIndex" => 30,
+            "count" => 1
+        ]);
+
+        $userName = $response->json('Resources')[0]['urn:ietf:params:scim:schemas:core:2.0:User']['userName'];
+
+        // Now search for this username
+        $response = $this->get('/scim/v2/Users?filter=userName eq "'.$userName.'"');
+        $response->assertStatus(200);
+
+        $this->assertEquals(1, count($response->json('Resources')));
     }
 
     public function testGroupAssignment()

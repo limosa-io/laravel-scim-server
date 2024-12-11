@@ -46,19 +46,28 @@ class MutableCollection extends Collection
 
         // Check if objects exist
         $existingObjects = $object
-            ->{$this->attribute}()
-            ->getRelated()
-            ::findMany($values)
+        ->{$this->attribute}()
+        ->getRelated()
+        ::findMany($values);
+        $existingObjectIds = $existingObjects
             ->map(fn ($o) => $o->getKey());
 
-        if (($diff = collect($values)->diff($existingObjects))->count() > 0) {
+        if (($diff = collect($values)->diff($existingObjectIds))->count() > 0) {
             throw new SCIMException(
                 sprintf('One or more %s are unknown: %s', $this->attribute, implode(',', $diff->all())),
                 500
             );
         }
 
-        $object->{$this->attribute}()->sync($existingObjects->all());
+        // Act like the relation is already saved. This allows running validations, if needed.
+        $object->setRelation($this->attribute, $existingObjects);
+
+        $object->saved(function (Model $model) use ($object, $existingObjectIds)  {
+            // Save relationships only after the model is saved. Essential if the model is new.
+            // Intentionlly `$object` is used instead of `$model`, to avoid accidentially updating the wrong model.
+            $object->{$this->attribute}()->sync($existingObjectIds->all());    
+        });
+        
     }
 
     public function patch($operation, $value, Model &$object, ?Path $path = null)

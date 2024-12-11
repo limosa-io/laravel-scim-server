@@ -45,10 +45,11 @@ class MutableCollection extends Collection
         $values = collect($value)->pluck('value')->all();
 
         // Check if objects exist
-        $existingObjects = $object
-            ->{$this->attribute}()
-            ->getRelated()
-            ::findMany($values)
+        $users = $object
+        ->{$this->attribute}()
+        ->getRelated()
+        ::findMany($values);
+        $existingObjects = $users
             ->map(fn ($o) => $o->getKey());
 
         if (($diff = collect($values)->diff($existingObjects))->count() > 0) {
@@ -58,9 +59,9 @@ class MutableCollection extends Collection
             );
         }
 
-        $object->saved(function (Model $model) use ($existingObjects)  {
+        $object->saved(function (Model $model) use ($existingObjects, $users)  {
             $model->{$this->attribute}()->sync($existingObjects->all());
-            $model->load($this->attribute);
+            $model->setRelation($this->attribute, $users);
         });
         
     }

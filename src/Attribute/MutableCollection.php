@@ -62,9 +62,10 @@ class MutableCollection extends Collection
         // Act like the relation is already saved. This allows running validations, if needed.
         $object->setRelation($this->attribute, $existingObjects);
 
-        $object->saved(function (Model $model) use ($existingObjectIds)  {
+        $object->saved(function (Model $model) use ($object, $existingObjectIds)  {
             // Save relationships only after the model is saved. Essential if the model is new.
-            $model->{$this->attribute}()->sync($existingObjectIds->all());    
+            // Intentionlly `$object` is used instead of `$model`, to avoid accidentially updating the wrong model.
+            $object->{$this->attribute}()->sync($existingObjectIds->all());    
         });
         
     }

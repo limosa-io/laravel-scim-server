@@ -3,6 +3,7 @@
 namespace ArieTimmerman\Laravel\SCIMServer\Tests;
 
 use ArieTimmerman\Laravel\SCIMServer\Tests\Model\Group;
+use ArieTimmerman\Laravel\SCIMServer\Tests\Model\User;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
@@ -67,6 +68,37 @@ class GroupsTest extends TestCase
         $this->assertNotNull(Group::find($response->json('id')));
         $this->assertNotNull(Group::where('displayName', 'TestGroup')->first());
 
+    }
+
+    public function testCreateWithMembers(){
+        $response = $this->post('/scim/v2/Groups', [
+            'schemas' => ['urn:ietf:params:scim:schemas:core:2.0:Group'], // Required
+            'urn:ietf:params:scim:schemas:core:2.0:Group' => [
+                'displayName' => 'TestGroup',
+                'members' => [
+                    [
+                        'value' => User::first()->id,
+                    ]
+                ]
+            ]
+        ]);
+
+        $response->assertJsonStructure([
+            'id',
+            'urn:ietf:params:scim:schemas:core:2.0:Group' => [
+                'displayName',
+                'members' => [
+                    0 => [
+                        'value',
+                        'display'
+                    ]
+                ]
+            ]
+        ]);
+
+        $this->assertEquals(User::first()->id, $response->json(['urn:ietf:params:scim:schemas:core:2.0:Group'])['members'][0]['value']);
+        $this->assertNotNull(Group::find($response->json('id')));
+        $this->assertNotNull(Group::where('displayName', 'TestGroup')->first());
     }
 
     public function testBulk(){

@@ -58,7 +58,11 @@ class MutableCollection extends Collection
             );
         }
 
-        $object->{$this->attribute}()->sync($existingObjects->all());
+        $object->saved(function (Model $model) use ($existingObjects)  {
+            $model->{$this->attribute}()->sync($existingObjects->all());
+            $model->load($this->attribute);
+        });
+        
     }
 
     public function patch($operation, $value, Model &$object, ?Path $path = null)

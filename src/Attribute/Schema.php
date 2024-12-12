@@ -16,7 +16,7 @@ class Schema extends Complex
                 "resourceType" => "Schema",
                 "created" => "2001-01-01T00:00:00+00:00",
                 "lastModified" => "2001-01-01T00:00:00+00:00",
-                "version" => 'W/"1"',
+                "version" => sprintf('W/"%s"', sha1(filemtime(__FILE__))),
                 "location" => route('scim.schemas', ['id' => $this->name])
             ],
             // name is substring after last occurence of :

@@ -142,4 +142,9 @@ class GroupsTest extends TestCase
         // confirm testgroup1 exists
         $this->assertNotNull(Group::where('displayName', 'TestGroup2')->first());
     }
+
+    public function testGroupCreationFailure(){
+        $response = $this->post('/scim/v2/Groups', []);
+        $response->assertStatus(400);
+    }
 }

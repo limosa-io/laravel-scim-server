@@ -51,7 +51,7 @@ class ResourceController extends Controller
     public static function createFromSCIM($resourceType, $input, PolicyDecisionPoint $pdp = null, Request $request = null, $allowAlways = false, $isMe = false)
     {
         if (!isset($input['schemas']) || !is_array($input['schemas'])) {
-            throw (new SCIMException('Missing a valid schemas-attribute.'))->setCode(500);
+            throw (new SCIMException('Missing a valid schemas-attribute.'))->setCode(400);
         }
 
         $flattened = Helper::flatten($input, $input['schemas']);

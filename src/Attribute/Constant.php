@@ -32,7 +32,7 @@ class Constant extends Attribute
         $current = json_encode($this->read($object)?->value);
 
         if (json_encode($value) != $current) {
-            throw (new SCIMException(sprintf('Write to "%s" is not supported, tried to change "%s" to "%s"', $this->getFullKey(), $current, json_encode($value))))->setCode(500)->setScimType('mutability');
+            throw (new SCIMException(sprintf('Write to "%s" is not supported, tried to change "%s" to "%s"', $this->getFullKey(), $current, json_encode($value))))->setCode(403)->setScimType('mutability');
         }
 
         $this->dirty = true;

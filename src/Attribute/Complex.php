@@ -11,6 +11,8 @@ use Illuminate\Database\Eloquent\Model;
 class Complex extends AbstractComplex
 {
 
+    protected $type = 'complex';
+
     /**
      * @return string[]
      */

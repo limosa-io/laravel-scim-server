@@ -140,6 +140,19 @@ class BasicTest extends TestCase
         $this->assertNull($response2->json('startIndex'));
     }
 
+    public function testCursorPaginationFailure()
+    {
+        $response1 = $this->get('/scim/v2/Users?count=60&cursor=invalid');
+
+        $response1->assertStatus(400);
+        $response1->assertJson([
+            'schemas' => ['urn:ietf:params:scim:api:messages:2.0:Error'],
+            'status' => '400',
+            'scimType' => 'invalidCursor'
+        ]);
+
+    }
+
     public function testPagination()
     {
         $response = $this->get('/scim/v2/Users?startIndex=21&count=20');

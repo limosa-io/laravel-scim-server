@@ -18,6 +18,7 @@ use ArieTimmerman\Laravel\SCIMServer\PolicyDecisionPoint;
 use ArieTimmerman\Laravel\SCIMServer\Tests\Model\User;
 use Illuminate\Contracts\Pagination\CursorPaginator;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Pagination\Cursor;
 use Illuminate\Support\Facades\Validator;
 
 class ResourceController extends Controller
@@ -259,6 +260,14 @@ class ResourceController extends Controller
                 $resourceObjects = $resourceObjects->orderBy('id');
             }
 
+            if($request->input('cursor')){
+                $cursor = @Cursor::fromEncoded($request->input('cursor'));
+
+                if($cursor == null){
+                    throw (new SCIMException('Invalid Cursor'))->setCode(400)->setScimType('invalidCursor');
+                }
+            }
+            
             $resourceObjects = $resourceObjects->cursorPaginate(
                 $count,
                 cursor: $request->input('cursor')

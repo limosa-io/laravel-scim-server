@@ -219,7 +219,7 @@ class ResourceController extends Controller
         }
 
         // Non-negative integer. Specifies the desired maximum number of query results per page, e.g., 10. A negative value SHALL be interpreted as "0". A value of "0" indicates that no resource results are to be returned except for "totalResults".
-        $count = min(max(0, intVal($request->input('count', 10))), 100);
+        $count = min(max(0, intVal($request->input('count', config('scim.pagination.defaultPageSize')))), config('scim.pagination.maxPageSize'));
 
         $startIndex = null;
         $sortBy = null;
@@ -266,6 +266,14 @@ class ResourceController extends Controller
                 if($cursor == null){
                     throw (new SCIMException('Invalid Cursor'))->setCode(400)->setScimType('invalidCursor');
                 }
+            }
+
+            $countRaw = $request->input('count');
+
+            if($countRaw < 1 || $countRaw > config('scim.pagination.maxPageSize')){
+                throw (new SCIMException(
+                    sprintf('Count value is invalid. Count value must be between 1 - and maxPageSize (%s) (when using cursor pagination)', config('scim.pagination.maxPageSize'))
+                ))->setCode(400)->setScimType('invalidCount');
             }
             
             $resourceObjects = $resourceObjects->cursorPaginate(

@@ -54,8 +54,8 @@ class ServiceProviderController extends Controller
                 "cursor" => true,
                 "index" => true,
                 "defaultPaginationMethod" => "index",
-                "defaultPageSize" => 10,
-                "maxPageSize" => 100,
+                "defaultPageSize" => config('scim.pagination.defaultPageSize'),
+                "maxPageSize" => config('scim.pagination.maxPageSize'),
                 "cursorTimeout" => 3600
             ],
             "meta" => [

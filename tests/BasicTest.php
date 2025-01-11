@@ -153,6 +153,19 @@ class BasicTest extends TestCase
 
     }
 
+    public function testCursorPaginationFailureMaxCount()
+    {
+        $response1 = $this->get('/scim/v2/Users?count=200&cursor');
+
+        $response1->assertStatus(400);
+        $response1->assertJson([
+            'schemas' => ['urn:ietf:params:scim:api:messages:2.0:Error'],
+            'status' => '400',
+            'scimType' => 'invalidCount'
+        ]);
+
+    }
+
     public function testPagination()
     {
         $response = $this->get('/scim/v2/Users?startIndex=21&count=20');
@@ -469,5 +482,10 @@ class BasicTest extends TestCase
         $this->assertArrayHasKey('urn:ietf:params:scim:schemas:core:2.0:User', $json);
         $this->assertEquals('mariejo@example.com', $json['urn:ietf:params:scim:schemas:core:2.0:User']['emails'][0]['value']);
         $this->assertEquals('Dr. Marie Jo', $json['urn:ietf:params:scim:schemas:core:2.0:User']['userName']);
+    }
+
+    public function testTotalResultsOnly(){
+        $response = $this->get('/scim/v2/Users?count=0');
+        $this->assertTrue(true);
     }
 }

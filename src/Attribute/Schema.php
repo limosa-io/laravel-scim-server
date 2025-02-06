@@ -4,6 +4,13 @@ namespace ArieTimmerman\Laravel\SCIMServer\Attribute;
 
 class Schema extends Complex
 {
+    public $required;
+
+    function __construct($name, $required = true)
+    {
+        parent::__construct($name);
+        $this->required = $required;
+    }
 
     public function generateSchema()
     {
@@ -29,6 +36,10 @@ class Schema extends Complex
         }
 
         return $result;
+    }
+
+    public function getName(){
+        return $this->name;
     }
 
 }

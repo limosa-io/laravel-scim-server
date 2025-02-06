@@ -127,7 +127,7 @@ class SCIMConfig
                         eloquent('primary')->ensure('boolean')->default(false)
                     )->ensure('nullable', 'array', 'max:20')
                 ),
-                (new AttributeSchema('urn:ietf:params:scim:schemas:extension:enterprise:2.0:User', true))->withSubAttributes(
+                (new AttributeSchema('urn:ietf:params:scim:schemas:extension:enterprise:2.0:User', false))->withSubAttributes(
                     eloquent('employeeNumber')->ensure('nullable')
                 )
             ),

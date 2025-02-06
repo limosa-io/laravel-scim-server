@@ -50,7 +50,10 @@ class ResourceTypesTest extends TestCase
             "description" => "User Account",
             "schema" => "urn:ietf:params:scim:schemas:core:2.0:User",
             "schemaExtensions" => [
-                "urn:ietf:params:scim:schemas:extension:enterprise:2.0:User"
+                [
+                    "schema" => "urn:ietf:params:scim:schemas:extension:enterprise:2.0:User",
+                    "required" => false
+                ]
             ],
             "meta" => [
                 "location" => "http://localhost/scim/v2/ResourceTypes/User",

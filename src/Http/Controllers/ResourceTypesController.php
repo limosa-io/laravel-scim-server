@@ -20,9 +20,23 @@ class ResourceTypesController extends Controller
         $resourceTypes = [];
         
         foreach ($config as $key => $value) {
-            $schemas = $value['map']->getSchemas();
+            $schemas = $value['map']->getSchemaNodes();
 
-            $resourceTypes[] = new ResourceType($value['singular'], $key, $key, $value['description'] ?? null, $schemas[0], array_slice($schemas, 1));
+            $resourceTypes[] = new ResourceType(
+                $value['singular'],
+                $key,
+                $key,
+                $value['description'] ?? null,
+                $schemas[0]->getName(),
+                collect(array_slice($schemas, 1))->map(
+                    function ($element) {
+                        return [
+                            'schema' => $element->getName(),
+                            'required' => $element->required
+                        ];
+                    }
+                )->toArray()
+            );
         }
         
         $this->resourceTypes = collect($resourceTypes);

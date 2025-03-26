@@ -4,6 +4,7 @@ namespace ArieTimmerman\Laravel\SCIMServer\Tests;
 
 use ArieTimmerman\Laravel\SCIMServer\ResourceType;
 use ArieTimmerman\Laravel\SCIMServer\SCIMConfig;
+use ArieTimmerman\Laravel\SCIMServer\Tests\Model\Group;
 use Illuminate\Support\Arr;
 
 class BasicTest extends TestCase
@@ -239,6 +240,23 @@ class BasicTest extends TestCase
         ]);
 
         $response->assertStatus(200);
+
+        $this->assertTrue(Group::find($groupValue)->members->pluck('id')->contains($userValue), 'User was not added to the group');        
+
+        // SCIM Patch remove member request
+        $response = $this->patch('/scim/v2/Groups/' . $groupValue, [
+            "schemas" => [
+                "urn:ietf:params:scim:api:messages:2.0:PatchOp",
+            ],
+            "Operations" => [[
+                "op" => "remove",
+                "path" => sprintf("members[value eq \"%s\"]", $userValue),
+            ]]
+        ]);
+
+        $response->assertStatus(200);
+
+        $this->assertFalse(Group::find($groupValue)->members->pluck('id')->contains($userValue), 'User was not removed from the group');
     }
 
     public function testSearch()

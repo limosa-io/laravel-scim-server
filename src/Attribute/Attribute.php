@@ -9,8 +9,7 @@ use ArieTimmerman\Laravel\SCIMServer\SCIM\Schema;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Tmilos\ScimFilterParser\Ast\AttributePath;
-use Tmilos\ScimFilterParser\Ast\ComparisonExpression;
-use Tmilos\ScimSchema\Model\Resource;
+use Illuminate\Support\Str;
 
 class Attribute
 {
@@ -36,7 +35,7 @@ class Attribute
 
     protected $multiValued = false;
     protected $mutability = 'readWrite';
-    protected $type = 'string';
+    protected $type;
     protected $description = null;
     protected $defaultValue = null;
     protected $returned = 'default';
@@ -64,10 +63,11 @@ class Attribute
     /**
      * Return SCIM schema for this attribute
      */
-    public function generateSchema(){
+    public function generateSchema()
+    {
         return [
             'name' => $this->name,
-            'type' => $this->type,
+            'type' => $this->getType(),
             'mutability' => $this->mutability,
             'returned' => $this->returned,
             'uniqueness' => 'server',
@@ -103,7 +103,8 @@ class Attribute
         return $this;
     }
 
-    public function default($value){
+    public function default($value)
+    {
         $this->defaultValue = $value;
 
         return $this;
@@ -117,6 +118,23 @@ class Attribute
     public function nullable()
     {
         return in_array('nullable', $this->validations);
+    }
+
+    public function getType()
+    {
+        $result = $this->type;
+
+        if ($result == null) {
+            if (in_array('boolean', $this->validations)) {
+                $result = 'boolean';
+            } elseif (in_array('integer', $this->validations)) {
+                $result = 'integer';
+            } else {
+                $result = 'string';
+            }
+        }
+
+        return $result;
     }
 
     public function isReadSupported()
@@ -134,7 +152,8 @@ class Attribute
         return true;
     }
 
-    public function setReturned($returned){
+    public function setReturned($returned)
+    {
         $this->returned = $returned;
         return $this;
     }
@@ -145,7 +164,8 @@ class Attribute
         return $this;
     }
 
-    protected function isRequested($attributes){
+    protected function isRequested($attributes)
+    {
         return empty($attributes) || in_array($this->name, $attributes) || in_array($this->getFullKey(), $attributes) || ($this->parent != null && $this->parent->isRequested($attributes));
     }
 
@@ -156,7 +176,7 @@ class Attribute
             return null;
         }
 
-        if($this->returned == 'never'){
+        if ($this->returned == 'never') {
             return null;
         }
 

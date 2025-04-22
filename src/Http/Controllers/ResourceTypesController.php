@@ -24,7 +24,7 @@ class ResourceTypesController extends Controller
 
             $resourceTypes[] = new ResourceType(
                 $value['singular'],
-                $key,
+                $value['singular'],
                 $key,
                 $value['description'] ?? null,
                 $schemas[0]->getName(),

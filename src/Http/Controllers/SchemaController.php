@@ -16,7 +16,7 @@ class SchemaController extends Controller
         $schemaNodes = [];
         $schemas = [];
 
-        foreach ($config as $key => $value) {
+        foreach ($config as $value) {
             $value['map']->generateSchema();
 
             $schemaNodes = array_merge($schemaNodes, $value['map']->getSchemaNodes());

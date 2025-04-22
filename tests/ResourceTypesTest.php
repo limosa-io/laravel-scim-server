@@ -45,7 +45,7 @@ class ResourceTypesTest extends TestCase
                 "urn:ietf:params:scim:schemas:core:2.0:ResourceType"
             ],
             "id" => "User",
-            "name" => "Users",
+            "name" => "User",
             "endpoint" => "http://localhost/scim/v2/Users",
             "description" => "User Account",
             "schema" => "urn:ietf:params:scim:schemas:core:2.0:User",

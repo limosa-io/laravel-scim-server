@@ -73,14 +73,12 @@ class MutableCollection extends Collection
         $values = collect($value)->pluck('value')->all();
 
         // Check if objects exist
-        $existingObjects = $object
-        ->{$this->attribute}()
-        ->getRelated()
-        ::findMany($values);
-        $existingObjectIds = $existingObjects
-            ->map(fn ($o) => $o->getKey());
+        $existingObjects = $object->{$this->attribute}()
+            ->getRelated()::findMany($values);
 
-        if (($diff = collect($values)->diff($existingObjectIds))->count() > 0) {
+        $existingObjectIds = $existingObjects->map(fn ($o) => $o->getKey());
+
+        if (($diff = collect($values)->filter()->diff($existingObjectIds))->count() > 0) {
             throw new SCIMException(
                 sprintf('One or more %s are unknown: %s', $this->attribute, implode(',', $diff->all())),
                 500

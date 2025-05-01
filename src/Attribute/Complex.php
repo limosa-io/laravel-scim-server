@@ -128,7 +128,7 @@ class Complex extends AbstractComplex
             $subNode = null;
 
             // if path contains : it is a schema node
-            if (strpos($key, ':') !== false) {
+            if (str_contains($key, ':')) {
                 $subNode = $this->getSubNode($key);
             } else {
                 $path = Parser::parse($key);

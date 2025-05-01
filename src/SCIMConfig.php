@@ -3,7 +3,6 @@
 namespace ArieTimmerman\Laravel\SCIMServer;
 
 use ArieTimmerman\Laravel\SCIMServer\SCIM\Schema;
-use ArieTimmerman\Laravel\SCIMServer\Helper;
 use ArieTimmerman\Laravel\SCIMServer\Attribute\Attribute;
 use ArieTimmerman\Laravel\SCIMServer\Attribute\Collection;
 use ArieTimmerman\Laravel\SCIMServer\Attribute\Complex;

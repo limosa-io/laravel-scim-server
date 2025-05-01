@@ -18,6 +18,7 @@ use ArieTimmerman\Laravel\SCIMServer\PolicyDecisionPoint;
 use ArieTimmerman\Laravel\SCIMServer\Tests\Model\User;
 use Illuminate\Contracts\Pagination\CursorPaginator;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Http\Response;
 use Illuminate\Pagination\Cursor;
 use Illuminate\Support\Facades\Validator;
 
@@ -109,7 +110,9 @@ class ResourceController extends Controller
     {
         event(new Get($resourceObject, $resourceType, null, $request->input()));
 
-        return Helper::objectToSCIMResponse($resourceObject, $resourceType);
+        $excludedAttributes = explode(',', $request->input('excludedAttributes', ''));
+
+        return Helper::objectToSCIMResponse($resourceObject, $resourceType, $excludedAttributes);
     }
 
     public function delete(Request $request, PolicyDecisionPoint $pdp, ResourceType $resourceType, Model $resourceObject)
@@ -305,8 +308,7 @@ class ResourceController extends Controller
             $attributes[] = 'schemas';
         }
 
-        // TODO: implement excludedAttributes
-        $excludedAttributes = [];
+        $excludedAttributes = explode(',', $request->input('excludedAttributes', ''));
 
         return new ListResponse(
             $resources,

@@ -2,6 +2,7 @@
 
 namespace ArieTimmerman\Laravel\SCIMServer;
 
+use ArieTimmerman\Laravel\SCIMServer\SCIM\ShowResponse;
 use Illuminate\Contracts\Support\Arrayable;
 use Tmilos\ScimFilterParser\Ast\ComparisonExpression;
 use Tmilos\ScimFilterParser\Ast\Negation;
@@ -26,16 +27,16 @@ class Helper
      *
      * @param unknown $object
      */
-    public static function prepareReturn(Arrayable $object, ResourceType $resourceType = null, array $attributes = [])
+    public static function prepareReturn(Arrayable $object, ResourceType $resourceType = null, array $attributes = [], array $excludedAttributes = [])
     {
         $result = null;
 
-        if (!empty($object) && isset($object[0]) && is_object($object[0])) {
-            if (!in_array('ArieTimmerman\Laravel\SCIMServer\Traits\SCIMResource', class_uses(get_class($object[0])))) {
+        if (isset($object[0]) && is_object($object[0])) {
+            if (! in_array('ArieTimmerman\Laravel\SCIMServer\Traits\SCIMResource', class_uses(get_class($object[0])))) {
                 $result = [];
 
                 foreach ($object as $key => $value) {
-                    $result[] = self::objectToSCIMArray($value, $resourceType, $attributes);
+                    $result[] = self::objectToSCIMArray($value, $resourceType, $attributes, $excludedAttributes);
                 }
             }
         }
@@ -47,7 +48,7 @@ class Helper
         return $result;
     }
 
-    public static function objectToSCIMArray($object, ResourceType $resourceType = null, array $attributes = [])
+    public static function objectToSCIMArray($object, ?ResourceType $resourceType = null, array $attributes = [], array $excludedAttributes = [])
     {
         if($resourceType == null){
             return $object instanceof Arrayable ? $object->toArray() : $object;
@@ -67,7 +68,7 @@ class Helper
             $result = array_merge($result, $main);
         }
 
-        return $result;
+        return Arr::except($result, $excludedAttributes);
     }
 
 
@@ -90,9 +91,11 @@ class Helper
      * @param unknown      $object
      * @param ResourceType $resourceType
      */
-    public static function objectToSCIMResponse(Model $object, ResourceType $resourceType = null)
+    public static function objectToSCIMResponse(Model $object, ?ResourceType $resourceType = null, array $excludedAttributes = [])
     {
-        return response(self::objectToSCIMArray($object, $resourceType))->header('ETag', self::getResourceObjectVersion($object));
+        $response = self::objectToSCIMArray($object, $resourceType, excludedAttributes: $excludedAttributes);
+
+        return response($response)->header('ETag', self::getResourceObjectVersion($object));
     }
 
     /**

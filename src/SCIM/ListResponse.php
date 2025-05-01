@@ -42,7 +42,7 @@ class ListResponse implements Jsonable
                "schemas" => [
                    "urn:ietf:params:scim:api:messages:2.0:ListResponse"
                ],
-               'Resources' => Helper::prepareReturn($this->resourceObjects, $this->resourceType, $this->attributes),
+               'Resources' => Helper::prepareReturn($this->resourceObjects, $this->resourceType, $this->attributes, $this->excludedAttributes),
         ],
             fn ($value) => $value !== null
         );

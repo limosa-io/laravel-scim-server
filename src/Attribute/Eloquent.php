@@ -72,7 +72,7 @@ class Eloquent extends Attribute
         $attribute = $this->attribute;
 
         // FIXME: ugly and perhaps incorrect.
-        if($parentAttribute != null){
+        if ($parentAttribute != null) {
             $attribute = $parentAttribute . '.' . $attribute;
         }
 
@@ -81,19 +81,23 @@ class Eloquent extends Attribute
 
         switch ($operator) {
             case "eq":
-                $query->where($attribute, $value);
+                if (is_numeric($value) || is_bool($value) || is_null($value)) {
+                    $query->where($attribute, $value);
+                } else {
+                    $query->whereLike($attribute, addcslashes($value, '%_'));
+                }
                 break;
             case "ne":
                 $query->where($attribute, '<>', $value);
                 break;
             case "co":
-                $query->where($attribute, 'like', '%' . addcslashes($value, '%_') . '%');
+                $query->whereLike($attribute, '%' . addcslashes($value, '%_') . '%');
                 break;
             case "sw":
-                $query->where($attribute, 'like', addcslashes($value, '%_') . '%');
+                $query->whereLike($attribute, addcslashes($value, '%_') . '%');
                 break;
             case "ew":
-                $query->where($attribute, 'like', '%' . addcslashes($value, '%_'));
+                $query->whereLike($attribute, '%' . addcslashes($value, '%_'));
                 break;
             case "pr":
                 $query->whereNotNull($attribute);

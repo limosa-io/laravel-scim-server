@@ -34,7 +34,9 @@ function eloquent($name, $attribute = null): Attribute
 
 class SCIMConfig
 {
-    public function __construct() {}
+    public function __construct()
+    {
+    }
 
     public function getConfigForResource($name)
     {
@@ -55,7 +57,7 @@ class SCIMConfig
             'description' => 'User Account',
 
             'map' => complex()->withSubAttributes(
-                new class('schemas', [
+                new class ('schemas', [
                     "urn:ietf:params:scim:schemas:core:2.0:User",
                 ]) extends Constant {
                     public function replace($value, &$object, $path = null)
@@ -64,7 +66,7 @@ class SCIMConfig
                         $this->dirty = true;
                     }
                 },
-                (new class('id', null) extends Constant {
+                (new class ('id', null) extends Constant {
                     protected function doRead(&$object, $attributes = [])
                     {
                         return (string)$object->id;
@@ -77,7 +79,7 @@ class SCIMConfig
                     eloquent('active')->ensure('boolean')->default(false),
                     complex('name')->withSubAttributes(eloquent('formatted')),
                     eloquent('password')->ensure('nullable')->setReturned('never'),
-                    (new class('emails') extends Complex {
+                    (new class ('emails') extends Complex {
                         protected function doRead(&$object, $attributes = [])
                         {
                             return collect([$object->email])->map(function ($email) {
@@ -101,7 +103,23 @@ class SCIMConfig
                         new Constant('type', 'other'),
                         new Constant('primary', true)
                     )->ensure('required', 'array')
-                        ->setMultiValued(true),
+                    ->setMultiValued(true),
+                    (new Collection('groups'))->withSubAttributes(
+                        eloquent('value', 'id'),
+                        (new class ('$ref') extends Eloquent {
+                            protected function doRead(&$object, $attributes = [])
+                            {
+                                return route(
+                                    'scim.resource',
+                                    [
+                                    'resourceType' => 'Group',
+                                    'resourceObject' => $object->id ?? "not-saved"
+                                    ]
+                                );
+                            }
+                        }),
+                        eloquent('display', 'name')
+                    ),
                     (new JSONCollection('roles'))->withSubAttributes(
                         eloquent('value')->ensure('required', 'min:3', 'alpha_dash:ascii'),
                         eloquent('display')->ensure('nullable', 'min:3', 'alpha_dash:ascii'),
@@ -116,11 +134,69 @@ class SCIMConfig
         ];
     }
 
+    public function getGroupConfig()
+    {
+        return [
+
+            'class' => Group::class,
+            'singular' => 'Group',
+
+            //eager loading
+            'withRelations' => [],
+            'description' => 'Group',
+
+            'map' => complex()->withSubAttributes(
+                new class ('schemas', [
+                    "urn:ietf:params:scim:schemas:core:2.0:Group",
+                ]) extends Constant {
+                    public function replace($value, &$object, $path = null)
+                    {
+                        // do nothing
+                        $this->dirty = true;
+                    }
+                },
+                (new class ('id', null) extends Constant {
+                    protected function doRead(&$object, $attributes = [])
+                    {
+                        return (string)$object->id;
+                    }
+                }
+                ),
+                new Meta('Groups'),
+                (new AttributeSchema(Schema::SCHEMA_GROUP, true))->withSubAttributes(
+                    eloquent('displayName')->ensure('required', 'min:3', function ($attribute, $value, $fail) {
+                        // check if group does not exist or if it exists, it is the same group
+                        $group = Group::where('displayName', $value)->first();
+                        if ($group && (request()->route('resourceObject') == null || $group->id != request()->route('resourceObject')->id)) {
+                            $fail('The name has already been taken.');
+                        }
+                    }),
+                    (new MutableCollection('members'))->withSubAttributes(
+                        eloquent('value', 'id')->ensure('required'),
+                        (new class ('$ref') extends Eloquent {
+                            protected function doRead(&$object, $attributes = [])
+                            {
+                                return route(
+                                    'scim.resource',
+                                    [
+                                    'resourceType' => 'Users',
+                                    'resourceObject' => $object->id ?? "not-saved"
+                                    ]
+                                );
+                            }
+                        }),
+                        eloquent('display', 'name')
+                    )->ensure('nullable', 'array')
+                )
+            ),
+        ];
+    }
 
     public function getConfig()
     {
         return [
-            'Users' => $this->getUserConfig()
+            'Users' => $this->getUserConfig(),
+            'Groups' => $this->getGroupConfig(),
         ];
     }
 }

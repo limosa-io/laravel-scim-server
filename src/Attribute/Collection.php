@@ -34,16 +34,18 @@ class Collection extends AbstractComplex
     {
         $result = [];
 
-        foreach ($object->{$this->attribute} as $o) {
-            $element = [];
+        if ($object->{$this->attribute} !== null) {
+            foreach ($object->{$this->attribute} as $o) {
+                $element = [];
 
-            foreach ($this->subAttributes as $attribute) {
-                if (($r = $attribute->read($o)) != null) {
-                    $element[$attribute->name] = $r->value;
+                foreach ($this->subAttributes as $attribute) {
+                    if (($r = $attribute->read($o)) != null) {
+                        $element[$attribute->name] = $r->value;
+                    }
                 }
-            }
 
-            $result[] = $element;
+                $result[] = $element;
+            }
         }
 
         return $result;

@@ -1,0 +1,37 @@
+// For format details, see https://aka.ms/devcontainer.json. For config options, see the
+// README at: https://github.com/devcontainers/templates/tree/main/src/php
+{
+	"name": "Laravel SCIM Server Dev",
+	// Use the Dockerfile in the .devcontainer folder
+	"build": {
+		"dockerfile": "Dockerfile",
+		"context": "."
+	},
+
+	// Configure tool-specific properties
+	"customizations": {
+		"vscode": {
+			"extensions": [
+				"bmewburn.vscode-intelephense-client",
+				"xdebug.php-debug",
+				"mikestead.dotenv",
+				"mehedidracula.php-namespace-resolver",
+				"recca0120.vscode-phpunit",
+				"formulahendry.terminal",
+				"junstyle.php-cs-fixer"
+			],
+			"settings": {
+				"php.validate.executablePath": "/usr/local/bin/php"
+			}
+		}
+	},
+
+	// Use 'forwardPorts' to make a list of ports inside the container available locally
+	"forwardPorts": [8000],
+
+	// Use 'postCreateCommand' to run commands after the container is created
+	"postCreateCommand": "composer install",
+	
+	// Add a non-root user to run the server
+	"remoteUser": "vscode"
+}

@@ -52,9 +52,14 @@ abstract class AbstractComplex extends Attribute
     {
         $result = collect($this->subAttributes)->first(fn ($element) => $element->name == $key);
 
-        // if this is the root node, search for a subNode in one of the default schema nodes
-        if($result == null){
-            $result = $this->getSchemaNode()?->getSubNode($key);
+        // if this is the root node, search for a subNode in all of the default schema nodes
+        if ($result == null) {
+            foreach ($this->getSchemaNodes() as $schema) {
+                if ($schema->getSubNode($key)) {
+                    $result = $schema->getSubNode($key);
+                    continue;
+                }
+            }
         }
 
         return $result;

@@ -1,9 +1,6 @@
 <?php
 namespace ArieTimmerman\Laravel\SCIMServer;
 
-use Illuminate\Support\Facades\Auth;
-use ArieTimmerman\Laravel\SCIMServer\Exceptions\SCIMException;
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
 /**
@@ -81,7 +78,7 @@ class RouteProvider
         // TODO: Use the attributes parameters ?attributes=userName, excludedAttributes=asdg,asdg (respect "returned" settings "always")
         Route::get('/{resourceType}/{resourceObject}', '\ArieTimmerman\Laravel\SCIMServer\Http\Controllers\ResourceController@show')->name('scim.resource');
         Route::get("/{resourceType}", '\ArieTimmerman\Laravel\SCIMServer\Http\Controllers\ResourceController@index')->name('scim.resources');
-
+        Route::post("/{resourceType}/.search", '\ArieTimmerman\Laravel\SCIMServer\Http\Controllers\ResourceController@search');
         Route::post("/{resourceType}", '\ArieTimmerman\Laravel\SCIMServer\Http\Controllers\ResourceController@create');
 
         Route::put("/{resourceType}/{resourceObject}", '\ArieTimmerman\Laravel\SCIMServer\Http\Controllers\ResourceController@replace');

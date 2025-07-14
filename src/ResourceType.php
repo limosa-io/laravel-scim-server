@@ -2,8 +2,9 @@
 
 namespace ArieTimmerman\Laravel\SCIMServer;
 
+use ArieTimmerman\Laravel\SCIMServer\Attribute\Complex;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Arr;
-use ArieTimmerman\Laravel\SCIMServer\Attribute\AttributeMapping;
 
 class ResourceType
 {
@@ -21,14 +22,9 @@ class ResourceType
         return $this->configuration;
     }
 
-    public function getMapping()
+    public function getMapping(): Complex
     {
-        $mapping = $this->configuration['mapping'];
-
-        if (!isset($mapping['schema'])) {
-            $mapping['schemas'] = AttributeMapping::constant($this->configuration['schema'])->ignoreWrite();
-        }
-        return AttributeMapping::object($mapping ?? [])->setDefaultSchema($this->configuration['schema']);
+        return $this->configuration['map'];
     }
 
     public function getName()
@@ -38,7 +34,7 @@ class ResourceType
 
     public function getSchema()
     {
-        return $this->configuration['schema'];
+        return $this->getMapping()->getSchemas();
     }
 
     public function getClass()
@@ -55,14 +51,14 @@ class ResourceType
         };
     }
 
-    public function getQuery()
+    public function getQuery(): Builder
     {
         return Arr::get($this->configuration, 'query') ?? $this->getClass()::query();
     }
 
     public function getValidations()
     {
-        return $this->configuration['validations'];
+        return $this->getMapping()->getValidations();
     }
 
     public function getWithRelations()
@@ -73,28 +69,5 @@ class ResourceType
     public static function user()
     {
         return new ResourceType('Users', resolve(SCIMConfig::class)->getUserConfig());
-    }
-
-    public function getAllAttributeConfigs($mapping = -1)
-    {
-        $result = [];
-
-        if ($mapping == -1) {
-            $mapping = $this->getMapping();
-        }
-
-        foreach ($mapping as $key => $value) {
-            if ($value instanceof AttributeMapping && $value != null) {
-                $result[] = $value;
-            } elseif (is_array($value)) {
-                $extra = $this->getAllAttributeConfigs($value);
-
-                if (!empty($extra)) {
-                    $result = array_merge($result, $extra);
-                }
-            }
-        }
-
-        return $result;
     }
 }

@@ -5,7 +5,6 @@
 
 namespace ArieTimmerman\Laravel\SCIMServer;
 
-use Illuminate\Support\Facades\Route;
 use ArieTimmerman\Laravel\SCIMServer\Exceptions\SCIMException;
 
 class ServiceProvider extends \Illuminate\Support\ServiceProvider
@@ -57,7 +56,7 @@ class ServiceProvider extends \Illuminate\Support\ServiceProvider
 
                     //if as version is '*' it is always ok
                     if (!in_array($currentVersion, $versionsAllowed) && !in_array('*', $versionsAllowed)) {
-                        throw (new SCIMException('Failed to update.  Resource changed on the server.'))->setCode(412);
+                        throw (new SCIMException('Failed to update. Resource changed on the server.'))->setCode(412);
                     }
                 }
 

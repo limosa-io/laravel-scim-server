@@ -50,10 +50,18 @@ class ServiceProviderController extends Controller
                     "type" => "httpbasic",
                 ],
             ],
+            "pagination" => [
+                "cursor" => true,
+                "index" => true,
+                "defaultPaginationMethod" => "index",
+                "defaultPageSize" => config('scim.pagination.defaultPageSize'),
+                "maxPageSize" => config('scim.pagination.maxPageSize'),
+                "cursorTimeout" => 3600
+            ],
             "meta" => [
                 "location" => route('scim.serviceproviderconfig'),
                 "resourceType" => "ServiceProviderConfig",
-                    
+
                 "created" => Carbon::createFromTimestampUTC(filectime(__FILE__))->format('c'),
                 "lastModified" => Carbon::createFromTimestampUTC(filemtime(__FILE__))->format('c'),
                 "version" => sprintf('W/"%s"', sha1(filemtime(__FILE__))),

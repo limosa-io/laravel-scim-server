@@ -4,7 +4,6 @@ namespace ArieTimmerman\Laravel\SCIMServer\Http\Controllers;
 
 use ArieTimmerman\Laravel\SCIMServer\SCIM\ListResponse;
 use ArieTimmerman\Laravel\SCIMServer\SCIM\ResourceType;
-use ArieTimmerman\Laravel\SCIMServer\SCIM\Schema;
 
 use Illuminate\Http\Request;
 use ArieTimmerman\Laravel\SCIMServer\Exceptions\SCIMException;
@@ -21,7 +20,23 @@ class ResourceTypesController extends Controller
         $resourceTypes = [];
         
         foreach ($config as $key => $value) {
-            $resourceTypes[] = new ResourceType($value['singular'], $key, $key, $value['description'] ?? null, Schema::SCHEMA_USER, [ ]);
+            $schemas = $value['map']->getSchemaNodes();
+
+            $resourceTypes[] = new ResourceType(
+                $value['singular'],
+                $value['singular'],
+                $key,
+                $value['description'] ?? null,
+                $schemas[0]->getName(),
+                collect(array_slice($schemas, 1))->map(
+                    function ($element) {
+                        return [
+                            'schema' => $element->getName(),
+                            'required' => $element->required
+                        ];
+                    }
+                )->toArray()
+            );
         }
         
         $this->resourceTypes = collect($resourceTypes);

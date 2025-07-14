@@ -1,0 +1,35 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "Setup Laravel SCIM Test Server",
+            "type": "shell",
+            "command": "setup-laravel-test.sh",
+            "problemMatcher": [],
+            "presentation": {
+                "reveal": "always",
+                "panel": "new"
+            },
+            "group": "test"
+        },
+        {
+            "label": "Start Laravel SCIM Test Server",
+            "type": "shell",
+            "command": "export XDEBUG_MODE=debug,develop && cd /home/vscode/laravel-test && COMPOSER_AUTOLOAD_DEV=1 composer dump-autoload && php artisan serve --host=0.0.0.0 --port=8000",
+            "dependsOn": "Setup Laravel SCIM Test Server",
+            "problemMatcher": [],
+            "presentation": {
+                "reveal": "always",
+                "panel": "dedicated"
+            },
+            "group": "test"
+        },
+        {
+            "label": "Open SCIM Server in Browser",
+            "type": "shell",
+            "command": "$BROWSER http://localhost:8000/scim/v2/Users",
+            "problemMatcher": [],
+            "group": "test"
+        }
+    ]
+}

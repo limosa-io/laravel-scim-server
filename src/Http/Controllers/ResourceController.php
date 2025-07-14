@@ -6,8 +6,6 @@ use ArieTimmerman\Laravel\SCIMServer\SCIM\ListResponse;
 use Illuminate\Http\Request;
 use ArieTimmerman\Laravel\SCIMServer\Helper;
 use ArieTimmerman\Laravel\SCIMServer\Exceptions\SCIMException;
-use Tmilos\ScimFilterParser\Parser;
-use Tmilos\ScimFilterParser\Mode;
 use ArieTimmerman\Laravel\SCIMServer\ResourceType;
 use Illuminate\Database\Eloquent\Model;
 use ArieTimmerman\Laravel\SCIMServer\Events\Delete;
@@ -15,9 +13,12 @@ use ArieTimmerman\Laravel\SCIMServer\Events\Get;
 use ArieTimmerman\Laravel\SCIMServer\Events\Create;
 use ArieTimmerman\Laravel\SCIMServer\Events\Replace;
 use ArieTimmerman\Laravel\SCIMServer\Events\Patch;
-use ArieTimmerman\Laravel\SCIMServer\SCIM\Schema;
+use ArieTimmerman\Laravel\SCIMServer\Parser\Parser as ParserParser;
 use ArieTimmerman\Laravel\SCIMServer\PolicyDecisionPoint;
-use Illuminate\Database\QueryException;
+use ArieTimmerman\Laravel\SCIMServer\Tests\Model\User;
+use Illuminate\Contracts\Pagination\CursorPaginator;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Pagination\Cursor;
 use Illuminate\Support\Facades\Validator;
 
 class ResourceController extends Controller
@@ -51,36 +52,26 @@ class ResourceController extends Controller
     public static function createFromSCIM($resourceType, $input, PolicyDecisionPoint $pdp = null, Request $request = null, $allowAlways = false, $isMe = false)
     {
         if (!isset($input['schemas']) || !is_array($input['schemas'])) {
-            throw (new SCIMException('Missing a valid schemas-attribute.'))->setCode(500);
+            throw (new SCIMException('Missing a valid schemas-attribute.'))->setCode(400);
         }
 
         $flattened = Helper::flatten($input, $input['schemas']);
-        $flattened = self::validateScim($resourceType, $flattened, null);
+        $flattened = static::validateScim($resourceType, $flattened, null);
 
-        if (!$allowAlways && !self::isAllowed($pdp, $request, PolicyDecisionPoint::OPERATION_POST, $flattened, $resourceType, null, $isMe)) {
+        if (!$allowAlways && !static::isAllowed($pdp, $request, PolicyDecisionPoint::OPERATION_POST, $flattened, $resourceType, null, $isMe)) {
             throw (new SCIMException('This is not allowed'))->setCode(403);
         }
 
         $resourceObject = $resourceType->getFactory()();
 
-        $allAttributeConfigs = [];
+        $resourceType->getMapping()->replace($input, $resourceObject);
 
-        foreach ($flattened as $scimAttribute => $value) {
-            $attributeConfig = Helper::getAttributeConfigOrFail($resourceType, $scimAttribute);
-            $attributeConfig->add($value, $resourceObject);
-            $allAttributeConfigs[] = $attributeConfig;
-        }
+        //validate
+        $newObject = Helper::flatten(Helper::objectToSCIMArray($resourceObject, $resourceType), $resourceType->getSchema());
 
-        try {
-            $resourceObject->save();
-        } catch (QueryException $exception) {
-            throw $exception;
-            // throw new SCIMException('Could not save this');
-        }
+        $flattened = static::validateScim($resourceType, $newObject, $resourceObject);
 
-        foreach ($allAttributeConfigs as &$attributeConfig) {
-            $attributeConfig->writeAfter($flattened[$attributeConfig->getFullKey()], $resourceObject);
-        }
+        $resourceObject->save();
 
         return $resourceObject;
     }
@@ -92,7 +83,7 @@ class ResourceController extends Controller
     {
         $input = $request->input();
 
-        $resourceObject = self::createFromSCIM($resourceType, $input, $pdp, $request, false, $isMe);
+        $resourceObject = static::createFromSCIM($resourceType, $input, $pdp, $request, false, $isMe);
 
         event(new Create($resourceObject, $resourceType, $isMe, $request->input()));
 
@@ -111,7 +102,7 @@ class ResourceController extends Controller
     {
         $resourceObject = $this->createObject($request, $pdp, $resourceType, $isMe);
 
-        return Helper::objectToSCIMCreateResponse($resourceObject, $resourceType);
+        return Helper::objectToSCIMResponse($resourceObject, $resourceType)->setStatusCode(201);
     }
 
     public function show(Request $request, PolicyDecisionPoint $pdp, ResourceType $resourceType, Model $resourceObject)
@@ -133,54 +124,15 @@ class ResourceController extends Controller
     public function replace(Request $request, PolicyDecisionPoint $pdp, ResourceType $resourceType, Model $resourceObject, $isMe = false)
     {
         $originalRaw = Helper::objectToSCIMArray($resourceObject, $resourceType);
-        $original = Helper::flatten($originalRaw, $resourceType->getSchema());
 
-        //TODO: get flattend from $resourceObject
-        $flattened = Helper::flatten($request->input(), $resourceType->getSchema());
-        $flattened = $this->validateScim($resourceType, $flattened, $resourceObject);
+        $resourceType->getMapping()->replace($request->input(), $resourceObject, null, true);
 
-        $updated = [];
+        $newObject = Helper::flatten(Helper::objectToSCIMArray($resourceObject, $resourceType), $resourceType->getSchema());
 
-        foreach ($flattened as $key => $value) {
-            if (!isset($original[$key]) || json_encode($original[$key]) != json_encode($flattened[$key])) {
-                $updated[$key] = $flattened[$key];
-            }
-        }
+        $flattened = $this->validateScim($resourceType, $newObject, $resourceObject);
 
-        if (!self::isAllowed($pdp, $request, PolicyDecisionPoint::OPERATION_PUT, $updated, $resourceType, null)) {
+        if (!static::isAllowed($pdp, $request, PolicyDecisionPoint::OPERATION_PATCH, $flattened, $resourceType, null)) {
             throw new SCIMException('This is not allowed');
-        }
-
-        //Keep an array of written values
-        $uses = [];
-
-        //Write all values
-        foreach ($flattened as $scimAttribute => $value) {
-            $attributeConfig = Helper::getAttributeConfigOrFail($resourceType, $scimAttribute);
-
-            if ($attributeConfig->isWriteSupported()) {
-                $attributeConfig->replace($value, $resourceObject);
-            }
-
-            $uses[] = $attributeConfig;
-        }
-
-        //Find values that have not been written in order to empty these.
-        $allAttributeConfigs = $resourceType->getAllAttributeConfigs();
-
-        foreach ($uses as $use) {
-            foreach ($allAttributeConfigs as $key => $option) {
-                if ($use->getFullKey() == $option->getFullKey()) {
-                    unset($allAttributeConfigs[$key]);
-                }
-            }
-        }
-
-        foreach ($allAttributeConfigs as $attributeConfig) {
-            // Do not write write-only attribtues (such as passwords)
-            if ($attributeConfig->isReadSupported() && $attributeConfig->isWriteSupported()) {
-                //   $attributeConfig->remove($resourceObject);
-            }
         }
 
         $resourceObject->save();
@@ -208,50 +160,19 @@ class ResourceController extends Controller
         foreach ($input['Operations'] as $operation) {
             switch (strtolower($operation['op'])) {
                 case "add":
-                    if (isset($operation['path'])) {
-                        $attributeConfig = Helper::getAttributeConfigOrFail($resourceType, $operation['path']);
-                        foreach ((array) $operation['value'] as $value) {
-                            $attributeConfig->add($value, $resourceObject);
-                        }
-                    } else {
-                        foreach ((array) $operation['value'] as $key => $value) {
-                            $attributeConfig = Helper::getAttributeConfigOrFail($resourceType, $key);
-
-                            foreach ((array) $value as $v) {
-                                $attributeConfig->add($v, $resourceObject);
-                            }
-                        }
-                    }
-
+                    $resourceType->getMapping()->patch('add', $operation['value'] ?? null, $resourceObject, ParserParser::parse($operation['path'] ?? null));
                     break;
 
                 case "remove":
                     if (isset($operation['path'])) {
-                        $attributeConfig = Helper::getAttributeConfigOrFail($resourceType, $operation['path']);
-                        $attributeConfig->remove($operation['value'] ?? null, $resourceObject);
+                        $resourceType->getMapping()->patch('remove', $operation['value'] ?? null, $resourceObject, ParserParser::parse($operation['path'] ?? null));
                     } else {
                         throw new SCIMException('You MUST provide a "Path"');
                     }
-
-
                     break;
 
                 case "replace":
-                    if (isset($operation['path'])) {
-                        // Removed this check. A replace with a null/empty value should be valid.
-                        // if(!isset($operation['value'])){
-                        //     throw new SCIMException('Please provide a "value"',400);
-                        // }
-
-                        $attributeConfig = Helper::getAttributeConfigOrFail($resourceType, $operation['path']);
-                        $attributeConfig->replace($operation['value'], $resourceObject);
-                    } else {
-                        foreach ((array) $operation['value'] as $key => $value) {
-                            $attributeConfig = Helper::getAttributeConfigOrFail($resourceType, $key);
-                            $attributeConfig->replace($value, $resourceObject);
-                        }
-                    }
-
+                    $resourceType->getMapping()->patch('replace', $operation['value'], $resourceObject, ParserParser::parse($operation['path'] ?? null));
                     break;
 
                 default:
@@ -261,12 +182,11 @@ class ResourceController extends Controller
 
         $dirty = $resourceObject->getDirty();
 
-        // TODO: prevent something from getten written before ...
         $newObject = Helper::flatten(Helper::objectToSCIMArray($resourceObject, $resourceType), $resourceType->getSchema());
 
         $flattened = $this->validateScim($resourceType, $newObject, $resourceObject);
 
-        if (!self::isAllowed($pdp, $request, PolicyDecisionPoint::OPERATION_PATCH, $flattened, $resourceType, null)) {
+        if (!static::isAllowed($pdp, $request, PolicyDecisionPoint::OPERATION_PATCH, $flattened, $resourceType, null)) {
             throw new SCIMException('This is not allowed');
         }
 
@@ -293,27 +213,27 @@ class ResourceController extends Controller
     {
         $query = $resourceType->getQuery();
 
-        // The 1-based index of the first query result. A value less than 1 SHALL be interpreted as 1.
-        $startIndex = max(1, intVal($request->input('startIndex', 0)));
+        // if both cursor and startIndex are present, throw an exception
+        if ($request->has('cursor') && $request->has('startIndex')) {
+            throw (new SCIMException('Both cursor and startIndex are present. Only one of them is allowed.'))->setCode(400);
+        }
 
         // Non-negative integer. Specifies the desired maximum number of query results per page, e.g., 10. A negative value SHALL be interpreted as "0". A value of "0" indicates that no resource results are to be returned except for "totalResults".
-        $count = max(0, intVal($request->input('count', 10)));
+        $count = min(max(0, intVal($request->input('count', config('scim.pagination.defaultPageSize')))), config('scim.pagination.maxPageSize'));
 
+        $startIndex = null;
         $sortBy = null;
 
         if ($request->input('sortBy')) {
-            $sortBy = Helper::getEloquentSortAttribute($resourceType, $request->input('sortBy'));
+            $sortBy = $resourceType->getMapping()->getSortAttributeByPath(\ArieTimmerman\Laravel\SCIMServer\Parser\Parser::parse($request->input('sortBy')));
         }
 
         $resourceObjectsBase = $query->when(
             $filter = $request->input('filter'),
-            function ($query) use ($filter, $resourceType) {
-                $parser = new Parser(Mode::FILTER());
-
+            function (Builder $query) use ($filter, $resourceType) {
                 try {
-                    $node = $parser->parse($filter);
 
-                    Helper::scimFilterToLaravelQuery($resourceType, $query, $node);
+                    Helper::scimFilterToLaravelQuery($resourceType, $query, ParserParser::parseFilter($filter));
                 } catch (\Tmilos\ScimFilterParser\Error\FilterException $e) {
                     throw (new SCIMException($e->getMessage()))->setCode(400)->setScimType('invalidFilter');
                 }
@@ -322,9 +242,11 @@ class ResourceController extends Controller
 
         $totalResults = $resourceObjectsBase->count();
 
-        $resourceObjects = $resourceObjectsBase->skip($startIndex - 1)->take($count);
-
-        $resourceObjects = $resourceObjects->with($resourceType->getWithRelations());
+        /**
+         * @var \Illuminate\Database\Query\Builder $resourceObjects
+         */
+        $resourceObjects = $resourceObjectsBase
+            ->with($resourceType->getWithRelations());
 
         if ($sortBy != null) {
             $direction = $request->input('sortOrder') == 'descending' ? 'desc' : 'asc';
@@ -332,12 +254,84 @@ class ResourceController extends Controller
             $resourceObjects = $resourceObjects->orderBy($sortBy, $direction);
         }
 
-        $resourceObjects = $resourceObjects->get();
+        $resources = null;
+        if ($request->has('cursor')) {
+            if($sortBy == null){
+                $resourceObjects = $resourceObjects->orderBy('id');
+            }
 
+            if($request->input('cursor')){
+                $cursor = @Cursor::fromEncoded($request->input('cursor'));
 
-        $attributes = [];
+                if($cursor == null){
+                    throw (new SCIMException('Invalid Cursor'))->setCode(400)->setScimType('invalidCursor');
+                }
+            }
+
+            $countRaw = $request->input('count');
+
+            if($countRaw < 1 || $countRaw > config('scim.pagination.maxPageSize')){
+                throw (new SCIMException(
+                    sprintf('Count value is invalid. Count value must be between 1 - and maxPageSize (%s) (when using cursor pagination)', config('scim.pagination.maxPageSize'))
+                ))->setCode(400)->setScimType('invalidCount');
+            }
+            
+            $resourceObjects = $resourceObjects->cursorPaginate(
+                $count,
+                cursor: $request->input('cursor')
+            );
+            $resources = collect($resourceObjects->items());
+
+            
+        } else {
+            // The 1-based index of the first query result. A value less than 1 SHALL be interpreted as 1.
+            $startIndex = max(1, intVal($request->input('startIndex', 0)));
+
+            $resourceObjects = $resourceObjects->skip($startIndex - 1)->take($count);
+            $resources = $resourceObjects->get();
+        }
+
+        // TODO: splitting the attributes parameters by dot and comma is not correct, but works in most cases
+        // if body contains attributes and this is an array, use that, else use existing
+        if($request->json('attributes') && is_array($request->json('attributes'))){
+            $attributes = $request->json('attributes');
+        } else {
+            $attributes = $request->input('attributes') ? preg_split('/[,.]/', $request->input('attributes')) : [];
+        }
+
+        if (!empty($attributes)) {
+            $attributes[] = 'id';
+            $attributes[] = 'meta';
+            $attributes[] = 'schemas';
+        }
+
+        // TODO: implement excludedAttributes
         $excludedAttributes = [];
 
-        return new ListResponse($resourceObjects, $startIndex, $totalResults, $attributes, $excludedAttributes, $resourceType);
+        return new ListResponse(
+            $resources,
+            $startIndex,
+            $totalResults,
+            $attributes,
+            $excludedAttributes,
+            $resourceType,
+            ($resourceObjects instanceof CursorPaginator) ? $resourceObjects->nextCursor()?->encode() : null,
+            ($resourceObjects instanceof CursorPaginator) ? $resourceObjects->previousCursor()?->encode() : null
+        );
+    }
+
+    public function search(Request $request, PolicyDecisionPoint $pdp, ResourceType $resourceType){
+
+        $input = $request->json()->all();
+
+        // ensure request post body is a scim SearchRequest
+        if (!is_array($input) || !isset($input['schemas']) || !in_array("urn:ietf:params:scim:api:messages:2.0:SearchRequest", $input['schemas'])) {
+            throw (new SCIMException('Invalid schema. MUST be "urn:ietf:params:scim:api:messages:2.0:SearchRequest"'))->setCode(400);
+        }
+
+        // ensure $request->input reads from payload/post only, not query parameters
+        $request->replace($request->json()->all());
+
+        return $this->index($request, $pdp, $resourceType);
     }
 }

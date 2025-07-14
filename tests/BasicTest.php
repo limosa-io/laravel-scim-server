@@ -2,8 +2,6 @@
 
 namespace ArieTimmerman\Laravel\SCIMServer\Tests;
 
-use ArieTimmerman\Laravel\SCIMServer\ResourceType;
-use ArieTimmerman\Laravel\SCIMServer\SCIMConfig;
 use ArieTimmerman\Laravel\SCIMServer\Tests\Model\Group;
 use Illuminate\Support\Arr;
 
@@ -220,7 +218,7 @@ class BasicTest extends TestCase
         $userValue = $response->json('Resources')[0]['id'];
 
         // SCIM Patch request
-        $response = $this->patch('/scim/v2/Groups/' . $groupValue, [
+        $response = $this->patchJson('/scim/v2/Groups/' . $groupValue, [
             "schemas" => [
                 "urn:ietf:params:scim:api:messages:2.0:PatchOp",
             ],
@@ -240,7 +238,7 @@ class BasicTest extends TestCase
         $this->assertTrue(Group::find($groupValue)->members->pluck('id')->contains($userValue), 'User was not added to the group');
 
         // SCIM Patch remove member request
-        $response = $this->patch('/scim/v2/Groups/' . $groupValue, [
+        $response = $this->patchJson('/scim/v2/Groups/' . $groupValue, [
             "schemas" => [
                 "urn:ietf:params:scim:api:messages:2.0:PatchOp",
             ],
@@ -354,7 +352,7 @@ class BasicTest extends TestCase
 
     public function testPatchMultiple()
     {
-        $response = $this->patch('/scim/v2/Users/2', [
+        $response = $this->patchJson('/scim/v2/Users/2', [
             "schemas" => [
                 "urn:ietf:params:scim:api:messages:2.0:PatchOp",
             ],
@@ -380,7 +378,7 @@ class BasicTest extends TestCase
 
     public function testPatchMultipleReplace()
     {
-        $response = $this->patch('/scim/v2/Users/2', [
+        $response = $this->patchJson('/scim/v2/Users/2', [
             "schemas" => [
                 "urn:ietf:params:scim:api:messages:2.0:PatchOp",
             ],
@@ -406,7 +404,7 @@ class BasicTest extends TestCase
 
     public function testPatchUsername()
     {
-        $response = $this->patch('/scim/v2/Users/4', [
+        $response = $this->patchJson('/scim/v2/Users/4', [
             "schemas" => [
                 "urn:ietf:params:scim:api:messages:2.0:PatchOp",
             ],
@@ -467,7 +465,7 @@ class BasicTest extends TestCase
 
     public function testPostTopLevel()
     {
-        $response = $this->post('/scim/v2/Users', [
+        $response = $this->postJson('/scim/v2/Users', [
             // "id" => 1,
             "schemas" => [
                 "urn:ietf:params:scim:schemas:core:2.0:User",

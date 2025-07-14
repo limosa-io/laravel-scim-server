@@ -2,27 +2,23 @@
 
 namespace ArieTimmerman\Laravel\SCIMServer\Tests;
 
-use ArieTimmerman\Laravel\SCIMServer\ResourceType;
-use ArieTimmerman\Laravel\SCIMServer\SCIMConfig;
-use ArieTimmerman\Laravel\SCIMServer\Tests\Model\Role;
 use Illuminate\Support\Arr;
-use Illuminate\Database\Schema\Blueprint;
-use Illuminate\Support\Facades\Schema;
 
 class ConfigTest extends TestCase
 {
-   
+
 
     protected function setUp(): void
     {
         parent::setUp();
 
         // set scim.omit_null_values to true
-        
+
     }
 
-    protected function createUser(){
-        return $this->post('/scim/v2/Users', [
+    protected function createUser()
+    {
+        return $this->postJson('/scim/v2/Users', [
             // "id" => 1,
             "schemas" => [
                 "urn:ietf:params:scim:schemas:core:2.0:User",
@@ -86,8 +82,8 @@ class ConfigTest extends TestCase
         $this->assertArrayHasKey('urn:ietf:params:scim:schemas:core:2.0:User', $response->json());
 
         $expected = [
-                "employeeNumber" => null
-            
+            "employeeNumber" => null
+
         ];
 
         $this->assertEquals($expected, Arr::get($response->json(), 'urn:ietf:params:scim:schemas:extension:enterprise:2.0:User'));
@@ -111,5 +107,4 @@ class ConfigTest extends TestCase
         $expected = null;
         $this->assertEquals($expected, Arr::get($response->json(), 'urn:ietf:params:scim:schemas:extension:enterprise:2.0:User'));
     }
-
 }

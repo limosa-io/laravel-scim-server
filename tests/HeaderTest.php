@@ -18,13 +18,13 @@ class HeaderTest extends TestCase
         $response->assertHeader('ETag');
         $response->assertJsonStructure(
             [
-            'meta' => [
-                'created',
-                'lastModified',
-                'location',
-                'resourceType',
-                'version'
-            ],
+                'meta' => [
+                    'created',
+                    'lastModified',
+                    'location',
+                    'resourceType',
+                    'version'
+                ],
             ]
         );
         // get the value of version from the response content
@@ -36,8 +36,9 @@ class HeaderTest extends TestCase
     }
 
 
-    public function testPut(){
-        $response = $this->put('/scim/v2/Users/1', [
+    public function testPut()
+    {
+        $response = $this->putJson('/scim/v2/Users/1', [
             'userName' => 'newUserName'
         ], ['IF-MATCH' => 'W/"1"']);
         $response->assertStatus(412);
@@ -48,7 +49,7 @@ class HeaderTest extends TestCase
         $etag = $response->baseResponse->headers->get('ETag');
 
         // now update it 
-        $response = $this->put('/scim/v2/Users/1', [
+        $response = $this->putJson('/scim/v2/Users/1', [
             'schemas' => ['urn:ietf:params:scim:schemas:core:2.0:User'],
             'userName' => 'newUserName',
             'id' => '1',

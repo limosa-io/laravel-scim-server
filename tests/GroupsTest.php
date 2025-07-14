@@ -50,8 +50,9 @@ class GroupsTest extends TestCase
         ]);
     }
 
-    public function testCreate(){
-        $response = $this->post('/scim/v2/Groups', [
+    public function testCreate()
+    {
+        $response = $this->postJson('/scim/v2/Groups', [
             'schemas' => ['urn:ietf:params:scim:schemas:core:2.0:Group'], // Required
             'urn:ietf:params:scim:schemas:core:2.0:Group' => [
                 'displayName' => 'TestGroup'
@@ -67,11 +68,11 @@ class GroupsTest extends TestCase
 
         $this->assertNotNull(Group::find($response->json('id')));
         $this->assertNotNull(Group::where('displayName', 'TestGroup')->first());
-
     }
 
-    public function testCreateWithMembers(){
-        $response = $this->post('/scim/v2/Groups', [
+    public function testCreateWithMembers()
+    {
+        $response = $this->postJson('/scim/v2/Groups', [
             'schemas' => ['urn:ietf:params:scim:schemas:core:2.0:Group'], // Required
             'urn:ietf:params:scim:schemas:core:2.0:Group' => [
                 'displayName' => 'TestGroup',
@@ -101,8 +102,9 @@ class GroupsTest extends TestCase
         $this->assertNotNull(Group::where('displayName', 'TestGroup')->first());
     }
 
-    public function testBulk(){
-        $response = $this->post('/scim/v2/Bulk', [
+    public function testBulk()
+    {
+        $response = $this->postJson('/scim/v2/Bulk', [
             'schemas' => ['urn:ietf:params:scim:api:messages:2.0:BulkRequest'], // Required
             'Operations' => [
                 [
@@ -143,8 +145,9 @@ class GroupsTest extends TestCase
         $this->assertNotNull(Group::where('displayName', 'TestGroup2')->first());
     }
 
-    public function testGroupCreationFailure(){
-        $response = $this->post('/scim/v2/Groups', []);
+    public function testGroupCreationFailure()
+    {
+        $response = $this->postJson('/scim/v2/Groups', []);
         $response->assertStatus(400);
     }
 }

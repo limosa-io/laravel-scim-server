@@ -19,7 +19,7 @@ class RolesTest extends TestCase
 
     public function testCreate()
     {
-        $response = $this->post('/scim/v2/Users', [
+        $response = $this->postJson('/scim/v2/Users', [
             "schemas" => [
                 "urn:ietf:params:scim:schemas:core:2.0:User",
             ],
@@ -51,7 +51,7 @@ class RolesTest extends TestCase
 
     public function testPatch()
     {
-        $response = $this->patch('/scim/v2/Users/2', [
+        $response = $this->patchJson('/scim/v2/Users/2', [
             "schemas" => [
                 "urn:ietf:params:scim:api:messages:2.0:PatchOp",
             ],
@@ -60,8 +60,8 @@ class RolesTest extends TestCase
                 "path" => "roles",
                 "value" => [
                     [
-                      "value" => "admin",
-                      "display" => "Administrator",
+                        "value" => "admin",
+                        "display" => "Administrator",
                     ]
                 ]
             ]]
@@ -80,7 +80,7 @@ class RolesTest extends TestCase
 
     public function testPut()
     {
-        $response = $this->put('/scim/v2/Users/1', [
+        $response = $this->putJson('/scim/v2/Users/1', [
             "id" => "1",
             "meta" => [
                 "resourceType" => "User",
@@ -104,7 +104,7 @@ class RolesTest extends TestCase
                     [
                         "value" => "1"
                     ]
-                    ],
+                ],
                 "roles" => [
                     [
                         "value" => "admin",
@@ -134,7 +134,7 @@ class RolesTest extends TestCase
         $json = $response->json();
         $this->assertCount(1, $json['Resources']);
 
-        $response = $this->patch('/scim/v2/Users/1', [
+        $response = $this->patchJson('/scim/v2/Users/1', [
             "schemas" => [
                 "urn:ietf:params:scim:api:messages:2.0:PatchOp",
             ],
@@ -143,8 +143,8 @@ class RolesTest extends TestCase
                 "path" => "roles",
                 "value" => [
                     [
-                      "value" => "admin",
-                      "display" => "Administrator",
+                        "value" => "admin",
+                        "display" => "Administrator",
                     ]
                 ]
             ]]

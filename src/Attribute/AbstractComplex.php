@@ -18,21 +18,22 @@ abstract class AbstractComplex extends Attribute
         return collect($this->subAttributes)->first(fn ($element) => $element instanceof Schema);
     }
 
-    public function getSchemaNodes(){
+    public function getSchemaNodes()
+    {
         return collect($this->subAttributes)->filter(fn ($element) => $element instanceof Schema)->values()->toArray();
     }
 
     public function getValidations()
     {
         $result = [
-            addcslashes($this->getFullKey(),'.') => $this->validations
+            addcslashes($this->getFullKey(), '.') => $this->validations,
         ];
 
         foreach ($this->subAttributes as $attribute) {
             $result = array_merge($result, $attribute->getValidations());
         }
 
-        $result = collect($result)->filter(fn ($v, $k) => !empty($v))->toArray();
+        $result = collect($result)->filter(fn ($v, $k) => ! empty($v))->toArray();
 
         return $result;
     }
@@ -53,8 +54,14 @@ abstract class AbstractComplex extends Attribute
         $result = collect($this->subAttributes)->first(fn ($element) => $element->name == $key);
 
         // if this is the root node, search for a subNode in one of the default schema nodes
-        if($result == null){
-            $result = $this->getSchemaNode()?->getSubNode($key);
+        if ($result == null) {
+            foreach ($this->getSchemaNodes() as $schema) {
+                $result = $schema->getSubNode($key);
+
+                if ($result !== null) {
+                    return $result;
+                }
+            }
         }
 
         return $result;

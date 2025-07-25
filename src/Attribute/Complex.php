@@ -119,6 +119,11 @@ class Complex extends AbstractComplex
             return;
         }
 
+        // FIXME: figure out why this is not an iterable...
+        if (! is_iterable($value)) {
+          return;
+        }
+
         // if there is no path, keys of value are attribute paths
         foreach ($value as $key => $v) {
             if (is_numeric($key)) {

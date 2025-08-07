@@ -138,7 +138,7 @@ class Complex extends AbstractComplex
             } else {
                 $path = Parser::parse($key);
 
-                if ($path->isNotEmpty()) {
+                if ($path?->isNotEmpty()) {
                     $attributeNames = $path->getAttributePathAttributes();
                     $path = $path->shiftAttributePathAttributes();
                     $sub = $attributeNames[0] ?? $path->getAttributePath()?->path?->schema;
@@ -148,7 +148,7 @@ class Complex extends AbstractComplex
 
             if ($subNode != null) {
                 $newValue = $v;
-                if ($path->isNotEmpty()) {
+                if ($path?->isNotEmpty()) {
                     $newValue = [
                         implode('.', $path->getAttributePathAttributes()) => $v
                     ];

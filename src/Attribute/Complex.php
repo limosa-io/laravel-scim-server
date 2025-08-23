@@ -18,7 +18,7 @@ class Complex extends AbstractComplex
      */
     public function getSchemas()
     {
-        return collect($this->getSchemaNodes())->map(fn ($element) => $element->name)->values()->toArray();
+        return collect($this->getSchemaNodes())->map(fn($element) => $element->name)->values()->toArray();
     }
 
 
@@ -76,21 +76,29 @@ class Complex extends AbstractComplex
                 $attributeNames = $path?->getAttributePath()?->getAttributeNames() ?? [];
 
                 if (!empty($attributeNames)) {
-                    $attribute = $this->getSubNode($attributeNames[0]);
+                    $schema = $path->getAttributePath()?->path?->schema;
+                    // Resolve attribute either directly or via schema parent when specified
+                    $attribute = $schema
+                        ? ((($parent = $this->getSubNode($schema)) instanceof Schema) ? $parent->getSubNode($attributeNames[0]) : null)
+                        : $this->getSubNode($attributeNames[0]);
+
                     if ($attribute != null) {
                         $attribute->patch($operation, $value, $object, $path->shiftAttributePathAttributes());
-                    } elseif ($this->parent == null) {
-                        // this is the root node, check within the first (the default) schema node
-                        // pass the unchanged path object
-                        $this->getSchemaNode()->patch($operation, $value, $object, $path);
-                    } else {
-                        throw new SCIMException('Unknown path: ' . (string)$path . ", in object: " . $this->getFullKey());
+                        return; // done
                     }
+
+                    if ($this->parent == null) {
+                        // root node: delegate unchanged path to default schema node
+                        $this->getSchemaNode()->patch($operation, $value, $object, $path);
+                        return; // done
+                    }
+
+                    throw new SCIMException('Unknown path: ' . (string)$path . ", in object: " . $this->getFullKey());
                 }
             }
         } else {
             // if there is no path, keys of value are attribute names
-            switch($operation) {
+            switch ($operation) {
                 case 'replace':
                     $this->replace($value, $object, $path, false);
                     break;
@@ -300,6 +308,6 @@ class Complex extends AbstractComplex
      */
     public function getDefaultSchema()
     {
-        return collect($this->subAttributes)->first(fn ($element) => $element instanceof Schema)->name;
+        return collect($this->subAttributes)->first(fn($element) => $element instanceof Schema)->name;
     }
 }

@@ -79,4 +79,28 @@ class CustomSchemaTest extends TestCase
         $this->assertEquals('Dr. Marie Jo', $json['urn:ietf:params:scim:schemas:core:2.0:User']['userName']);
         $this->assertEquals('123', $json['urn:ietf:params:scim:schemas:extension:enterprise:2.0:User']['employeeNumber']);
     }
+
+    public function testPatchEnterpriseSchema()
+    {
+        $response = $this->patch('/scim/v2/Users/2', [
+            "schemas" => [
+                "urn:ietf:params:scim:api:messages:2.0:PatchOp",
+            ],
+            "Operations" => [
+                [
+                    "op" => "replace",
+                    "path" => "urn:ietf:params:scim:schemas:extension:enterprise:2.0:User:employeeNumber",
+                    "value" => "12345"
+                ]
+            ]
+        ]);
+
+
+        $response->assertStatus(200);
+
+        $json = $response->json();
+
+        $this->assertArrayHasKey('urn:ietf:params:scim:schemas:extension:enterprise:2.0:User', $json);
+        $this->assertEquals('12345', $json['urn:ietf:params:scim:schemas:extension:enterprise:2.0:User']['employeeNumber']);
+    }
 }

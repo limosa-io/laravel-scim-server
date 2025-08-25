@@ -191,8 +191,8 @@ class Attribute
     public function getFullKey()
     {
         if ($this->parent != null && $this->parent->name != null) {
-            $seperator = $this->parent instanceof AttributeSchema ? ':' : '.';
-            return $this->parent->getFullKey() . $seperator . $this->name;
+            $separator = $this->parent instanceof AttributeSchema ? ':' : '.';
+            return $this->parent->getFullKey() . $separator . $this->name;
         } else {
             return $this->name;
         }

@@ -2,8 +2,6 @@
 
 namespace ArieTimmerman\Laravel\SCIMServer\Tests;
 
-use ArieTimmerman\Laravel\SCIMServer\ResourceType;
-use ArieTimmerman\Laravel\SCIMServer\SCIMConfig;
 use ArieTimmerman\Laravel\SCIMServer\Tests\Model\Group;
 use Illuminate\Support\Arr;
 
@@ -11,7 +9,7 @@ class BasicTest extends TestCase
 {
     public function testGet()
     {
-        $response = $this->get('/scim/v2/Users');
+        $response = $this->get('/scim/v2/Users', $this->headers);
 
         $response->assertStatus(200);
         $response->assertJsonCount(10, 'Resources');
@@ -103,9 +101,7 @@ class BasicTest extends TestCase
         $response->assertJsonCount(10, 'Resources');
         $response->assertJsonStructure([
             'Resources' => [
-                '*' => [
-
-                ]
+                '*' => []
             ]
         ]);
     }
@@ -151,7 +147,6 @@ class BasicTest extends TestCase
             'status' => '400',
             'scimType' => 'invalidCursor'
         ]);
-
     }
 
     public function testCursorPaginationFailureMaxCount()
@@ -164,7 +159,6 @@ class BasicTest extends TestCase
             'status' => '400',
             'scimType' => 'invalidCount'
         ]);
-
     }
 
     public function testPagination()
@@ -207,7 +201,7 @@ class BasicTest extends TestCase
         $userName = $response->json('Resources')[0]['urn:ietf:params:scim:schemas:core:2.0:User']['userName'];
 
         // Now search for this username
-        $response = $this->get('/scim/v2/Users?filter=userName eq "'.$userName.'"');
+        $response = $this->get('/scim/v2/Users?filter=userName eq "' . $userName . '"');
         $response->assertStatus(200);
 
         $this->assertEquals(1, count($response->json('Resources')));
@@ -224,7 +218,7 @@ class BasicTest extends TestCase
         $userValue = $response->json('Resources')[0]['id'];
 
         // SCIM Patch request
-        $response = $this->patch('/scim/v2/Groups/' . $groupValue, [
+        $response = $this->patchJson('/scim/v2/Groups/' . $groupValue, [
             "schemas" => [
                 "urn:ietf:params:scim:api:messages:2.0:PatchOp",
             ],
@@ -241,10 +235,10 @@ class BasicTest extends TestCase
 
         $response->assertStatus(200);
 
-        $this->assertTrue(Group::find($groupValue)->members->pluck('id')->contains($userValue), 'User was not added to the group');        
+        $this->assertTrue(Group::find($groupValue)->members->pluck('id')->contains($userValue), 'User was not added to the group');
 
         // SCIM Patch remove member request
-        $response = $this->patch('/scim/v2/Groups/' . $groupValue, [
+        $response = $this->patchJson('/scim/v2/Groups/' . $groupValue, [
             "schemas" => [
                 "urn:ietf:params:scim:api:messages:2.0:PatchOp",
             ],
@@ -271,7 +265,7 @@ class BasicTest extends TestCase
         $userName = $response->json('Resources')[0]['urn:ietf:params:scim:schemas:core:2.0:User']['userName'];
 
         // Now search for this username
-        $response = $this->get('/scim/v2/Users?filter=userName eq "'.$userName.'"');
+        $response = $this->get('/scim/v2/Users?filter=userName eq "' . $userName . '"');
         $response->assertStatus(200);
 
         $this->assertEquals(1, count($response->json('Resources')));
@@ -292,7 +286,7 @@ class BasicTest extends TestCase
 
     public function testPut()
     {
-        $response = $this->put('/scim/v2/Users/1', [
+        $response = $this->putJson('/scim/v2/Users/1', [
             "id" => "1",
             "meta" => [
                 "resourceType" => "User",
@@ -318,7 +312,7 @@ class BasicTest extends TestCase
                     ]
                 ]
             ]
-        ]);
+        ], $this->headers);
 
         $response->assertStatus(200);
 
@@ -331,7 +325,7 @@ class BasicTest extends TestCase
 
     public function testPatch()
     {
-        $response = $this->patch('/scim/v2/Users/2', [
+        $response = $this->patchJson('/scim/v2/Users/2', [
             "schemas" => [
                 "urn:ietf:params:scim:api:messages:2.0:PatchOp",
             ],
@@ -340,13 +334,13 @@ class BasicTest extends TestCase
                 "path" => "emails",
                 "value" => [
                     [
-                      "value" => "something@example.com",
-                      "type" => "work",
-                      "primary" => true
+                        "value" => "something@example.com",
+                        "type" => "work",
+                        "primary" => true
                     ]
                 ]
             ]]
-        ]);
+        ], $this->headers);
 
         $response->assertStatus(200);
 
@@ -358,7 +352,7 @@ class BasicTest extends TestCase
 
     public function testPatchMultiple()
     {
-        $response = $this->patch('/scim/v2/Users/2', [
+        $response = $this->patchJson('/scim/v2/Users/2', [
             "schemas" => [
                 "urn:ietf:params:scim:api:messages:2.0:PatchOp",
             ],
@@ -384,7 +378,7 @@ class BasicTest extends TestCase
 
     public function testPatchMultipleReplace()
     {
-        $response = $this->patch('/scim/v2/Users/2', [
+        $response = $this->patchJson('/scim/v2/Users/2', [
             "schemas" => [
                 "urn:ietf:params:scim:api:messages:2.0:PatchOp",
             ],
@@ -410,7 +404,7 @@ class BasicTest extends TestCase
 
     public function testPatchUsername()
     {
-        $response = $this->patch('/scim/v2/Users/4', [
+        $response = $this->patchJson('/scim/v2/Users/4', [
             "schemas" => [
                 "urn:ietf:params:scim:api:messages:2.0:PatchOp",
             ],
@@ -431,13 +425,13 @@ class BasicTest extends TestCase
 
     public function testDelete()
     {
-        $response = $this->delete('/scim/v2/Users/1');
+        $response = $this->deleteJson('/scim/v2/Users/1', [], $this->headers);
         $response->assertStatus(204);
     }
 
     public function testPost()
     {
-        $response = $this->post('/scim/v2/Users', [
+        $response = $this->postJson('/scim/v2/Users', [
             // "id" => 1,
             "schemas" => [
                 "urn:ietf:params:scim:schemas:core:2.0:User",
@@ -453,7 +447,7 @@ class BasicTest extends TestCase
                     ]
                 ]
             ]
-        ]);
+        ], $this->headers);
 
         $this->assertEquals(
             201,
@@ -471,7 +465,7 @@ class BasicTest extends TestCase
 
     public function testPostTopLevel()
     {
-        $response = $this->post('/scim/v2/Users', [
+        $response = $this->postJson('/scim/v2/Users', [
             // "id" => 1,
             "schemas" => [
                 "urn:ietf:params:scim:schemas:core:2.0:User",
@@ -502,7 +496,8 @@ class BasicTest extends TestCase
         $this->assertEquals('Dr. Marie Jo', $json['urn:ietf:params:scim:schemas:core:2.0:User']['userName']);
     }
 
-    public function testTotalResultsOnly(){
+    public function testTotalResultsOnly()
+    {
         $response = $this->get('/scim/v2/Users?count=0');
         $this->assertTrue(true);
     }

@@ -44,7 +44,7 @@ class CustomSchemaTest extends TestCase
 
     public function testPost()
     {
-        $response = $this->post('/scim/v2/Users', [
+        $response = $this->postJson('/scim/v2/Users', [
             // "id" => 1,
             "schemas" => [
                 "urn:ietf:params:scim:schemas:core:2.0:User",

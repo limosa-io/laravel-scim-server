@@ -143,7 +143,7 @@ class SCIMConfig
     {
         return [
 
-            'class' => Group::class,
+            'class' => $this->getGroupClass(),
             'singular' => 'Group',
 
             //eager loading
@@ -171,7 +171,7 @@ class SCIMConfig
                 (new AttributeSchema(Schema::SCHEMA_GROUP, true))->withSubAttributes(
                     eloquent('displayName')->ensure('required', 'min:3', function ($attribute, $value, $fail) {
                         // check if group does not exist or if it exists, it is the same group
-                        $group = Group::where('displayName', $value)->first();
+                        $group = $this->getGroupClass()::where('displayName', $value)->first();
                         if ($group && (request()->route('resourceObject') == null || $group->id != request()->route('resourceObject')->id)) {
                             $fail('The name has already been taken.');
                         }

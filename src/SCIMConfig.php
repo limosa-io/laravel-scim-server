@@ -44,6 +44,11 @@ class SCIMConfig
         return @$result[$name];
     }
 
+    public function getGroupClass()
+    {
+        return Group::class;
+    }
+
     public function getUserConfig()
     {
         return [

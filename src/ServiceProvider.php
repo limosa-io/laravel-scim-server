@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Laravel service provider for registering the routes and publishing the configuration.
  */
@@ -14,7 +15,7 @@ class ServiceProvider extends \Illuminate\Support\ServiceProvider
         $this->loadMigrationsFrom(__DIR__ . DIRECTORY_SEPARATOR . '..' . DIRECTORY_SEPARATOR . 'database' . DIRECTORY_SEPARATOR . 'migrations');
 
         $this->publishes([
-            __DIR__.'/../config/scim.php' => config_path('scim.php'),
+            __DIR__ . '/../config/scim.php' => config_path('scim.php'),
         ], 'laravel-scim');
 
         // Match everything, except the Me routes
@@ -79,7 +80,7 @@ class ServiceProvider extends \Illuminate\Support\ServiceProvider
     public function register()
     {
         $this->mergeConfigFrom(
-            __DIR__.'/../config/scim.php',
+            __DIR__ . '/../config/scim.php',
             'scim'
         );
     }

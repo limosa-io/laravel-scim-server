@@ -10,6 +10,15 @@
 Add SCIM 2.0 Server capabilities to your Laravel application with ease. This package requires minimal configuration to get started with basic functionalities.
 
 This implementation is used by [The SCIM Playground](https://scim.dev) and is therefore one of the most widely tested SCIM servers available.
+## Docker
+
+To quickly spin up a SCIM test server using Docker, run:
+
+~~~
+docker run -d -p 8000:8000 --name laravel-scim-server ghcr.io/limosa-io/laravel-scim-server:latest
+~~~
+
+This command will start the server and bind it to port 8000 on your local machine. You can then access the SCIM endpoints at `http://localhost:8000/scim/v2/Users`. Other SCIM endpoints like `/Groups`, `/Schemas`, and `/ResourceTypes` will also be available.
 
 ## Installation
 

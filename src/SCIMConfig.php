@@ -76,6 +76,10 @@ class SCIMConfig
                     {
                         return (string)$object->id;
                     }
+                    public function remove($value, &$object, $path = null)
+                    {
+                        // do nothing
+                    }
                 }
                 ),
                 new Meta('Users'),
@@ -164,6 +168,10 @@ class SCIMConfig
                     protected function doRead(&$object, $attributes = [])
                     {
                         return (string)$object->id;
+                    }
+                    public function remove($value, &$object, $path = null)
+                    {
+                        // do nothing
                     }
                 }
                 ),

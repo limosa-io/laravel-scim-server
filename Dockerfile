@@ -89,14 +89,13 @@ RUN mkdir -p app/SCIM && cat > app/SCIM/CustomSCIMConfig.php <<'EOM'
 namespace App\SCIM;
 
 use ArieTimmerman\Laravel\SCIMServer\SCIMConfig as BaseSCIMConfig;
+use App\Models\Group;
 
 class CustomSCIMConfig extends BaseSCIMConfig
 {
-    public function getGroupConfig()
+    public function getGroupClass()
     {
-        $config = parent::getGroupConfig();
-        $config['class'] = \App\Models\Group::class;
-        return $config;
+        return Group::class;
     }
 }
 EOM

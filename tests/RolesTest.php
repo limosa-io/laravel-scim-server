@@ -7,6 +7,7 @@ use Illuminate\Support\Facades\Schema;
 
 class RolesTest extends TestCase
 {
+    #[\Override]
     protected function setUp(): void
     {
         parent::setUp();

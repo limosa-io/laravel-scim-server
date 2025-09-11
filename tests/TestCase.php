@@ -16,6 +16,7 @@ abstract class TestCase extends BaseTestCase
 
     protected $baseUrl = 'http://localhost';
 
+    #[\Override]
     protected function setUp(): void
     {
         parent::setUp();
@@ -57,7 +58,7 @@ abstract class TestCase extends BaseTestCase
 
         $users->each(function ($user) use ($groups) {
             $user->groups()->attach(
-                $groups->random(rand(1, 3))->pluck('id')->toArray()
+                $groups->random(random_int(1, 3))->pluck('id')->toArray()
             );
         });
     }

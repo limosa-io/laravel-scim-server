@@ -9,6 +9,7 @@ use Illuminate\Support\Facades\Schema;
 
 class GroupsTest extends TestCase
 {
+    #[\Override]
     protected function setUp(): void
     {
         parent::setUp();
@@ -18,6 +19,7 @@ class GroupsTest extends TestCase
         });
     }
 
+    #[\Override]
     protected function getEnvironmentSetUp($app)
     {
         parent::getEnvironmentSetUp($app);

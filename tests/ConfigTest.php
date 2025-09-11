@@ -13,6 +13,7 @@ class ConfigTest extends TestCase
 {
    
 
+    #[\Override]
     protected function setUp(): void
     {
         parent::setUp();

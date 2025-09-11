@@ -7,6 +7,7 @@ use ArieTimmerman\Laravel\SCIMServer\SCIMConfig;
 
 class CustomSCIMConfigSchema extends SCIMConfig
 {
+    #[\Override]
     public function getUserConfig()
     {
         $config = parent::getUserConfig();
@@ -26,11 +27,12 @@ class CustomSCIMConfigSchema extends SCIMConfig
 class SchemaTest extends TestCase
 {
 
+    #[\Override]
     protected function getEnvironmentSetUp($app)
     {
         parent::getEnvironmentSetUp($app);
 
-        $app->singleton('ArieTimmerman\Laravel\SCIMServer\SCIMConfig', CustomSCIMConfigSchema::class);
+        $app->singleton(\ArieTimmerman\Laravel\SCIMServer\SCIMConfig::class, CustomSCIMConfigSchema::class);
     }
 
     public function testGet()

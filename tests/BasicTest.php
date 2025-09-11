@@ -190,9 +190,7 @@ class BasicTest extends TestCase
         $response->assertStatus(200);
 
         $formattedNames = collect($response->json('Resources') ?? [])
-            ->map(function ($resource) {
-                return $resource['urn:ietf:params:scim:schemas:core:2.0:User']['name']['formatted'] ?? null;
-            })
+            ->map(fn($resource) => $resource['urn:ietf:params:scim:schemas:core:2.0:User']['name']['formatted'] ?? null)
             ->filter() // Remove null values
             ->values() // Re-index the array
             ->toArray();

@@ -9,6 +9,7 @@ use Illuminate\Support\Facades\Schema;
 
 class CustomSCIMConfig extends SCIMConfig
 {
+    #[\Override]
     public function getUserConfig()
     {
         $config = parent::getUserConfig();
@@ -26,6 +27,7 @@ class CustomSCIMConfig extends SCIMConfig
 
 class CustomSchemaTest extends TestCase
 {
+    #[\Override]
     protected function setUp(): void
     {
         parent::setUp();
@@ -35,11 +37,12 @@ class CustomSchemaTest extends TestCase
         });
     }
 
+    #[\Override]
     protected function getEnvironmentSetUp($app)
     {
         parent::getEnvironmentSetUp($app);
 
-        $app->singleton('ArieTimmerman\Laravel\SCIMServer\SCIMConfig', CustomSCIMConfig::class);
+        $app->singleton(\ArieTimmerman\Laravel\SCIMServer\SCIMConfig::class, CustomSCIMConfig::class);
     }
 
     public function testPost()

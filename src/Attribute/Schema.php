@@ -4,14 +4,12 @@ namespace ArieTimmerman\Laravel\SCIMServer\Attribute;
 
 class Schema extends Complex
 {
-    public $required;
-
-    function __construct($name, $required = true)
+    function __construct($name, public $required = true)
     {
         parent::__construct($name);
-        $this->required = $required;
     }
 
+    #[\Override]
     public function generateSchema()
     {
         $result = [
@@ -27,7 +25,7 @@ class Schema extends Complex
                 "location" => route('scim.schemas', ['id' => $this->name])
             ],
             // name is substring after last occurence of :
-            "name" => substr($this->name, strrpos($this->name, ':') + 1),
+            "name" => substr((string) $this->name, strrpos((string) $this->name, ':') + 1),
             "attributes" => collect($this->subAttributes)->map(fn ($element) => $element->generateSchema())->toArray()
         ];
 

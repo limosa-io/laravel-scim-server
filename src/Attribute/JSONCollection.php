@@ -10,6 +10,7 @@ use Illuminate\Support\Facades\DB;
 
 class JSONCollection extends MutableCollection
 {
+    #[\Override]
     public function add($value, Model &$object)
     {
         foreach ($value as $v) {
@@ -22,17 +23,20 @@ class JSONCollection extends MutableCollection
         $object->{$this->attribute} = collect($object->{$this->attribute})->merge($value);
     }
 
+    #[\Override]
     public function replace($value, Model &$object, ?Path $path = null)
     {
         $object->{$this->attribute} = $value;
     }
 
+    #[\Override]
     public function doRead(&$object, $attributes = [])
     {
         return $object->{$this->attribute}?->values()->all();
     }
 
-    public function remove($value, Model &$object, Path $path = null)
+    #[\Override]
+    public function remove($value, Model &$object, ?Path $path = null)
     {
         if ($path?->getValuePathFilter()?->getComparisonExpression() != null) {
             $attributes = $path?->getValuePathFilter()?->getComparisonExpression()?->attributePath?->attributeNames;
@@ -59,14 +63,13 @@ class JSONCollection extends MutableCollection
             })->values()->all();
         } else {
             foreach ($value as $v) {
-                $object->{$this->attribute} = collect($object->{$this->attribute})->filter(function ($item) use ($v) {
-                    return !collect($item)->diffAssoc($v)->isEmpty();
-                })->values()->all();
+                $object->{$this->attribute} = collect($object->{$this->attribute})->filter(fn($item) => !collect($item)->diffAssoc($v)->isEmpty())->values()->all();
             }
         }
     }
 
-    public function applyComparison(Builder &$query, Path $path, Path $parentAttribute = null)
+    #[\Override]
+    public function applyComparison(Builder &$query, Path $path, ?Path $parentAttribute = null)
     {
         $fieldName = 'value';
 
@@ -109,7 +112,7 @@ class JSONCollection extends MutableCollection
 
         switch ($operator) {
             case "eq":
-                $query->whereRaw($baseQuery, [addcslashes($value, '%_')]);
+                $query->whereRaw($baseQuery, [addcslashes((string) $value, '%_')]);
                 break;
             case "ne":
                 if (DB::getConfig("driver") == 'pgsql') {
@@ -127,17 +130,17 @@ class JSONCollection extends MutableCollection
                 } else {
                     throw new SCIMException('Unsupported database engine');
                 }
-                $query->whereRaw($baseQuery, [addcslashes($value, '%_')])->orWhereNull($this->attribute);
+                $query->whereRaw($baseQuery, [addcslashes((string) $value, '%_')])->orWhereNull($this->attribute);
                 break;
             case "co":
-                $query->whereRaw($baseQuery, ['%' . addcslashes($value, '%_') . "%"]);
+                $query->whereRaw($baseQuery, ['%' . addcslashes((string) $value, '%_') . "%"]);
                 break;
             case "sw":
                 // $query->where($jsonAttribute, 'like', addcslashes($value, '%_') . '%');
-                $query->whereRaw($baseQuery, [addcslashes($value, '%_') . "%"]);
+                $query->whereRaw($baseQuery, [addcslashes((string) $value, '%_') . "%"]);
                 break;
             case "ew":
-                $query->whereRaw($baseQuery, ['%' . addcslashes($value, '%_')]);
+                $query->whereRaw($baseQuery, ['%' . addcslashes((string) $value, '%_')]);
                 break;
             case "pr":
                 $query->whereNotNull($this->attribute);

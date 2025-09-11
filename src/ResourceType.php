@@ -8,13 +8,10 @@ use Illuminate\Support\Arr;
 
 class ResourceType
 {
-    protected $configuration = null;
-
     protected $name = null;
 
-    public function __construct($name, $configuration)
+    public function __construct($name, protected $configuration)
     {
-        $this->configuration = $configuration;
     }
 
     public function getConfiguration()

@@ -7,5 +7,5 @@ use Illuminate\Database\Eloquent\Model;
 
 interface EventInterface
 {
-    public function __construct(Model $model, ResourceType $resourceType, bool $me = null, $input, $odlObjectArray = []);
+    public function __construct(Model $model, ResourceType $resourceType, ?bool $me = null, $input = null, $odlObjectArray = []);
 }

@@ -22,6 +22,7 @@ class Complex extends AbstractComplex
     }
 
 
+    #[\Override]
     public function read(&$object, array $attributes = []): ?AttributeValue
     {
         if (!($this instanceof Schema) && $this->parent != null && !empty($attributes) && !in_array($this->name, $attributes) && !in_array($this->getFullKey(), $attributes)) {
@@ -46,7 +47,7 @@ class Complex extends AbstractComplex
         return $result;
     }
 
-    public function patch($operation, $value, Model &$object, Path $path = null, $removeIfNotSet = false)
+    public function patch($operation, $value, Model &$object, ?Path $path = null, $removeIfNotSet = false)
     {
         $this->dirty = true;
 
@@ -90,19 +91,12 @@ class Complex extends AbstractComplex
             }
         } else {
             // if there is no path, keys of value are attribute names
-            switch($operation) {
-                case 'replace':
-                    $this->replace($value, $object, $path, false);
-                    break;
-                case 'add':
-                    $this->add($value, $object, $path);
-                    break;
-                case 'remove':
-                    $this->remove($value, $object, $path);
-                    break;
-                default:
-                    throw new SCIMException('Unknown operation: ' . $operation);
-            }
+            match ($operation) {
+                'replace' => $this->replace($value, $object, $path, false),
+                'add' => $this->add($value, $object),
+                'remove' => $this->remove($value, $object, $path),
+                default => throw new SCIMException('Unknown operation: ' . $operation),
+            };
         }
     }
 
@@ -110,7 +104,7 @@ class Complex extends AbstractComplex
         * @param $value
         * @param Model $object
     */
-    public function replace($value, Model &$object, Path $path = null, $removeIfNotSet = false)
+    public function replace($value, Model &$object, ?Path $path = null, $removeIfNotSet = false)
     {
         $this->dirty = true;
 
@@ -133,7 +127,7 @@ class Complex extends AbstractComplex
             $subNode = null;
 
             // if path contains : it is a schema node
-            if (str_contains($key, ':')) {
+            if (str_contains((string) $key, ':')) {
                 $subNode = $this->getSubNode($key);
             } else {
                 $path = Parser::parse($key);
@@ -222,7 +216,7 @@ class Complex extends AbstractComplex
     }
 
 
-    public function remove($value, Model &$object, Path $path = null)
+    public function remove($value, Model &$object, ?Path $path = null)
     {
         if ($this->mutability == 'readOnly') {
             // silently ignore

@@ -68,6 +68,7 @@ class MutableCollection extends Collection
         $object->load($this->attribute);
     }
 
+    #[\Override]
     public function replace($value, Model &$object, ?Path $path = null)
     {
         $values = collect($value)->pluck('value')->all();

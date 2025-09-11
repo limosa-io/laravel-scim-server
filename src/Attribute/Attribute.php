@@ -13,8 +13,6 @@ use Illuminate\Support\Str;
 
 class Attribute
 {
-    protected $name = null;
-
     public $read;
     public $add;
 
@@ -42,17 +40,16 @@ class Attribute
 
     public $dirty = false;
 
-    public function __construct($name = null)
+    public function __construct(protected $name = null)
     {
-        $this->name = $name;
     }
 
     public function getValidations()
     {
-        $key = addcslashes($this->getFullKey(), '.');
+        $key = addcslashes((string) $this->getFullKey(), '.');
 
         if ($this->parent != null && $this->parent->getMultiValued()) {
-            $key = addcslashes($this->parent->getFullKey(), '.') . '.*.' . $this->name;
+            $key = addcslashes((string) $this->parent->getFullKey(), '.') . '.*.' . $this->name;
         }
 
         return [
@@ -217,7 +214,7 @@ class Attribute
         $schema = $attributePath->schema ?? $this->getDefaultSchema();
 
         if (!empty($schema) && !empty($this->getSchema()) && $this->getSchema() != $schema) {
-            throw (new SCIMException(sprintf('Trying to get attribute for schema "%s". But schema is already "%s"', $attributePath->schema, $this->getSchema())))->setCode(500)->setScimType('noTarget');
+            throw new SCIMException(sprintf('Trying to get attribute for schema "%s". But schema is already "%s"', $attributePath->schema, $this->getSchema()))->setCode(500)->setScimType('noTarget');
         }
 
         $elements = [];
@@ -266,17 +263,11 @@ class Attribute
         if ($path == null) {
             return $this;
         } else {
-            $getAttributePath = function () {
-                return $this->attributePath;
-            };
+            $getAttributePath = (fn() => $this->attributePath);
 
-            $getValuePath = function () {
-                return $this->valuePath;
-            };
+            $getValuePath = (fn() => $this->valuePath);
 
-            $getFilter = function () {
-                return $this->filter;
-            };
+            $getFilter = (fn() => $this->filter);
 
             $first = @$getAttributePath->call((object)$getValuePath->call($path));
             $filter = @$getFilter->call((object)$getValuePath->call($path));
@@ -300,7 +291,7 @@ class Attribute
         return $this;
     }
 
-    public function applyComparison(Builder &$query, Path $path, Path $parentAttribute = null)
+    public function applyComparison(Builder &$query, Path $path, ?Path $parentAttribute = null)
     {
         throw new SCIMException(sprintf('Comparison is not implemented for "%s"', $this->getFullKey()));
     }
@@ -310,17 +301,17 @@ class Attribute
         throw new SCIMException(sprintf('Write is not implemented for "%s"', $this->getFullKey()));
     }
 
-    public function replace($value, Model &$object, Path $path = null)
+    public function replace($value, Model &$object, ?Path $path = null)
     {
         throw new SCIMException(sprintf('Replace is not implemented for "%s"', $this->getFullKey()));
     }
 
-    public function patch($operation, $value, Model &$object, Path $path = null)
+    public function patch($operation, $value, Model &$object, ?Path $path = null)
     {
         throw new SCIMException(sprintf('Patch is not implemented for "%s"', $this->getFullKey()));
     }
 
-    public function remove($value, Model &$object, Path $path = null)
+    public function remove($value, Model &$object, ?Path $path = null)
     {
         throw new SCIMException(sprintf('Remove is not implemented for "%s"', $this->getFullKey()));
     }

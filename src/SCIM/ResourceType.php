@@ -7,26 +7,8 @@ use Illuminate\Contracts\Support\Jsonable;
 
 class ResourceType implements Jsonable, Arrayable
 {
-    public $id;
-    
-    public $name;
-    
-    public $plurar;
-    
-    public $description;
-    
-    public $schema;
-    
-    public $schemaExtensions;
-    
-    public function __construct($id, $name, $plurar, $description, $schema, $schemaExtensions = [])
+    public function __construct(public $id, public $name, public $plurar, public $description, public $schema, public $schemaExtensions = [])
     {
-        $this->id = $id;
-        $this->name = $name;
-        $this->plurar = $plurar;
-        $this->description = $description;
-        $this->schema = $schema;
-        $this->schemaExtensions = $schemaExtensions;
     }
     
     public function toJson($options = 0)

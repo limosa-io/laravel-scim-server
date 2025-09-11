@@ -29,12 +29,10 @@ class ResourceTypesController extends Controller
                 $value['description'] ?? null,
                 $schemas[0]->getName(),
                 collect(array_slice($schemas, 1))->map(
-                    function ($element) {
-                        return [
-                            'schema' => $element->getName(),
-                            'required' => $element->required
-                        ];
-                    }
+                    fn($element) => [
+                        'schema' => $element->getName(),
+                        'required' => $element->required
+                    ]
                 )->toArray()
             );
         }
@@ -50,13 +48,11 @@ class ResourceTypesController extends Controller
     public function show(Request $request, $id = null)
     {
         $result = $this->resourceTypes->first(
-            function ($value, $key) use ($id) {
-                return $value->id == $id;
-            }
+            fn($value, $key) => $value->id == $id
         );
         
         if ($result == null) {
-            throw (new SCIMException("Resource not found"))->setCode(404);
+            throw new SCIMException("Resource not found")->setCode(404);
         }
         
         return $result;

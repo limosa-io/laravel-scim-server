@@ -6,9 +6,6 @@ use Illuminate\Contracts\Support\Jsonable;
 
 class Error implements Jsonable
 {
-    protected $detail;
-    protected $status;
-    protected $scimType;
     protected $errors;
 
     public function toJson($options = 0)
@@ -29,11 +26,8 @@ class Error implements Jsonable
         );
     }
 
-    public function __construct($detail, $status = "404", $scimType = "invalidValue")
+    public function __construct(protected $detail, protected $status = "404", protected $scimType = "invalidValue")
     {
-        $this->detail = $detail;
-        $this->status = $status;
-        $this->scimType = $scimType;
     }
 
     public function setErrors($errors)

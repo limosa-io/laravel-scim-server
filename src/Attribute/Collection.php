@@ -19,6 +19,7 @@ class Collection extends AbstractComplex
         $this->attribute = $attribute ?? $name;
     }
 
+    #[\Override]
     public function read(&$object, array $attributes = []): ?AttributeValue
     {
         if (!empty($attributes) && !in_array($this->name, $attributes) && !in_array($this->getFullKey(), $attributes)) {
@@ -49,7 +50,7 @@ class Collection extends AbstractComplex
         return $result;
     }
 
-    public function applyComparison(Builder &$query, Path $path, Path $parentAttribute = null)
+    public function applyComparison(Builder &$query, Path $path, ?Path $parentAttribute = null)
     {
         if ($path == null || empty($path->getAttributePathAttributes())) {
             throw new SCIMException('No attribute path attributes found. Could not apply comparison in ' . $this->getFullKey());
@@ -63,7 +64,7 @@ class Collection extends AbstractComplex
         )->get();
     }
 
-    public function replace($value, Model &$object, Path $path = null)
+    public function replace($value, Model &$object, ?Path $path = null)
     {
         // ignore replace actions
     }

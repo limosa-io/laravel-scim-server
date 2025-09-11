@@ -73,7 +73,7 @@ class SCIMConfig
                 }
                 ),
                 new Meta('Users'),
-                (new AttributeSchema(Schema::SCHEMA_USER, true))->withSubAttributes(
+                new AttributeSchema(Schema::SCHEMA_USER, true)->withSubAttributes(
                     eloquent('userName', 'name')->ensure('required'),
                     eloquent('active')->ensure('boolean')->default(false),
                     complex('name')->withSubAttributes(eloquent('formatted')),
@@ -81,13 +81,11 @@ class SCIMConfig
                     (new class ('emails') extends Complex {
                         protected function doRead(&$object, $attributes = [])
                         {
-                            return collect([$object->email])->map(function ($email) {
-                                return [
-                                    'value' => $email,
-                                    'type' => 'other',
-                                    'primary' => true
-                                ];
-                            })->toArray();
+                            return collect([$object->email])->map(fn($email) => [
+                                'value' => $email,
+                                'type' => 'other',
+                                'primary' => true
+                            ])->toArray();
                         }
                         public function add($value, Model &$object)
                         {
@@ -103,7 +101,7 @@ class SCIMConfig
                         new Constant('primary', true)
                     )->ensure('required', 'array')
                     ->setMultiValued(true),
-                    (new Collection('groups'))->withSubAttributes(
+                    new Collection('groups')->withSubAttributes(
                         eloquent('value', 'id'),
                         (new class ('$ref') extends Eloquent {
                             protected function doRead(&$object, $attributes = [])
@@ -119,14 +117,14 @@ class SCIMConfig
                         }),
                         eloquent('display', 'name')
                     ),
-                    (new JSONCollection('roles'))->withSubAttributes(
+                    new JSONCollection('roles')->withSubAttributes(
                         eloquent('value')->ensure('required', 'min:3', 'alpha_dash:ascii'),
                         eloquent('display')->ensure('nullable', 'min:3', 'alpha_dash:ascii'),
                         eloquent('type')->ensure('nullable', 'min:3', 'alpha_dash:ascii'),
                         eloquent('primary')->ensure('boolean')->default(false)
                     )->ensure('nullable', 'array', 'max:20')
                 ),
-                (new AttributeSchema('urn:ietf:params:scim:schemas:extension:enterprise:2.0:User', false))->withSubAttributes(
+                new AttributeSchema('urn:ietf:params:scim:schemas:extension:enterprise:2.0:User', false)->withSubAttributes(
                     eloquent('employeeNumber')->ensure('nullable')
                 )
             ),
@@ -162,7 +160,7 @@ class SCIMConfig
                 }
                 ),
                 new Meta('Groups'),
-                (new AttributeSchema(Schema::SCHEMA_GROUP, true))->withSubAttributes(
+                new AttributeSchema(Schema::SCHEMA_GROUP, true)->withSubAttributes(
                     eloquent('displayName')->ensure('required', 'min:3', function ($attribute, $value, $fail) {
                         // check if group does not exist or if it exists, it is the same group
                         $group = Group::where('displayName', $value)->first();
@@ -170,7 +168,7 @@ class SCIMConfig
                             $fail('The name has already been taken.');
                         }
                     }),
-                    (new MutableCollection('members'))->withSubAttributes(
+                    new MutableCollection('members')->withSubAttributes(
                         eloquent('value', 'id')->ensure('required'),
                         (new class ('$ref') extends Eloquent {
                             protected function doRead(&$object, $attributes = [])

@@ -32,7 +32,7 @@ class Meta extends Complex
                 }
             }),
             // get substring of $resourceType, everything till the last character
-            new Constant('resourceType', substr($resourceType, 0, -1)),
+            new Constant('resourceType', substr((string) $resourceType, 0, -1)),
             new class ('version', null) extends Constant {
                 protected function doRead(&$object, $attributes = [])
                 {
@@ -42,11 +42,13 @@ class Meta extends Complex
         );
     }
 
-    public function remove($value, Model &$object, Path $path = null)
+    #[\Override]
+    public function remove($value, Model &$object, ?Path $path = null)
     {
         // ignore
     }
 
+    #[\Override]
     public function add($value, Model &$object)
     {
         // ignore

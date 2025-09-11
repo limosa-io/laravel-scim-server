@@ -23,7 +23,7 @@ class RouteProvider
                     [
                     // TODO: Not loading this middleware introduces resolve issues. But having it, might slow things down.
                     \Illuminate\Routing\Middleware\SubstituteBindings::class,
-                    'ArieTimmerman\Laravel\SCIMServer\Middleware\SCIMHeaders'
+                    \ArieTimmerman\Laravel\SCIMServer\Middleware\SCIMHeaders::class
                     ]
                 )->group(
                     function () use ($options) {

@@ -27,12 +27,12 @@ class Helper
      *
      * @param unknown $object
      */
-    public static function prepareReturn(Arrayable $object, ResourceType $resourceType = null, array $attributes = [], array $excludedAttributes = [])
+    public static function prepareReturn(Arrayable $object, ?ResourceType $resourceType = null, array $attributes = [], array $excludedAttributes = [])
     {
         $result = null;
 
         if (isset($object[0]) && is_object($object[0])) {
-            if (! in_array('ArieTimmerman\Laravel\SCIMServer\Traits\SCIMResource', class_uses(get_class($object[0])))) {
+            if (! in_array('ArieTimmerman\Laravel\SCIMServer\Traits\SCIMResource', class_uses($object[0]::class))) {
                 $result = [];
 
                 foreach ($object as $key => $value) {
@@ -109,7 +109,7 @@ class Helper
         if ($node instanceof Negation) {
             $filter = $node->getFilter();
 
-            throw (new SCIMException('Negation filters not supported'))->setCode(400)->setScimType('invalidFilter');
+            throw new SCIMException('Negation filters not supported')->setCode(400)->setScimType('invalidFilter');
         } elseif ($node instanceof ComparisonExpression) {
             $resourceType->getMapping()->applyComparison($query, $path);
         } elseif ($node instanceof Conjunction) {

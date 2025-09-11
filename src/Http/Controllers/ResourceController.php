@@ -44,23 +44,23 @@ class ResourceController extends Controller
         if ($validator->fails()) {
             $e = $validator->errors();
 
-            throw (new SCIMException('Invalid data!'))->setCode(400)->setScimType('invalidSyntax')->setErrors($e);
+            throw new SCIMException('Invalid data!')->setCode(400)->setScimType('invalidSyntax')->setErrors($e);
         }
 
         return $validator->validate();
     }
 
-    public static function createFromSCIM($resourceType, $input, PolicyDecisionPoint $pdp = null, Request $request = null, $allowAlways = false, $isMe = false)
+    public static function createFromSCIM($resourceType, $input, ?PolicyDecisionPoint $pdp = null, ?Request $request = null, $allowAlways = false, $isMe = false)
     {
         if (!isset($input['schemas']) || !is_array($input['schemas'])) {
-            throw (new SCIMException('Missing a valid schemas-attribute.'))->setCode(400);
+            throw new SCIMException('Missing a valid schemas-attribute.')->setCode(400);
         }
 
         $flattened = Helper::flatten($input, $input['schemas']);
         $flattened = static::validateScim($resourceType, $flattened, null);
 
         if (!$allowAlways && !static::isAllowed($pdp, $request, PolicyDecisionPoint::OPERATION_POST, $flattened, $resourceType, null, $isMe)) {
-            throw (new SCIMException('This is not allowed'))->setCode(403);
+            throw new SCIMException('This is not allowed')->setCode(403);
         }
 
         $resourceObject = $resourceType->getFactory()();
@@ -110,7 +110,7 @@ class ResourceController extends Controller
     {
         event(new Get($resourceObject, $resourceType, null, $request->input()));
 
-        $excludedAttributes = explode(',', $request->input('excludedAttributes', ''));
+        $excludedAttributes = explode(',', (string) $request->input('excludedAttributes', ''));
 
         return Helper::objectToSCIMResponse($resourceObject, $resourceType, $excludedAttributes);
     }
@@ -132,7 +132,7 @@ class ResourceController extends Controller
 
         $newObject = Helper::flatten(Helper::objectToSCIMArray($resourceObject, $resourceType), $resourceType->getSchema());
 
-        $flattened = $this->validateScim($resourceType, $newObject, $resourceObject);
+        $flattened = static::validateScim($resourceType, $newObject, $resourceObject);
 
         if (!static::isAllowed($pdp, $request, PolicyDecisionPoint::OPERATION_PATCH, $flattened, $resourceType, null)) {
             throw new SCIMException('This is not allowed');
@@ -150,7 +150,7 @@ class ResourceController extends Controller
         $input = $request->input();
 
         if ($input['schemas'] !== ["urn:ietf:params:scim:api:messages:2.0:PatchOp"]) {
-            throw (new SCIMException(sprintf('Invalid schema "%s". MUST be "urn:ietf:params:scim:api:messages:2.0:PatchOp"', json_encode($input['schemas']))))->setCode(404);
+            throw new SCIMException(sprintf('Invalid schema "%s". MUST be "urn:ietf:params:scim:api:messages:2.0:PatchOp"', json_encode($input['schemas'])))->setCode(404);
         }
 
         if (isset($input['urn:ietf:params:scim:api:messages:2.0:PatchOp:Operations'])) {
@@ -161,7 +161,7 @@ class ResourceController extends Controller
         $oldObject = Helper::objectToSCIMArray($resourceObject, $resourceType);
 
         foreach ($input['Operations'] as $operation) {
-            switch (strtolower($operation['op'])) {
+            switch (strtolower((string) $operation['op'])) {
                 case "add":
                     $resourceType->getMapping()->patch('add', $operation['value'] ?? null, $resourceObject, ParserParser::parse($operation['path'] ?? null));
                     break;
@@ -187,7 +187,7 @@ class ResourceController extends Controller
 
         $newObject = Helper::flatten(Helper::objectToSCIMArray($resourceObject, $resourceType), $resourceType->getSchema());
 
-        $flattened = $this->validateScim($resourceType, $newObject, $resourceObject);
+        $flattened = static::validateScim($resourceType, $newObject, $resourceObject);
 
         if (!static::isAllowed($pdp, $request, PolicyDecisionPoint::OPERATION_PATCH, $flattened, $resourceType, null)) {
             throw new SCIMException('This is not allowed');
@@ -208,7 +208,7 @@ class ResourceController extends Controller
 
     public function wrongVersion(Request $request)
     {
-        throw (new SCIMException('Only SCIM v2 is supported. Accessible under ' . url('scim/v2')))->setCode(501)
+        throw new SCIMException('Only SCIM v2 is supported. Accessible under ' . url('scim/v2'))->setCode(501)
             ->setScimType('invalidVers');
     }
 
@@ -218,7 +218,7 @@ class ResourceController extends Controller
 
         // if both cursor and startIndex are present, throw an exception
         if ($request->has('cursor') && $request->has('startIndex')) {
-            throw (new SCIMException('Both cursor and startIndex are present. Only one of them is allowed.'))->setCode(400);
+            throw new SCIMException('Both cursor and startIndex are present. Only one of them is allowed.')->setCode(400);
         }
 
         // Non-negative integer. Specifies the desired maximum number of query results per page, e.g., 10. A negative value SHALL be interpreted as "0". A value of "0" indicates that no resource results are to be returned except for "totalResults".
@@ -238,7 +238,7 @@ class ResourceController extends Controller
 
                     Helper::scimFilterToLaravelQuery($resourceType, $query, ParserParser::parseFilter($filter));
                 } catch (\Tmilos\ScimFilterParser\Error\FilterException $e) {
-                    throw (new SCIMException($e->getMessage()))->setCode(400)->setScimType('invalidFilter');
+                    throw new SCIMException($e->getMessage())->setCode(400)->setScimType('invalidFilter');
                 }
             }
         );
@@ -267,16 +267,16 @@ class ResourceController extends Controller
                 $cursor = @Cursor::fromEncoded($request->input('cursor'));
 
                 if($cursor == null){
-                    throw (new SCIMException('Invalid Cursor'))->setCode(400)->setScimType('invalidCursor');
+                    throw new SCIMException('Invalid Cursor')->setCode(400)->setScimType('invalidCursor');
                 }
             }
 
             $countRaw = $request->input('count');
 
             if($countRaw < 1 || $countRaw > config('scim.pagination.maxPageSize')){
-                throw (new SCIMException(
+                throw new SCIMException(
                     sprintf('Count value is invalid. Count value must be between 1 - and maxPageSize (%s) (when using cursor pagination)', config('scim.pagination.maxPageSize'))
-                ))->setCode(400)->setScimType('invalidCount');
+                )->setCode(400)->setScimType('invalidCount');
             }
             
             $resourceObjects = $resourceObjects->cursorPaginate(
@@ -299,7 +299,7 @@ class ResourceController extends Controller
         if($request->json('attributes') && is_array($request->json('attributes'))){
             $attributes = $request->json('attributes');
         } else {
-            $attributes = $request->input('attributes') ? preg_split('/[,.]/', $request->input('attributes')) : [];
+            $attributes = $request->input('attributes') ? preg_split('/[,.]/', (string) $request->input('attributes')) : [];
         }
 
         if (!empty($attributes)) {
@@ -308,7 +308,7 @@ class ResourceController extends Controller
             $attributes[] = 'schemas';
         }
 
-        $excludedAttributes = explode(',', $request->input('excludedAttributes', ''));
+        $excludedAttributes = explode(',', (string) $request->input('excludedAttributes', ''));
 
         return new ListResponse(
             $resources,
@@ -328,7 +328,7 @@ class ResourceController extends Controller
 
         // ensure request post body is a scim SearchRequest
         if (!is_array($input) || !isset($input['schemas']) || !in_array("urn:ietf:params:scim:api:messages:2.0:SearchRequest", $input['schemas'])) {
-            throw (new SCIMException('Invalid schema. MUST be "urn:ietf:params:scim:api:messages:2.0:SearchRequest"'))->setCode(400);
+            throw new SCIMException('Invalid schema. MUST be "urn:ietf:params:scim:api:messages:2.0:SearchRequest"')->setCode(400);
         }
 
         // ensure $request->input reads from payload/post only, not query parameters

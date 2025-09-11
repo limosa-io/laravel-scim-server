@@ -4,28 +4,19 @@ namespace ArieTimmerman\Laravel\SCIMServer\Parser;
 
 use Tmilos\ScimFilterParser\Ast\Factor;
 
-class Path {
-    public $node;
-    public $text;
+class Path implements \Stringable {
     public $attributePath;
     public $valuePath;
 
-    public function __construct($node, $text){
-        $this->node = $node;
-        $this->text = $text;
-
+    public function __construct(public $node, public $text){
         // attribute path
-        $getAttributePath = function () {
-            return $this->attributePath;
-        };
+        $getAttributePath = (fn() => $this->attributePath);
 
         $attributePath = $getAttributePath->call($this->node);
         $this->attributePath = $attributePath != null ? new AttributePath($attributePath) : null;
 
         //value path
-        $getValuePath = function () {
-            return $this instanceof Factor ? null : $this->valuePath;
-        };
+        $getValuePath = (fn() => $this instanceof Factor ? null : $this->valuePath);
 
         $valuePath = $getValuePath->call($this->node);
         $this->valuePath = $valuePath != null ? new ValuePath($valuePath) : null;
@@ -85,9 +76,9 @@ class Path {
         return $this;
     }
 
-    public function __toString()
+    public function __toString(): string
     {
-        return $this->text;
+        return (string) $this->text;
     }
 
     public function isNotEmpty(){

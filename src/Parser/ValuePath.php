@@ -13,15 +13,11 @@ class ValuePath {
     public function __construct(ScimFilterParserAstValuePath $path){
         $this->path = $path;
 
-        $getAttributePath = function () {
-            return $this->attributePath;
-        };
+        $getAttributePath = (fn() => $this->attributePath);
 
         $this->attributePath = new AttributePath($getAttributePath->call($this->path));
 
-        $getFilter = function () {
-            return $this->filter;
-        };
+        $getFilter = (fn() => $this->filter);
 
         $this->filter = new Filter($getFilter->call($this->path));
 

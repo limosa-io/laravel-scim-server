@@ -23,10 +23,11 @@ abstract class AbstractComplex extends Attribute
         return collect($this->subAttributes)->filter(fn ($element) => $element instanceof Schema)->values()->toArray();
     }
 
+    #[\Override]
     public function getValidations()
     {
         $result = [
-            addcslashes($this->getFullKey(), '.') => $this->validations,
+            addcslashes((string) $this->getFullKey(), '.') => $this->validations,
         ];
 
         foreach ($this->subAttributes as $attribute) {
@@ -67,6 +68,7 @@ abstract class AbstractComplex extends Attribute
         return $result;
     }
 
+    #[\Override]
     public function generateSchema()
     {
         $base = parent::generateSchema();

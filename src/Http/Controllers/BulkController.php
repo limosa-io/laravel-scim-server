@@ -81,6 +81,7 @@ class BulkController extends Controller
             $encoded = str_replace(array_keys($bulkIdMapping), array_values($bulkIdMapping), $encoded);
             $path = str_replace(array_keys($bulkIdMapping), array_values($bulkIdMapping), $operation['path']);
 
+            // TODO: Allow BULK requests for all configured resource types (RFC 7644 §3.7).
             // ensure $path starts with /Users or /Groups
             if (!preg_match('/^\/(Users|Groups)/', $path)) {
                 throw (new SCIMException('Invalid path!'))->setCode(400)->setScimType('invalidPath');

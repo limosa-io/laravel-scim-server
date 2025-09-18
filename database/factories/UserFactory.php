@@ -9,6 +9,6 @@ $factory->define(ArieTimmerman\Laravel\SCIMServer\Tests\Model\User::class, funct
         'formatted' => $faker->name,
         'name' => $faker->name,
         'password'=>'test',
-        'active' => false
+        'active' => $faker->boolean
     ];
 });

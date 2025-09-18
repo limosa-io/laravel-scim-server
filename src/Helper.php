@@ -3,6 +3,10 @@
 namespace ArieTimmerman\Laravel\SCIMServer;
 
 use Illuminate\Contracts\Support\Arrayable;
+use ArieTimmerman\Laravel\SCIMServer\Attribute\AbstractComplex;
+use ArieTimmerman\Laravel\SCIMServer\Attribute\Attribute;
+use ArieTimmerman\Laravel\SCIMServer\Attribute\Collection;
+use ArieTimmerman\Laravel\SCIMServer\Attribute\JSONCollection;
 use ArieTimmerman\Laravel\SCIMServer\Filter\Ast\ComparisonExpression;
 use ArieTimmerman\Laravel\SCIMServer\Filter\Ast\Negation;
 use ArieTimmerman\Laravel\SCIMServer\Filter\Ast\Conjunction;
@@ -14,6 +18,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Arr;
 use ArieTimmerman\Laravel\SCIMServer\Filter\Ast\Factor;
 use ArieTimmerman\Laravel\SCIMServer\Filter\Ast\ValuePath;
+use ArieTimmerman\Laravel\SCIMServer\Filter\Ast\Filter as AstFilter;
 
 class Helper
 {
@@ -151,7 +156,13 @@ class Helper
         if ($node instanceof Negation) {
             $filter = $node->getFilter();
 
-            throw (new SCIMException('Negation filters not supported'))->setCode(400)->setScimType('invalidFilter');
+            $query->whereNot(
+                function (Builder $nested) use ($resourceType, $filter) {
+                    Helper::scimFilterToLaravelQuery($resourceType, $nested, new ParserPath($filter, $filter->dump()));
+                }
+            );
+
+            return;
         } elseif ($node instanceof ComparisonExpression) {
             $resourceType->getMapping()->applyComparison($query, $path);
         } elseif ($node instanceof Conjunction) {
@@ -171,10 +182,133 @@ class Helper
                 );
             }
         } elseif ($node instanceof ValuePath) {
-            throw new SCIMException('ValuePath not supported');
+            $attribute = static::resolveAttributeChain($resourceType->getMapping(), $path->getValuePathAttributes());
+
+            if ($attribute === null) {
+                throw (new SCIMException('Unknown attribute referenced in valuePath filter'))->setCode(400)->setScimType('invalidFilter');
+            }
+
+            static::applyValuePathFilterToAttribute($attribute, $query, $node->getFilter());
+
+            return;
         } elseif ($node instanceof Factor) {
             throw new SCIMException('Unknown filter not supported');
         }
+    }
+
+    protected static function applyValuePathFilterToAttribute(Attribute $attribute, Builder $query, AstFilter $filter): void
+    {
+        if ($attribute instanceof Collection) {
+            $query->whereHas(
+                $attribute->getRelationshipName(),
+                function (Builder $relationQuery) use ($attribute, $filter) {
+                    static::applyFilterInCollectionContext($attribute, $relationQuery, $filter);
+                }
+            );
+
+            return;
+        }
+
+        if ($attribute instanceof JSONCollection) {
+            throw (new SCIMException(sprintf('ValuePath filters are not supported for attribute "%s"', $attribute->getFullKey())))->setCode(501);
+        }
+
+        throw (new SCIMException(sprintf('ValuePath filters are only supported for multi-valued attributes. Attribute "%s" is not multi-valued.', $attribute->getFullKey())))->setCode(400)->setScimType('invalidFilter');
+    }
+
+    protected static function applyFilterInCollectionContext(Collection $collection, Builder $query, AstFilter $filter): void
+    {
+        if ($filter instanceof ComparisonExpression) {
+            $path = new ParserPath($filter, $filter->dump());
+            $attributeNames = $path->getAttributePathAttributes();
+
+            if (empty($attributeNames)) {
+                throw (new SCIMException('ValuePath filter must reference an attribute'))->setCode(400)->setScimType('invalidFilter');
+            }
+
+            $subAttribute = $collection->getSubNode($attributeNames[0]);
+
+            if ($subAttribute === null) {
+                throw (new SCIMException(sprintf('Unknown attribute "%s" in valuePath filter', $attributeNames[0])))->setCode(400)->setScimType('invalidFilter');
+            }
+
+            $tablePrefix = method_exists($query, 'getModel') ? $query->getModel()->getTable() : null;
+
+            $subAttribute->applyComparison($query, $path->shiftAttributePathAttributes(), $tablePrefix);
+
+            return;
+        }
+
+        if ($filter instanceof Conjunction) {
+            foreach ($filter->getFactors() as $factor) {
+                static::applyFilterInCollectionContext($collection, $query, $factor);
+            }
+
+            return;
+        }
+
+        if ($filter instanceof Disjunction) {
+            $query->where(
+                function (Builder $nested) use ($collection, $filter) {
+                    foreach ($filter->getTerms() as $index => $term) {
+                        $method = $index === 0 ? 'where' : 'orWhere';
+                        $nested->{$method}(
+                            function (Builder $inner) use ($collection, $term) {
+                                static::applyFilterInCollectionContext($collection, $inner, $term);
+                            }
+                        );
+                    }
+                }
+            );
+
+            return;
+        }
+
+        if ($filter instanceof Negation) {
+            $query->whereNot(
+                function (Builder $nested) use ($collection, $filter) {
+                    static::applyFilterInCollectionContext($collection, $nested, $filter->getFilter());
+                }
+            );
+
+            return;
+        }
+
+        if ($filter instanceof ValuePath) {
+            $path = new ParserPath($filter, $filter->dump());
+            $target = static::resolveAttributeChain($collection, $path->getValuePathAttributes());
+
+            if ($target === null) {
+                throw (new SCIMException('Unknown attribute referenced in nested valuePath filter'))->setCode(400)->setScimType('invalidFilter');
+            }
+
+            static::applyValuePathFilterToAttribute($target, $query, $filter->getFilter());
+
+            return;
+        }
+
+        throw (new SCIMException('Unsupported filter found in valuePath expression'))->setCode(400)->setScimType('invalidFilter');
+    }
+
+    protected static function resolveAttributeChain(Attribute $attribute, array $segments): ?Attribute
+    {
+        $current = $attribute;
+
+        foreach ($segments as $segment) {
+            if (!($current instanceof AbstractComplex)) {
+                return null;
+            }
+
+            $next = $current->getSubNode($segment);
+
+            if ($next === null) {
+                return null;
+            }
+
+            $current = $next;
+        }
+
+        return $current;
     }
 
     protected static function applyExcludedAttributes(array $resource, array $excludedAttributes, $defaultSchema = null): array

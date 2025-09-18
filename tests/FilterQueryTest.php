@@ -67,4 +67,45 @@ class FilterQueryTest extends TestCase
             'Groups without the user should remain when using not(valuePath) filter.'
         );
     }
+
+    public function testMultiConditionFilterCombinesCriteriaWithAnd(): void
+    {
+        $matchingUser = factory(User::class)->create([
+            'name' => 'te-matching-user',
+            'formatted' => 'te matching formatted',
+            'email' => 'matching-user@example.com',
+        ]);
+
+        $formattedOnlyUser = factory(User::class)->create([
+            'name' => 'AlphaName',
+            'formatted' => 'te formatted only',
+            'email' => 'formatted-only@example.com',
+        ]);
+
+        $userNameOnlyUser = factory(User::class)->create([
+            'name' => 'te username only',
+            'formatted' => 'AlphaDisplay',
+            'email' => 'username-only@example.com',
+        ]);
+
+        $filter = rawurlencode('name.formatted co "te" and userName co "te"');
+
+        $response = $this->get("/scim/v2/Users?filter={$filter}&count=200");
+        $response->assertStatus(200);
+
+        $ids = collect($response->json('Resources'))->pluck('id');
+
+        $this->assertTrue(
+            $ids->contains((string)$matchingUser->id),
+            'Expected user that matches both conditions to be returned.'
+        );
+        $this->assertFalse(
+            $ids->contains((string)$formattedOnlyUser->id),
+            'User matching only the formatted condition should be excluded.'
+        );
+        $this->assertFalse(
+            $ids->contains((string)$userNameOnlyUser->id),
+            'User matching only the userName condition should be excluded.'
+        );
+    }
 }

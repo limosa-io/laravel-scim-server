@@ -26,7 +26,7 @@ class Helper
      *
      * @param unknown $object
      */
-    public static function prepareReturn(Arrayable $object, ResourceType $resourceType = null, array $attributes = [])
+    public static function prepareReturn(Arrayable $object, ResourceType $resourceType = null, array $attributes = [], array $excludedAttributes = [])
     {
         $result = null;
 
@@ -35,7 +35,7 @@ class Helper
                 $result = [];
 
                 foreach ($object as $key => $value) {
-                    $result[] = self::objectToSCIMArray($value, $resourceType, $attributes);
+                    $result[] = self::objectToSCIMArray($value, $resourceType, $attributes, $excludedAttributes);
                 }
             }
         }
@@ -44,17 +44,32 @@ class Helper
             $result = $object;
         }
 
+        if (is_array($result) && !empty($excludedAttributes)) {
+            $defaultSchema = $resourceType?->getMapping()->getDefaultSchema();
+            $result = self::applyExcludedAttributes($result, $excludedAttributes, $defaultSchema);
+        }
+
         return $result;
     }
 
-    public static function objectToSCIMArray($object, ResourceType $resourceType = null, array $attributes = [])
+    public static function objectToSCIMArray($object, ResourceType $resourceType = null, array $attributes = [], array $excludedAttributes = [])
     {
         if($resourceType == null){
-            return $object instanceof Arrayable ? $object->toArray() : $object;
+            $result = $object instanceof Arrayable ? $object->toArray() : $object;
+
+            if (is_array($result) && !empty($excludedAttributes)) {
+                $result = self::applyExcludedAttributes($result, $excludedAttributes);
+            }
+
+            return $result;
         }
 
         $mapping = $resourceType->getMapping();
         $result = $mapping->read($object, $attributes)->value;
+
+        if (!empty($excludedAttributes)) {
+            $result = self::applyExcludedAttributes($result, $excludedAttributes, $mapping->getDefaultSchema());
+        }
 
         if (config('scim.omit_main_schema_in_return')) {
             $defaultSchema = collect($mapping->getDefaultSchema())->first();
@@ -90,9 +105,39 @@ class Helper
      * @param unknown      $object
      * @param ResourceType $resourceType
      */
-    public static function objectToSCIMResponse(Model $object, ResourceType $resourceType = null)
+    public static function objectToSCIMResponse(Model $object, ResourceType $resourceType = null, array $attributes = [], array $excludedAttributes = [])
     {
-        return response(self::objectToSCIMArray($object, $resourceType))->header('ETag', self::getResourceObjectVersion($object));
+        $response = response(self::objectToSCIMArray($object, $resourceType, $attributes, $excludedAttributes))
+            ->header('ETag', self::getResourceObjectVersion($object));
+
+        if ($resourceType !== null) {
+            $resourceTypeName = $resourceType->getName();
+
+            if ($resourceTypeName === null) {
+                $routeResourceType = request()?->route('resourceType');
+
+                if ($routeResourceType instanceof ResourceType) {
+                    $resourceTypeName = $routeResourceType->getName();
+                } elseif (is_string($routeResourceType)) {
+                    $resourceTypeName = $routeResourceType;
+                }
+            }
+
+            if ($resourceTypeName !== null) {
+                $response->header(
+                    'Location',
+                    route(
+                        'scim.resource',
+                        [
+                            'resourceType' => $resourceTypeName,
+                            'resourceObject' => $object->getKey(),
+                        ]
+                    )
+                );
+            }
+        }
+
+        return $response;
     }
 
     /**
@@ -130,6 +175,125 @@ class Helper
         } elseif ($node instanceof Factor) {
             throw new SCIMException('Unknown filter not supported');
         }
+    }
+
+    protected static function applyExcludedAttributes(array $resource, array $excludedAttributes, $defaultSchema = null): array
+    {
+        foreach ($excludedAttributes as $reference) {
+            $reference = trim($reference);
+
+            if ($reference === '') {
+                continue;
+            }
+
+            [$schema, $segments] = self::splitAttributeReference($reference, $defaultSchema);
+
+            if (empty($segments)) {
+                continue;
+            }
+
+            if ($schema !== null) {
+                if (!isset($resource[$schema]) || !is_array($resource[$schema])) {
+                    continue;
+                }
+
+                self::removeAttributePath($resource[$schema], $segments);
+
+                if (is_array($resource[$schema]) && empty($resource[$schema])) {
+                    unset($resource[$schema]);
+                }
+
+                continue;
+            }
+
+            self::removeAttributePath($resource, $segments);
+        }
+
+        return $resource;
+    }
+
+    protected static function splitAttributeReference(string $reference, $defaultSchema = null): array
+    {
+        $schema = null;
+        $attributePart = $reference;
+
+        if (str_starts_with($reference, 'urn:')) {
+            $lastColon = strrpos($reference, ':');
+
+            if ($lastColon !== false) {
+                $schema = substr($reference, 0, $lastColon);
+                $attributePart = substr($reference, $lastColon + 1);
+            }
+        }
+
+        $attributePart = trim($attributePart);
+
+        if ($schema === null) {
+            $firstSegment = $attributePart;
+
+            if (($dotPosition = strpos($attributePart, '.')) !== false) {
+                $firstSegment = substr($attributePart, 0, $dotPosition);
+            }
+
+            if (!in_array($firstSegment, ['schemas', 'meta', 'id'], true) && $defaultSchema !== null) {
+                $schema = $defaultSchema;
+            }
+        }
+
+        $segments = $attributePart === '' ? [] : explode('.', $attributePart);
+
+        return [$schema, $segments];
+    }
+
+    protected static function removeAttributePath(&$node, array $segments, int $depth = 0): void
+    {
+        if (!is_array($node)) {
+            return;
+        }
+
+        if (self::isList($node)) {
+            foreach ($node as &$element) {
+                self::removeAttributePath($element, $segments, $depth);
+            }
+
+            return;
+        }
+
+        $key = $segments[$depth] ?? null;
+
+        if ($key === null || !array_key_exists($key, $node)) {
+            return;
+        }
+
+        if ($depth === count($segments) - 1) {
+            unset($node[$key]);
+            return;
+        }
+
+        self::removeAttributePath($node[$key], $segments, $depth + 1);
+
+        if (is_array($node[$key]) && empty($node[$key])) {
+            unset($node[$key]);
+        }
+    }
+
+    protected static function isList(array $value): bool
+    {
+        if (function_exists('array_is_list')) {
+            return array_is_list($value);
+        }
+
+        $expectedKey = 0;
+
+        foreach ($value as $key => $unused) {
+            if ($key !== $expectedKey) {
+                return false;
+            }
+
+            $expectedKey++;
+        }
+
+        return true;
     }
 
     public static function getFlattenKey($parts, $schemas)

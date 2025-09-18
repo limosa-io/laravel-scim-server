@@ -2,33 +2,29 @@
 
 namespace ArieTimmerman\Laravel\SCIMServer\Parser;
 
-use Tmilos\ScimFilterParser\Mode;
-use Tmilos\ScimFilterParser\Parser as ScimFilterParserParser;
+use ArieTimmerman\Laravel\SCIMServer\Filter\FilterParser;
 
-class Parser {
-    public static function parse($input): ?Path {
-        if($input == null){
+class Parser
+{
+    public static function parse(?string $input): ?Path
+    {
+        if ($input === null) {
             return null;
         }
 
-        $node = (new ScimFilterParserParser(Mode::PATH()))->parse($input);
+        $node = (new FilterParser())->parsePath($input);
 
-        return new Path(
-            $node,
-            $input
-        );
+        return new Path($node, $input);
     }
 
-    public static function parseFilter($input): ?Path {
-        if($input == null){
+    public static function parseFilter(?string $input): ?Path
+    {
+        if ($input === null) {
             return null;
         }
 
-        $node = (new ScimFilterParserParser(Mode::FILTER()))->parse($input);
+        $node = (new FilterParser())->parseFilter($input);
 
-        return new Path(
-            $node,
-            $input
-        );
+        return new Path($node, $input);
     }
 }

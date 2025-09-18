@@ -8,7 +8,7 @@ use ArieTimmerman\Laravel\SCIMServer\Parser\Path;
 use ArieTimmerman\Laravel\SCIMServer\SCIM\Schema;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
-use Tmilos\ScimFilterParser\Ast\AttributePath;
+use ArieTimmerman\Laravel\SCIMServer\Filter\Ast\AttributePath as FilterAttributePath;
 use Illuminate\Support\Str;
 
 class Attribute
@@ -207,7 +207,7 @@ class Attribute
         }
     }
 
-    public function getNode(?AttributePath $attributePath)
+    public function getNode(?FilterAttributePath $attributePath)
     {
         if (empty($attributePath)) {
             return $this;

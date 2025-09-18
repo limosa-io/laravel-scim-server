@@ -3,17 +3,17 @@
 namespace ArieTimmerman\Laravel\SCIMServer;
 
 use Illuminate\Contracts\Support\Arrayable;
-use Tmilos\ScimFilterParser\Ast\ComparisonExpression;
-use Tmilos\ScimFilterParser\Ast\Negation;
-use Tmilos\ScimFilterParser\Ast\Conjunction;
-use Tmilos\ScimFilterParser\Ast\Disjunction;
+use ArieTimmerman\Laravel\SCIMServer\Filter\Ast\ComparisonExpression;
+use ArieTimmerman\Laravel\SCIMServer\Filter\Ast\Negation;
+use ArieTimmerman\Laravel\SCIMServer\Filter\Ast\Conjunction;
+use ArieTimmerman\Laravel\SCIMServer\Filter\Ast\Disjunction;
 use ArieTimmerman\Laravel\SCIMServer\Exceptions\SCIMException;
 use ArieTimmerman\Laravel\SCIMServer\Parser\Path as ParserPath;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Arr;
-use Tmilos\ScimFilterParser\Ast\Factor;
-use Tmilos\ScimFilterParser\Ast\ValuePath;
+use ArieTimmerman\Laravel\SCIMServer\Filter\Ast\Factor;
+use ArieTimmerman\Laravel\SCIMServer\Filter\Ast\ValuePath;
 
 class Helper
 {

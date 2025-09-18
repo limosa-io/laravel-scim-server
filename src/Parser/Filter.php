@@ -2,8 +2,8 @@
 
 namespace ArieTimmerman\Laravel\SCIMServer\Parser;
 
-use Tmilos\ScimFilterParser\Ast\ComparisonExpression;
-use Tmilos\ScimFilterParser\Ast\Filter as AstFilter;
+use ArieTimmerman\Laravel\SCIMServer\Filter\Ast\ComparisonExpression;
+use ArieTimmerman\Laravel\SCIMServer\Filter\Ast\Filter as AstFilter;
 
 class Filter
 {
@@ -11,7 +11,7 @@ class Filter
     {
     }
 
-    public function getComparisonExpression(): ComparisonExpression
+    public function getComparisonExpression(): ?ComparisonExpression
     {
         return $this->filter instanceof ComparisonExpression ? $this->filter : null;
     }

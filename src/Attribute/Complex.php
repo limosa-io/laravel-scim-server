@@ -102,12 +102,23 @@ class Complex extends AbstractComplex
                     }
                 }
 
-                if (empty($matchedIndexes)) {
-                    return;
-                }
-
                 $attributeNames = $path?->getAttributePath()?->getAttributeNames() ?? [];
                 $modified = false;
+
+                if (empty($matchedIndexes)) {
+                    if ($operation === 'add') {
+                        $newElement = $this->createElementFromFilter($filterNode, $attributeNames, $value);
+
+                        if ($newElement !== null) {
+                            $currentValues[] = $newElement;
+                            $modified = true;
+                        }
+                    }
+
+                    if (!$modified) {
+                        return;
+                    }
+                }
 
                 foreach ($matchedIndexes as $index) {
                     if (empty($attributeNames)) {
@@ -637,5 +648,79 @@ class Complex extends AbstractComplex
         }
 
         return $result;
+    }
+
+    private function createElementFromFilter(AstFilter $filter, array $attributePath, mixed $value): ?array
+    {
+        $base = $this->extractAssignmentsFromFilter($filter);
+
+        if (!empty($attributePath)) {
+            $base = $this->setNestedValue($base, $attributePath, $value);
+        } elseif (is_array($value)) {
+            $base = array_replace_recursive($base, $this->normalizeElement($value));
+        } else {
+            return null;
+        }
+
+        return $this->normalizeElement($base);
+    }
+
+    private function extractAssignmentsFromFilter(AstFilter $filter): array
+    {
+        if ($filter instanceof ComparisonExpression) {
+            if (strtolower($filter->operator) !== 'eq') {
+                return [];
+            }
+
+            $attributeNames = $filter->attributePath->getAttributeNames();
+
+            if (empty($attributeNames)) {
+                return [];
+            }
+
+            return $this->setNestedValue([], $attributeNames, $filter->compareValue);
+        }
+
+        if ($filter instanceof Conjunction) {
+            $result = [];
+
+            foreach ($filter->getFactors() as $factor) {
+                $result = array_replace_recursive($result, $this->extractAssignmentsFromFilter($factor));
+            }
+
+            return $result;
+        }
+
+        if ($filter instanceof AstValuePath) {
+            $nested = $this->extractAssignmentsFromFilter($filter->getFilter());
+
+            $attributeNames = $filter->getAttributePath()->getAttributeNames();
+
+            return $this->setNestedValue([], $attributeNames, $nested);
+        }
+
+        return [];
+    }
+
+    private function setNestedValue(array $array, array $path, mixed $value): array
+    {
+        if (empty($path)) {
+            return is_array($value) ? array_replace_recursive($array, $value) : $array;
+        }
+
+        $segment = array_shift($path);
+
+        if (!array_key_exists($segment, $array) || !is_array($array[$segment])) {
+            $array[$segment] = [];
+        }
+
+        if (empty($path)) {
+            $array[$segment] = $value;
+            return $array;
+        }
+
+        $array[$segment] = $this->setNestedValue($array[$segment], $path, $value);
+
+        return $array;
     }
 }

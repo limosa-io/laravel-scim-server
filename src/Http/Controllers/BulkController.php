@@ -21,17 +21,18 @@ class BulkController extends Controller
     public function processBulkRequest(Request $request)
     {
 
+        $originalRequest = $request;
+
         // get the content size in bytes from raw content (not entirely accurate, but good enough for now)
-        $contentSize = mb_strlen($request->getContent(), '8bit');
+        $contentSize = mb_strlen($originalRequest->getContent(), '8bit');
 
         if($contentSize > static::MAX_PAYLOAD_SIZE){
             throw (new SCIMException('Payload too large!'))->setCode(413)->setScimType('tooLarge');
         }
 
-        $validator = Validator::make($request->input(), [
+        $validator = Validator::make($originalRequest->input(), [
             'schemas' => 'required|array',
             'schemas.*' => 'required|string|in:urn:ietf:params:scim:api:messages:2.0:BulkRequest',
-            // TODO: implement failOnErrors
             'failOnErrors' => 'nullable|int',
             'Operations' => 'required|array',
             'Operations.*.method' => 'required|string|in:POST,PUT,PATCH,DELETE',
@@ -45,7 +46,7 @@ class BulkController extends Controller
             throw (new SCIMException('Invalid data!'))->setCode(400)->setScimType('invalidSyntax')->setErrors($e);
         }
 
-        $operations = $request->input('Operations');
+        $operations = $originalRequest->input('Operations');
 
         if(count($operations) > static::MAX_OPERATIONS){
             throw (new SCIMException('Too many operations!'))->setCode(413)->setScimType('tooLarge');
@@ -53,17 +54,30 @@ class BulkController extends Controller
 
         $bulkIdMapping = [];
         $responses = [];
+        $errorCount = 0;
+
+        $failOnErrors = $originalRequest->input('failOnErrors');
+        $failOnErrors = is_numeric($failOnErrors) ? (int)$failOnErrors : null;
+
+        if ($failOnErrors !== null && $failOnErrors < 1) {
+            $failOnErrors = null;
+        }
 
         // Remove everything till the last occurence of Bulk, e.g. /scim/v2/Bulk should become /scim/v2/
-        $prefix = substr($request->path(), 0, strrpos($request->path(), '/Bulk'));
+        $prefix = substr($originalRequest->path(), 0, strrpos($originalRequest->path(), '/Bulk'));
 
-        foreach ($operations as $operation) {
+        foreach ($operations as $index => $operation) {
             
             $method = $operation['method'];
             $bulkId = $operation['bulkId'] ?? null;
+            $data = $operation['data'] ?? [];
+
+            if (!is_array($data)) {
+                $data = [];
+            }
 
             // Call internal Laravel route based on method, path and data
-            $encoded = json_encode($operation['data'] ?? []);
+            $encoded = json_encode($data);
             $encoded = str_replace(array_keys($bulkIdMapping), array_values($bulkIdMapping), $encoded);
             $path = str_replace(array_keys($bulkIdMapping), array_values($bulkIdMapping), $operation['path']);
 
@@ -72,19 +86,34 @@ class BulkController extends Controller
                 throw (new SCIMException('Invalid path!'))->setCode(400)->setScimType('invalidPath');
             }
 
-            $request = Request::create(
+            $operationRequest = Request::create(
                 $prefix . $path,
-                $operation['method'], 
-                server: [
-                    'HTTP_Authorization' => $request->header('Authorization'),
-                    'CONTENT_TYPE' => 'application/scim+json',
-                ],
+                $method,
+                parameters: [],
+                cookies: $originalRequest->cookies->all(),
+                files: [],
+                server: array_replace(
+                    $originalRequest->server->all(),
+                    [
+                        'HTTP_Authorization' => $originalRequest->header('Authorization'),
+                        'CONTENT_TYPE' => 'application/scim+json',
+                        'HTTP_CONTENT_TYPE' => 'application/scim+json',
+                    ]
+                ),
                 content: $encoded
             );
 
+            if ($originalRequest->getUserResolver()) {
+                $operationRequest->setUserResolver($originalRequest->getUserResolver());
+            }
+
+            if ($originalRequest->getRouteResolver()) {
+                $operationRequest->setRouteResolver($originalRequest->getRouteResolver());
+            }
+
             // run request and get response
             /** @var \Illuminate\Http\Response */
-            $response = app()->handle($request);
+            $response = app()->handle($operationRequest);
             // Get the JSON content of the response
             $jsonContent = $response->getContent();
             // Decode the JSON content
@@ -98,14 +127,39 @@ class BulkController extends Controller
                 $bulkIdMapping['bulkId:' . $bulkId] = $id;
             }
 
+            $status = $response->getStatusCode();
+
+            if ($status >= 400) {
+                $errorCount++;
+            }
+
             $responses[] = array_filter([
                 "location" => $responseData?->meta?->location ?? null,
                 "method" => $method,
                 "bulkId" => $bulkId,
                 "version" => $responseData?->meta?->version ?? null,
-                "status" => $response->getStatusCode(),
-                "response" => $response->getStatusCode() >= 400 ? $responseData : null,
+                "status" => $status,
+                "response" => $status >= 400 ? $responseData : null,
             ]);
+
+            if ($failOnErrors !== null && $errorCount >= $failOnErrors) {
+                $remaining = array_slice($operations, $index + 1);
+
+                foreach ($remaining as $remainingOperation) {
+                    $responses[] = array_filter([
+                        'method' => $remainingOperation['method'],
+                        'bulkId' => $remainingOperation['bulkId'] ?? null,
+                        'status' => 424,
+                        'response' => [
+                            'schemas' => ['urn:ietf:params:scim:api:messages:2.0:Error'],
+                            'scimType' => 'cancelled',
+                            'detail' => 'Operation cancelled because failOnErrors threshold was reached.',
+                        ],
+                    ]);
+                }
+
+                break;
+            }
         }
 
         // Return a response indicating the successful processing of the SCIM BULK request

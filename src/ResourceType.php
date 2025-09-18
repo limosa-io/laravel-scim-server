@@ -14,6 +14,7 @@ class ResourceType
 
     public function __construct($name, $configuration)
     {
+        $this->name = $name;
         $this->configuration = $configuration;
     }
 

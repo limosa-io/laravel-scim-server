@@ -15,7 +15,6 @@ use ArieTimmerman\Laravel\SCIMServer\Events\Replace;
 use ArieTimmerman\Laravel\SCIMServer\Events\Patch;
 use ArieTimmerman\Laravel\SCIMServer\Parser\Parser as ParserParser;
 use ArieTimmerman\Laravel\SCIMServer\PolicyDecisionPoint;
-use ArieTimmerman\Laravel\SCIMServer\Tests\Model\User;
 use Illuminate\Contracts\Pagination\CursorPaginator;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Pagination\Cursor;
@@ -102,14 +101,14 @@ class ResourceController extends Controller
     {
         $resourceObject = $this->createObject($request, $pdp, $resourceType, $isMe);
 
-        return Helper::objectToSCIMResponse($resourceObject, $resourceType)->setStatusCode(201);
+        return $this->respondWithResource($request, $resourceType, $resourceObject, 201);
     }
 
     public function show(Request $request, PolicyDecisionPoint $pdp, ResourceType $resourceType, Model $resourceObject)
     {
         event(new Get($resourceObject, $resourceType, null, $request->input()));
 
-        return Helper::objectToSCIMResponse($resourceObject, $resourceType);
+        return $this->respondWithResource($request, $resourceType, $resourceObject);
     }
 
     public function delete(Request $request, PolicyDecisionPoint $pdp, ResourceType $resourceType, Model $resourceObject)
@@ -131,7 +130,7 @@ class ResourceController extends Controller
 
         $flattened = $this->validateScim($resourceType, $newObject, $resourceObject);
 
-        if (!static::isAllowed($pdp, $request, PolicyDecisionPoint::OPERATION_PATCH, $flattened, $resourceType, null)) {
+        if (!static::isAllowed($pdp, $request, PolicyDecisionPoint::OPERATION_PUT, $flattened, $resourceType, null)) {
             throw new SCIMException('This is not allowed');
         }
 
@@ -139,7 +138,7 @@ class ResourceController extends Controller
 
         event(new Replace($resourceObject, $resourceType, $isMe, $request->input(), $originalRaw));
 
-        return Helper::objectToSCIMResponse($resourceObject, $resourceType);
+        return $this->respondWithResource($request, $resourceType, $resourceObject);
     }
 
     public function update(Request $request, PolicyDecisionPoint $pdp, ResourceType $resourceType, Model $resourceObject, $isMe = false)
@@ -194,7 +193,7 @@ class ResourceController extends Controller
 
         event(new Patch($resourceObject, $resourceType, $isMe, $request->input(), $oldObject));
 
-        return Helper::objectToSCIMResponse($resourceObject, $resourceType);
+        return $this->respondWithResource($request, $resourceType, $resourceObject);
     }
 
 
@@ -291,22 +290,7 @@ class ResourceController extends Controller
             $resources = $resourceObjects->get();
         }
 
-        // TODO: splitting the attributes parameters by dot and comma is not correct, but works in most cases
-        // if body contains attributes and this is an array, use that, else use existing
-        if($request->json('attributes') && is_array($request->json('attributes'))){
-            $attributes = $request->json('attributes');
-        } else {
-            $attributes = $request->input('attributes') ? preg_split('/[,.]/', $request->input('attributes')) : [];
-        }
-
-        if (!empty($attributes)) {
-            $attributes[] = 'id';
-            $attributes[] = 'meta';
-            $attributes[] = 'schemas';
-        }
-
-        // TODO: implement excludedAttributes
-        $excludedAttributes = [];
+        [$attributes, $excludedAttributes] = $this->resolveAttributeParameters($request);
 
         return new ListResponse(
             $resources,
@@ -333,5 +317,71 @@ class ResourceController extends Controller
         $request->replace($request->json()->all());
 
         return $this->index($request, $pdp, $resourceType);
+    }
+
+    protected function respondWithResource(Request $request, ResourceType $resourceType, Model $resourceObject, int $status = 200)
+    {
+        [$attributes, $excludedAttributes] = $this->resolveAttributeParameters($request);
+
+        return Helper::objectToSCIMResponse($resourceObject, $resourceType, $attributes, $excludedAttributes)
+            ->setStatusCode($status);
+    }
+
+    protected function resolveAttributeParameters(Request $request): array
+    {
+        $attributes = $this->extractAttributeList($request, 'attributes');
+        $excludedAttributes = $this->extractAttributeList($request, 'excludedAttributes');
+
+        if (!empty($attributes)) {
+            $attributes = array_values(array_unique(array_merge($attributes, ['id', 'meta', 'schemas'])));
+        }
+
+        if (!empty($excludedAttributes)) {
+            $excludedAttributes = array_values(array_unique($excludedAttributes));
+        }
+
+        return [$attributes, $excludedAttributes];
+    }
+
+    private function extractAttributeList(Request $request, string $key): array
+    {
+        $value = $request->json($key, null);
+
+        if ($value === null) {
+            $value = $request->input($key);
+        }
+
+        return $this->normalizeAttributeList($value);
+    }
+
+    private function normalizeAttributeList($value): array
+    {
+        if (is_array($value)) {
+            $normalized = [];
+
+            foreach ($value as $item) {
+                if (!is_string($item)) {
+                    continue;
+                }
+
+                $trimmed = trim($item);
+
+                if ($trimmed !== '') {
+                    $normalized[] = $trimmed;
+                }
+            }
+
+            return array_values(array_unique($normalized));
+        }
+
+        if (is_string($value)) {
+            $parts = preg_split('/\s*,\s*/', $value);
+
+            $normalized = array_filter(array_map('trim', $parts), fn ($item) => $item !== '');
+
+            return array_values(array_unique($normalized));
+        }
+
+        return [];
     }
 }

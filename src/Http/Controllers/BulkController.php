@@ -3,6 +3,7 @@
 namespace ArieTimmerman\Laravel\SCIMServer\Http\Controllers;
 
 use ArieTimmerman\Laravel\SCIMServer\Exceptions\SCIMException;
+use ArieTimmerman\Laravel\SCIMServer\SCIMConfig;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 
@@ -66,6 +67,14 @@ class BulkController extends Controller
         // Remove everything till the last occurence of Bulk, e.g. /scim/v2/Bulk should become /scim/v2/
         $prefix = substr($originalRequest->path(), 0, strrpos($originalRequest->path(), '/Bulk'));
 
+        $resourceTypeConfig = resolve(SCIMConfig::class)->getConfig();
+        $resourceTypePattern = null;
+
+        if (!empty($resourceTypeConfig)) {
+            $escapedResourceTypes = array_map(static fn ($name) => preg_quote($name, '/'), array_keys($resourceTypeConfig));
+            $resourceTypePattern = '/^\/(' . implode('|', $escapedResourceTypes) . ')(?:\/|\?|$)/';
+        }
+
         foreach ($operations as $index => $operation) {
             
             $method = $operation['method'];
@@ -81,9 +90,7 @@ class BulkController extends Controller
             $encoded = str_replace(array_keys($bulkIdMapping), array_values($bulkIdMapping), $encoded);
             $path = str_replace(array_keys($bulkIdMapping), array_values($bulkIdMapping), $operation['path']);
 
-            // TODO: Allow BULK requests for all configured resource types (RFC 7644 §3.7).
-            // ensure $path starts with /Users or /Groups
-            if (!preg_match('/^\/(Users|Groups)/', $path)) {
+            if ($resourceTypePattern === null || !preg_match($resourceTypePattern, $path)) {
                 throw (new SCIMException('Invalid path!'))->setCode(400)->setScimType('invalidPath');
             }
 

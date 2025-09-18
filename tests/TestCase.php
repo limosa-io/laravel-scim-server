@@ -53,6 +53,14 @@ abstract class TestCase extends BaseTestCase
         \ArieTimmerman\Laravel\SCIMServer\RouteProvider::routes();
 
         $users = factory(User::class, 100)->create();
+
+        if (!$users->contains(fn ($user) => (bool)$user->active)) {
+            optional($users->first())->update(['active' => true]);
+        }
+
+        if (!$users->contains(fn ($user) => !(bool)$user->active)) {
+            optional($users->firstWhere('active', true) ?? $users->first())->update(['active' => false]);
+        }
         $groups = factory(Group::class, 100)->create();
 
         $users->each(function ($user) use ($groups) {

@@ -19,6 +19,11 @@ class Collection extends AbstractComplex
         $this->attribute = $attribute ?? $name;
     }
 
+    public function getRelationshipName(): string
+    {
+        return $this->attribute;
+    }
+
     public function read(&$object, array $attributes = []): ?AttributeValue
     {
         if (!empty($attributes) && !in_array($this->name, $attributes) && !in_array($this->getFullKey(), $attributes)) {

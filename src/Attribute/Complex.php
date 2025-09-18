@@ -70,6 +70,7 @@ class Complex extends AbstractComplex
                     throw new SCIMException('Unknown path: ' . (string)$path . ", in object: " . $this->getFullKey());
                 }
             } elseif ($path->getValuePathFilter() != null) {
+                // TODO: Handle valuePath filters for PATCH operations on multi-valued attributes (RFC 7644 §3.5.2).
                 // apply filtering here, for each match, call replace with updated path
                 throw new \Exception('Filtering not implemented for this complex attribute');
             } elseif ($path->getAttributePath() != null) {

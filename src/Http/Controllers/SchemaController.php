@@ -1,8 +1,6 @@
 <?php
 
 namespace ArieTimmerman\Laravel\SCIMServer\Http\Controllers;
-
-use Tmilos\ScimSchema\Builder\SchemaBuilderV2;
 use ArieTimmerman\Laravel\SCIMServer\SCIM\ListResponse;
 use ArieTimmerman\Laravel\SCIMServer\Exceptions\SCIMException;
 use ArieTimmerman\Laravel\SCIMServer\SCIMConfig;

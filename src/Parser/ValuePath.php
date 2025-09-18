@@ -2,44 +2,37 @@
 
 namespace ArieTimmerman\Laravel\SCIMServer\Parser;
 
-use Tmilos\ScimFilterParser\Ast\ValuePath as ScimFilterParserAstValuePath;
+use ArieTimmerman\Laravel\SCIMServer\Filter\Ast\ValuePath as AstValuePath;
 
-class ValuePath {
-    public $path;
+class ValuePath
+{
+    public AttributePath $attributePath;
 
-    public $attributePath = null;
-    public $filter = null;
+    public ?Filter $filter;
 
-    public function __construct(ScimFilterParserAstValuePath $path){
-        $this->path = $path;
-
-        $getAttributePath = function () {
-            return $this->attributePath;
-        };
-
-        $this->attributePath = new AttributePath($getAttributePath->call($this->path));
-
-        $getFilter = function () {
-            return $this->filter;
-        };
-
-        $this->filter = new Filter($getFilter->call($this->path));
-
+    public function __construct(public AstValuePath $path)
+    {
+        $this->attributePath = new AttributePath($this->path->getAttributePath());
+        $this->filter = new Filter($this->path->getFilter());
     }
-    
-    public function getAttributePath(): AttributePath{
+
+    public function getAttributePath(): AttributePath
+    {
         return $this->attributePath;
     }
 
-    public function setAttributePath(AttributePath $attributePath){
+    public function setAttributePath(AttributePath $attributePath): void
+    {
         $this->attributePath = $attributePath;
     }
 
-    public function getFilter(): Filter{
+    public function getFilter(): ?Filter
+    {
         return $this->filter;
     }
 
-    public function setFilter($filter){
+    public function setFilter(?Filter $filter): void
+    {
         $this->filter = $filter;
     }
 }

@@ -15,6 +15,7 @@ use ArieTimmerman\Laravel\SCIMServer\Events\Replace;
 use ArieTimmerman\Laravel\SCIMServer\Events\Patch;
 use ArieTimmerman\Laravel\SCIMServer\Parser\Parser as ParserParser;
 use ArieTimmerman\Laravel\SCIMServer\PolicyDecisionPoint;
+use ArieTimmerman\Laravel\SCIMServer\Filter\Exception\FilterException as ParserFilterException;
 use Illuminate\Contracts\Pagination\CursorPaginator;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Pagination\Cursor;
@@ -231,9 +232,8 @@ class ResourceController extends Controller
             $filter = $request->input('filter'),
             function (Builder $query) use ($filter, $resourceType) {
                 try {
-
                     Helper::scimFilterToLaravelQuery($resourceType, $query, ParserParser::parseFilter($filter));
-                } catch (\Tmilos\ScimFilterParser\Error\FilterException $e) {
+                } catch (ParserFilterException $e) {
                     throw (new SCIMException($e->getMessage()))->setCode(400)->setScimType('invalidFilter');
                 }
             }

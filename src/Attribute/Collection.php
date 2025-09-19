@@ -9,6 +9,8 @@ use Illuminate\Database\Eloquent\Model;
 
 class Collection extends AbstractComplex
 {
+    protected $type = 'complex';
+
     protected $attribute;
     protected $multiValued = true;
 

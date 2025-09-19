@@ -64,6 +64,19 @@ class SchemaTest extends TestCase
         $this->assertNotNull($activeAttribute, "Active attribute not found");
         $this->assertEquals('boolean', $activeAttribute['type'], "Active attribute is not of type boolean");
 
+        // Inspect the group schema to validate collection metadata for members.
+        $groupSchema = collect($jsonResponse['Resources'] ?? [])->firstWhere('id', 'urn:ietf:params:scim:schemas:core:2.0:Group');
+
+        $this->assertNotNull($groupSchema, 'Group schema not found');
+
+        $membersAttribute = collect($groupSchema['attributes'] ?? [])->firstWhere('name', 'members');
+
+        $this->assertNotNull($membersAttribute, 'members attribute missing from Group schema');
+        $this->assertSame('complex', $membersAttribute['type']);
+        $this->assertTrue($membersAttribute['multiValued']);
+        $this->assertSame('A list of members of the Group.', $membersAttribute['description']);
+        $this->assertNotEmpty($membersAttribute['subAttributes']);
+
     }
 
     public function getSchemaGenerator(){

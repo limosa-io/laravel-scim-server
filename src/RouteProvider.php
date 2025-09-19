@@ -71,8 +71,9 @@ class RouteProvider
 
     private static function allRoutes(array $options = [])
     {
-        // TODO: Implement POST /.search for cross-resource queries per RFC 7644 §3.4.3.
-        Route::post('.search', [\ArieTimmerman\Laravel\SCIMServer\Http\Controllers\ResourceController::class, 'notImplemented']);
+        Route::get('/', [\ArieTimmerman\Laravel\SCIMServer\Http\Controllers\ResourceController::class, 'crossResourceIndex']);
+        Route::get('', [\ArieTimmerman\Laravel\SCIMServer\Http\Controllers\ResourceController::class, 'crossResourceIndex']);
+        Route::post('.search', [\ArieTimmerman\Laravel\SCIMServer\Http\Controllers\ResourceController::class, 'crossResourceSearch']);
 
         Route::post("/Bulk", [\ArieTimmerman\Laravel\SCIMServer\Http\Controllers\BulkController::class, 'processBulkRequest']);
 

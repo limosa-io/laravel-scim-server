@@ -2,7 +2,7 @@
 
 namespace ArieTimmerman\Laravel\SCIMServer\Filter\Ast;
 
-class Disjunction extends Filter
+class Disjunction extends Term
 {
     /** @var Term[] */
     private array $terms = [];

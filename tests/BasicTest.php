@@ -167,6 +167,24 @@ class BasicTest extends TestCase
 
     }
 
+    public function testCursorPaginationDisabled()
+    {
+        config(['scim.pagination.cursorPaginationEnabled' => false]);
+
+        try {
+            $response = $this->get('/scim/v2/Users?count=60&cursor');
+
+            $response->assertStatus(400);
+            $response->assertJson([
+                'schemas' => ['urn:ietf:params:scim:api:messages:2.0:Error'],
+                'status' => '400',
+                'scimType' => 'invalidCursor'
+            ]);
+        } finally {
+            config(['scim.pagination.cursorPaginationEnabled' => true]);
+        }
+    }
+
     public function testPagination()
     {
         $response = $this->get('/scim/v2/Users?startIndex=21&count=20');

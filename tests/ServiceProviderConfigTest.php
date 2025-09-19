@@ -16,6 +16,22 @@ class ServiceProviderConfigTest extends TestCase
     {
         $response = $this->get('/scim/v2/ServiceProviderConfig');
         $response->assertStatus(200);
+        $this->assertTrue($response->json('pagination.cursor'));
+        $this->assertSame(3600, $response->json('pagination.cursorTimeout'));
+    }
+
+    public function testCursorPaginationCanBeDisabled()
+    {
+        config(['scim.pagination.cursorPaginationEnabled' => false]);
+
+        try {
+            $response = $this->get('/scim/v2/ServiceProviderConfig');
+            $response->assertStatus(200);
+            $this->assertFalse($response->json('pagination.cursor'));
+            $this->assertArrayNotHasKey('cursorTimeout', $response->json('pagination') ?? []);
+        } finally {
+            config(['scim.pagination.cursorPaginationEnabled' => true]);
+        }
     }
 
 }

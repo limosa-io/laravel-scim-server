@@ -1,4 +1,3 @@
-
 ![](https://github.com/arietimmerman/laravel-scim-server/workflows/CI/badge.svg)
 [![Latest Stable Version](https://poser.pugx.org/arietimmerman/laravel-scim-server/v/stable)](https://packagist.org/packages/arietimmerman/laravel-scim-server)
 [![Total Downloads](https://poser.pugx.org/arietimmerman/laravel-scim-server/downloads)](https://packagist.org/packages/arietimmerman/laravel-scim-server)
@@ -7,71 +6,91 @@
 
 # SCIM 2.0 Server implementation for Laravel
 
-Add SCIM 2.0 Server capabilities to your Laravel application with ease. This package requires minimal configuration to get started with basic functionalities.
+Add SCIM 2.0 Server capabilities to your Laravel application with ease. This package requires minimal configuration to get started with the core SCIM flows and is powering [The SCIM Playground](https://scim.dev), one of the most widely tested SCIM servers available.
 
-This implementation is used by [The SCIM Playground](https://scim.dev) and is therefore one of the most widely tested SCIM servers available.
-## Docker
+## Why Laravel SCIM Server?
+- Battle-tested with real-world providers through the SCIM Playground
+- Familiar Laravel tooling and middleware integration
+- Fully extensible configuration for resources, attributes, and filtering
+- Ships with dockerized demo and an expressive test suite
 
-To quickly spin up a SCIM test server using Docker, run:
+## Table of contents
+- [Quick start](#quick-start)
+- [Installation](#installation)
+- [SCIM routes](#scim-routes)
+- [Configuration](#configuration)
+- [Security & app integration](#security--app-integration)
+- [Test server](#test-server)
+- [Contributing & support](#contributing--support)
 
-~~~
+## Quick start
+Spin up a SCIM test server in seconds:
+
+```bash
 docker run -d -p 8000:8000 --name laravel-scim-server ghcr.io/limosa-io/laravel-scim-server:latest
-~~~
+```
 
-This command will start the server and bind it to port 8000 on your local machine. You can then access the SCIM endpoints at `http://localhost:8000/scim/v2/Users`. Other SCIM endpoints like `/Groups`, `/Schemas`, and `/ResourceTypes` will also be available.
+Visit `http://localhost:8000/scim/v2/Users` (or `/Groups`, `/Schemas`, `/ResourceTypes`, etc.) to exercise the API.
 
 ## Installation
+Add the package to your Laravel app:
 
-Simply run:
-
-~~~
+```bash
 composer require arietimmerman/laravel-scim-server
-~~~
+```
 
-And optionally
+Optionally publish the config for fine-grained control:
 
-~~~
+```bash
 php artisan vendor:publish --tag=laravel-scim
-~~~
+```
 
-# Routes
+## SCIM routes
 
-| Method | Path |
-|--------|------|
-| GET\|HEAD | / |
-| GET\|HEAD | scim/v1 |
-| GET\|HEAD | scim/v1/{fallbackPlaceholder} |
-| POST | scim/v2/.search |
-| POST | scim/v2/Bulk |
-| GET\|HEAD | scim/v2/ResourceTypes |
-| GET\|HEAD | scim/v2/ResourceTypes/{id} |
-| GET\|HEAD | scim/v2/Schemas |
-| GET\|HEAD | scim/v2/Schemas/{id} |
-| GET\|HEAD | scim/v2/ServiceProviderConfig |
-| GET\|HEAD | scim/v2/{fallbackPlaceholder} |
-| GET\|HEAD | scim/v2/{resourceType} |
-| POST | scim/v2/{resourceType} |
-| POST | scim/v2/{resourceType}/.search |
-| GET\|HEAD | scim/v2/{resourceType}/{resourceObject} |
-| PUT | scim/v2/{resourceType}/{resourceObject} |
-| PATCH | scim/v2/{resourceType}/{resourceObject} |
-| DELETE | scim/v2/{resourceType}/{resourceObject} |
+| Method | Path | Description |
+|--------|------|-------------|
+| GET | /scim/v1 | SCIM 1.x compatibility message (returns error with upgrade guidance) |
+| GET | /scim/v2 | Cross-resource index (alias of `/scim/v2/`) |
+| GET | /scim/v2/ | Cross-resource index |
+| POST | /scim/v2/.search | Cross-resource search across all types |
+| POST | /scim/v2/Bulk | SCIM bulk operations |
+| GET | /scim/v2/ResourceTypes | List available resource types |
+| GET | /scim/v2/ResourceTypes/{id} | Retrieve a specific resource type |
+| GET | /scim/v2/Schemas | List SCIM schemas |
+| GET | /scim/v2/Schemas/{id} | Retrieve a specific schema |
+| GET | /scim/v2/ServiceProviderConfig | Discover server capabilities |
+| GET | /scim/v2/{resourceType} | List resources of a given type |
+| POST | /scim/v2/{resourceType} | Create a new resource |
+| POST | /scim/v2/{resourceType}/.search | Filter resources of a given type |
+| GET | /scim/v2/{resourceType}/{resourceObject} | Retrieve a single resource |
+| PUT | /scim/v2/{resourceType}/{resourceObject} | Replace a resource |
+| PATCH | /scim/v2/{resourceType}/{resourceObject} | Update a resource |
+| DELETE | /scim/v2/{resourceType}/{resourceObject} | Delete a resource |
 
+Optional "Me" routes can be enabled separately:
 
-# Configuration
+| Method | Path | Description |
+|--------|------|-------------|
+| GET | /scim/v2/Me | Retrieve the SCIM resource for the authenticated subject |
+| PUT | /scim/v2/Me | Replace the SCIM resource for the authenticated subject |
+| POST | /scim/v2/Me | Create the authenticated subject (requires `RouteProvider::meRoutePost()`) |
 
-The configuration is retrieved from `SCIMConfig::class`.
+## Configuration
 
-Extend this class and register your extension in `app/Providers/AppServiceProvider.php` like this.
+The package resolves configuration via `SCIMConfig::class`. Extend it to tweak resource definitions, attribute mappings, filters, or pagination defaults.
 
-~~~.php
-$this->app->singleton('ArieTimmerman\Laravel\SCIMServer\SCIMConfig', YourCustomSCIMConfig::class);
-~~~
+Register your custom config in `app/Providers/AppServiceProvider.php`:
 
-## An example override
+```php
+$this->app->singleton(
+    \ArieTimmerman\Laravel\SCIMServer\SCIMConfig::class,
+    YourCustomSCIMConfig::class
+);
+```
 
-Here's one way to override the default configuration without copying too much of the SCIMConfig file into your app.
-~~~.php
+Minimal override example:
+
+```php
 <?php
 
 class YourCustomSCIMConfig extends \ArieTimmerman\Laravel\SCIMServer\SCIMConfig
@@ -80,59 +99,61 @@ class YourCustomSCIMConfig extends \ArieTimmerman\Laravel\SCIMServer\SCIMConfig
     {
         $config = parent::getUserConfig();
 
-        // Modify the $config variable however you need...
+        // Customize $config as needed.
 
         return $config;
     }
 }
-~~~
-
-
-# Security & App Integration
-
-By default, this package does no security checks on its own. This can be dangerous, in that a functioning SCIM Server can view, add, update, delete, or list users. 
-You are welcome to implement your own security checks at the middleware layer, 
-or somehow/somewhere else that makes sense for your application. But make sure to do **something**.
-
-If you want to integrate into _already existing_ middleware, you'll want to take the following steps - 
-
-## Turn off automatic publishing of routes
-
-Modify `config/scim.php` like this:
-```php
-<?php
-return [
-    "publish_routes" => false
-];
 ```
 
-## Next, explicitly publish your routes with your choice of middleware
-
-In either your RouteServiceProvider, or in a particular route file, add the following:
+### Pagination settings
+Cursor-based pagination is enabled by default via the [SCIM cursor pagination draft](https://datatracker.ietf.org/doc/draft-ietf-scim-cursor-pagination/). Publish the config file and update `config/scim.php` to adjust defaults:
 
 ```php
-use ArieTimmerman\Laravel\SCIMServer\RouteProvider as SCIMServerRouteProvider;
-
-SCIMServerRouteProvider::publicRoutes(); // Make sure to add public routes *first*
-
-
-Route::middleware('auth:api')->group(function () { // or any other middleware you choose
-    SCIMServerRouteProvider::routes(
-        [
-            'public_routes' => false // but do not hide public routes (metadata) behind authentication
-        ]
-    );
-
-    SCIMServerRouteProvider::meRoutes();
-});
-
-
+'pagination' => [
+    'defaultPageSize' => 10,
+    'maxPageSize' => 100,
+    'cursorPaginationEnabled' => false,
+]
 ```
 
-# Test server
+## Security & app integration
+SCIM grants the ability to view, add, update, and delete users or groups. Make sure you secure the routes before shipping to production.
 
-~~~
+1. Disable automatic route publishing if you plan to wrap routes in your own middleware:
+
+   ```php
+   // config/scim.php
+   return [
+       'publish_routes' => false,
+   ];
+   ```
+
+2. Re-register the routes with your preferred middleware stack:
+
+   ```php
+   use ArieTimmerman\Laravel\SCIMServer\RouteProvider as SCIMServerRouteProvider;
+
+   SCIMServerRouteProvider::publicRoutes();
+
+   Route::middleware('auth:api')->group(function () {
+       SCIMServerRouteProvider::routes([
+           'public_routes' => false,
+       ]);
+
+       SCIMServerRouteProvider::meRoutes();
+   });
+   ```
+
+## Test server
+Bring up the full demo stack with Docker Compose:
+
+```bash
 docker-compose up
-~~~
+```
 
-Now visit `http://localhost:18123/scim/v2/Users`.
+Browse to `http://localhost:18123/scim/v2/Users` to explore the API and run the test suite.
+
+## Contributing & support
+- Issues and pull requests are welcome on [GitHub](https://github.com/arietimmerman/laravel-scim-server)
+- Found this package helpful? [Give it a star on GitHub](https://github.com/arietimmerman/laravel-scim-server) so others can discover it faster

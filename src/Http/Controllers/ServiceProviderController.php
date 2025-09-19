@@ -8,6 +8,20 @@ class ServiceProviderController extends Controller
 {
     public function index()
     {
+        $cursorPaginationEnabled = (bool) config('scim.pagination.cursorPaginationEnabled', true);
+
+        $pagination = [
+            "cursor" => $cursorPaginationEnabled,
+            "index" => true,
+            "defaultPaginationMethod" => "index",
+            "defaultPageSize" => config('scim.pagination.defaultPageSize'),
+            "maxPageSize" => config('scim.pagination.maxPageSize'),
+        ];
+
+        if ($cursorPaginationEnabled) {
+            $pagination["cursorTimeout"] = 3600;
+        }
+
         return [
             "schemas" => ["urn:ietf:params:scim:schemas:core:2.0:ServiceProviderConfig"],
             "patch" => [
@@ -50,14 +64,7 @@ class ServiceProviderController extends Controller
                     "type" => "httpbasic",
                 ],
             ],
-            "pagination" => [
-                "cursor" => true,
-                "index" => true,
-                "defaultPaginationMethod" => "index",
-                "defaultPageSize" => config('scim.pagination.defaultPageSize'),
-                "maxPageSize" => config('scim.pagination.maxPageSize'),
-                "cursorTimeout" => 3600
-            ],
+            "pagination" => $pagination,
             "meta" => [
                 "location" => route('scim.serviceproviderconfig'),
                 "resourceType" => "ServiceProviderConfig",

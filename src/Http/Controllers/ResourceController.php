@@ -213,6 +213,7 @@ class ResourceController extends Controller
     public function index(Request $request, PolicyDecisionPoint $pdp, ResourceType $resourceType)
     {
         $query = $resourceType->getQuery();
+        $cursorPaginationEnabled = (bool) config('scim.pagination.cursorPaginationEnabled', true);
 
         // if both cursor and startIndex are present, throw an exception
         if ($request->has('cursor') && $request->has('startIndex')) {
@@ -256,6 +257,9 @@ class ResourceController extends Controller
 
         $resources = null;
         if ($request->has('cursor')) {
+            if (!$cursorPaginationEnabled) {
+                throw (new SCIMException('Cursor pagination is disabled.'))->setCode(400)->setScimType('invalidCursor');
+            }
             if($sortBy == null){
                 $resourceObjects = $resourceObjects->orderBy('id');
             }

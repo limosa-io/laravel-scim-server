@@ -6,10 +6,7 @@ use Illuminate\Database\Eloquent\Casts\AsCollection;
 
 class User extends \Illuminate\Foundation\Auth\User
 {
-
-    protected $fillable = [
-        'roles',
-    ];
+    protected $guarded = [];
 
     protected $casts = [
         'active' => 'boolean',

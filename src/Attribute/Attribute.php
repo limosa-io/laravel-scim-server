@@ -65,7 +65,7 @@ class Attribute
      */
     public function generateSchema()
     {
-        return [
+        $schema = [
             'name' => $this->name,
             'type' => $this->getType(),
             'mutability' => $this->mutability,
@@ -75,6 +75,12 @@ class Attribute
             'multiValued' => $this->getMultiValued(),
             'caseExact' => false
         ];
+
+        if ($this->description !== null) {
+            $schema['description'] = $this->description;
+        }
+
+        return $schema;
     }
 
     public function setMultiValued($multiValued)
@@ -161,6 +167,13 @@ class Attribute
     public function setParent($parent)
     {
         $this->parent = $parent;
+        return $this;
+    }
+
+    public function setDescription(?string $description)
+    {
+        $this->description = $description;
+
         return $this;
     }
 

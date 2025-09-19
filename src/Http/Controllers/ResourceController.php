@@ -7,6 +7,7 @@ use Illuminate\Http\Request;
 use ArieTimmerman\Laravel\SCIMServer\Helper;
 use ArieTimmerman\Laravel\SCIMServer\Exceptions\SCIMException;
 use ArieTimmerman\Laravel\SCIMServer\ResourceType;
+use ArieTimmerman\Laravel\SCIMServer\SCIMConfig;
 use Illuminate\Database\Eloquent\Model;
 use ArieTimmerman\Laravel\SCIMServer\Events\Delete;
 use ArieTimmerman\Laravel\SCIMServer\Events\Get;
@@ -304,6 +305,24 @@ class ResourceController extends Controller
         );
     }
 
+    public function crossResourceSearch(Request $request, PolicyDecisionPoint $pdp, SCIMConfig $config)
+    {
+        $input = $request->json()->all();
+
+        if (!is_array($input) || !isset($input['schemas']) || !in_array('urn:ietf:params:scim:api:messages:2.0:SearchRequest', $input['schemas'])) {
+            throw (new SCIMException('Invalid schema. MUST be "urn:ietf:params:scim:api:messages:2.0:SearchRequest"'))->setCode(400);
+        }
+
+        $request->replace($input);
+
+        return $this->runCrossResourceQuery($request, $config);
+    }
+
+    public function crossResourceIndex(Request $request, PolicyDecisionPoint $pdp, SCIMConfig $config)
+    {
+        return $this->runCrossResourceQuery($request, $config);
+    }
+
     public function search(Request $request, PolicyDecisionPoint $pdp, ResourceType $resourceType){
 
         $input = $request->json()->all();
@@ -317,6 +336,126 @@ class ResourceController extends Controller
         $request->replace($request->json()->all());
 
         return $this->index($request, $pdp, $resourceType);
+    }
+
+    protected function runCrossResourceQuery(Request $request, SCIMConfig $config): ListResponse
+    {
+        if ($request->has('cursor')) {
+            throw (new SCIMException('Cursor pagination is not supported for cross-resource search'))->setCode(400)->setScimType('invalidCursor');
+        }
+
+        [$attributes, $excludedAttributes] = $this->resolveAttributeParameters($request);
+
+        $count = min(max(0, intVal($request->input('count', config('scim.pagination.defaultPageSize')))), config('scim.pagination.maxPageSize'));
+        $startIndex = max(1, intVal($request->input('startIndex', 1)));
+
+        $resourceTypes = $this->resolveResourceTypesForSearch($config);
+
+        if (empty($resourceTypes)) {
+            return new ListResponse(collect(), $startIndex, 0, $attributes, $excludedAttributes);
+        }
+
+        if ($request->filled('sortBy') && count($resourceTypes) > 1) {
+            throw (new SCIMException('sortBy is only supported when a single resourceType is requested'))->setCode(400)->setScimType('invalidValue');
+        }
+
+        $sortAttribute = null;
+        $sortDirection = $request->input('sortOrder') === 'descending' ? 'desc' : 'asc';
+
+        if ($request->filled('sortBy')) {
+            $sortAttribute = $resourceTypes[0]->getMapping()->getSortAttributeByPath(ParserParser::parse($request->input('sortBy')));
+        }
+
+        $filter = $request->input('filter');
+
+        $resources = collect();
+        $offset = $startIndex - 1;
+        $remaining = $count;
+        $perTypeTotals = [];
+        $totalResults = 0;
+
+        $applyFilter = function (Builder $query, ResourceType $resourceType) use ($filter) {
+            if ($filter === null) {
+                return;
+            }
+
+            try {
+                Helper::scimFilterToLaravelQuery($resourceType, $query, ParserParser::parseFilter($filter));
+            } catch (ParserFilterException $e) {
+                throw (new SCIMException($e->getMessage()))->setCode(400)->setScimType('invalidFilter');
+            }
+        };
+
+        foreach ($resourceTypes as $resourceType) {
+            $countQuery = $resourceType->getQuery();
+            $applyFilter($countQuery, $resourceType);
+
+            $typeTotal = $countQuery->count();
+            $perTypeTotals[] = [$resourceType, $typeTotal];
+            $totalResults += $typeTotal;
+        }
+
+        foreach ($perTypeTotals as [$resourceType, $typeTotal]) {
+            if ($offset >= $typeTotal) {
+                $offset -= $typeTotal;
+                continue;
+            }
+
+            if ($remaining === 0) {
+                break;
+            }
+
+            $dataQuery = $resourceType->getQuery();
+            $applyFilter($dataQuery, $resourceType);
+
+            $dataQuery = $dataQuery->with($resourceType->getWithRelations());
+
+            if ($sortAttribute !== null) {
+                $dataQuery = $dataQuery->orderBy($sortAttribute, $sortDirection);
+            }
+
+            if ($offset > 0) {
+                $dataQuery = $dataQuery->skip($offset);
+            }
+
+            if ($remaining > 0) {
+                $dataQuery = $dataQuery->take($remaining);
+            }
+
+            $items = $dataQuery->get();
+
+            $offset = 0;
+            $remaining -= $items->count();
+
+            foreach ($items as $item) {
+                $resources->push(
+                    Helper::objectToSCIMArray($item, $resourceType, $attributes, $excludedAttributes)
+                );
+            }
+
+            if ($remaining <= 0) {
+                break;
+            }
+        }
+
+        return new ListResponse($resources, $startIndex, $totalResults, $attributes, $excludedAttributes);
+    }
+
+    protected function resolveResourceTypesForSearch(SCIMConfig $config): array
+    {
+        $configurations = $config->getConfig();
+
+        if (empty($configurations)) {
+            return [];
+        }
+
+        $resourceTypes = [];
+
+        foreach ($configurations as $name => $configuration) {
+            $resourceTypes[] = new ResourceType($name, $configuration);
+        }
+
+        return $resourceTypes;
     }
 
     protected function respondWithResource(Request $request, ResourceType $resourceType, Model $resourceObject, int $status = 200)

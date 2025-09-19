@@ -63,6 +63,17 @@ abstract class TestCase extends BaseTestCase
         }
         $groups = factory(Group::class, 100)->create();
 
+        // Ensure deterministic boundary records for cross-resource pagination tests.
+        optional($users->sortBy('id')->last())->update([
+            'name' => 'boundary.user',
+            'formatted' => 'Boundary User',
+            'email' => 'boundary.user@example.test',
+        ]);
+
+        optional($groups->sortBy('id')->first())->update([
+            'displayName' => 'Boundary Group',
+        ]);
+
         $users->each(function ($user) use ($groups) {
             $user->groups()->attach(
                 $groups->random(rand(1, 3))->pluck('id')->toArray()

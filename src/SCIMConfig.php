@@ -184,7 +184,9 @@ class SCIMConfig
                             $fail('The name has already been taken.');
                         }
                     }),
-                    (new MutableCollection('members'))->withSubAttributes(
+                    (new MutableCollection('members'))
+                    ->setDescription('A list of members of the Group.')
+                    ->withSubAttributes(
                         eloquent('value', 'id')->ensure('required'),
                         (new class ('$ref') extends Eloquent {
                             protected function doRead(&$object, $attributes = [])

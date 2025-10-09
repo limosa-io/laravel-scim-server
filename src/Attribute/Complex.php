@@ -215,6 +215,11 @@ class Complex extends AbstractComplex
             return;
         }
 
+        // if value is empty, nothing to do
+        if (empty($value)) {
+            return;
+        }
+
         // if there is no path, keys of value are attribute paths
         foreach ($value as $key => $v) {
             if (is_numeric($key)) {

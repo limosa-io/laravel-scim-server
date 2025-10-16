@@ -68,7 +68,14 @@ class ServiceProvider extends \Illuminate\Support\ServiceProvider
         $router->middleware('SCIMHeaders', 'ArieTimmerman\Laravel\SCIMServer\Middleware\SCIMHeaders');
 
         if (config('scim.publish_routes')) {
-            \ArieTimmerman\Laravel\SCIMServer\RouteProvider::routes();
+            $routeOptions = [
+                'path' => config('scim.path', '/scim'),
+                'domain' => config('scim.domain'),
+                'middleware' => config('scim.middleware', []),
+                'public_middleware' => config('scim.public_middleware', []),
+            ];
+
+            \ArieTimmerman\Laravel\SCIMServer\RouteProvider::routes($routeOptions);
         }
     }
 

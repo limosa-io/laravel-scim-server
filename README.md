@@ -77,6 +77,54 @@ Optional "Me" routes can be enabled separately:
 
 ## Configuration
 
+### Route Configuration
+
+The SCIM server routes can be customized using the following configuration options in `config/scim.php`:
+
+```php
+return [
+    // Base path for all SCIM routes
+    'path' => env('SCIM_BASE_PATH', '/scim'),
+
+    // Optional domain to restrict SCIM endpoints to
+    'domain' => env('SCIM_DOMAIN', null),
+
+    // Middleware for protected routes (resource operations)
+    'middleware' => env('SCIM_MIDDLEWARE', []),
+
+    // Middleware for public routes (ServiceProviderConfig, Schemas, ResourceTypes)
+    'public_middleware' => env('SCIM_PUBLIC_MIDDLEWARE', []),
+];
+```
+
+You can override these in your `.env` file:
+
+```
+SCIM_BASE_PATH=/scim/api
+SCIM_MIDDLEWARE=api,auth:sanctum
+SCIM_PUBLIC_MIDDLEWARE=api
+```
+
+If you need more control, you can disable route auto-publishing and register the routes manually:
+
+```php
+// config/scim.php
+return [
+    'publish_routes' => false,
+    // other config...
+];
+
+// In your RouteServiceProvider or a custom service provider:
+ArieTimmerman\Laravel\SCIMServer\RouteProvider::routes([
+    'path' => '/custom-scim',
+    'domain' => 'api.example.com',
+    'middleware' => ['api', 'auth:api', 'scoped-tokens'],
+    'public_middleware' => ['api', 'rate-limit'],
+]);
+```
+
+### Resource Configuration
+
 The package resolves configuration via `SCIMConfig::class`. Extend it to tweak resource definitions, attribute mappings, filters, or pagination defaults.
 
 Register your custom config in `app/Providers/AppServiceProvider.php`:
@@ -120,30 +168,55 @@ Cursor-based pagination is enabled by default via the [SCIM cursor pagination dr
 ## Security & app integration
 SCIM grants the ability to view, add, update, and delete users or groups. Make sure you secure the routes before shipping to production.
 
-1. Disable automatic route publishing if you plan to wrap routes in your own middleware:
+You have two approaches to securing your SCIM endpoints:
 
-   ```php
-   // config/scim.php
-   return [
-       'publish_routes' => false,
-   ];
-   ```
+### Option 1: Configure middleware via config
+The simplest approach is to set middleware in your config:
 
-2. Re-register the routes with your preferred middleware stack:
+```php
+// config/scim.php
+return [
+    'middleware' => ['api', 'auth:sanctum'], // For protected resource routes
+    'public_middleware' => ['api'],          // For schema/discovery endpoints
+];
+```
 
-   ```php
-   use ArieTimmerman\Laravel\SCIMServer\RouteProvider as SCIMServerRouteProvider;
+Or via environment variables:
+```
+SCIM_MIDDLEWARE=api,auth:sanctum
+SCIM_PUBLIC_MIDDLEWARE=api
+```
 
-   SCIMServerRouteProvider::publicRoutes();
+### Option 2: Manual route registration
+For more control, disable automatic route publishing:
 
-   Route::middleware('auth:api')->group(function () {
-       SCIMServerRouteProvider::routes([
-           'public_routes' => false,
-       ]);
+```php
+// config/scim.php
+return [
+    'publish_routes' => false,
+];
+```
 
-       SCIMServerRouteProvider::meRoutes();
-   });
-   ```
+Then re-register the routes with your preferred middleware and configuration:
+
+```php
+use ArieTimmerman\Laravel\SCIMServer\RouteProvider as SCIMServerRouteProvider;
+
+SCIMServerRouteProvider::publicRoutes([
+    'path' => '/scim',
+    'middleware' => ['api'],
+]);
+
+Route::middleware('auth:api')->group(function () {
+    SCIMServerRouteProvider::routes([
+        'path' => '/scim',
+        'middleware' => ['custom-scim-check'],
+        'public_routes' => false,
+    ]);
+
+    SCIMServerRouteProvider::meRoutes();
+});
+```
 
 ## Test server
 Bring up the full demo stack with Docker Compose:

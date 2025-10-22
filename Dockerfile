@@ -146,6 +146,40 @@ class GroupFactory extends Factory
 }
 EOM
 
+# User factory for example app (related username/email/formatted)
+RUN cat > /example/database/factories/UserFactory.php <<'EOM'
+<?php
+
+namespace Database\Factories;
+
+use App\Models\User;
+use Illuminate\Database\Eloquent\Factories\Factory;
+
+class UserFactory extends Factory
+{
+    protected $model = User::class;
+
+    public function definition(): array
+    {
+        $first = $this->faker->firstName();
+        $last  = $this->faker->lastName();
+
+        $formatted = "{$first} {$last}";
+        $base = strtolower(substr($first, 0, 1) . preg_replace('/[^a-z0-9]/i', '', $last));
+        $suffix = $this->faker->unique()->numberBetween(100, 999999);
+        $username = $base . $suffix;
+
+        return [
+            'name' => $username,                 // login username
+            'formatted' => $formatted,           // full name
+            'email' => "{$username}@example.test",
+            'password' => bcrypt('test'),
+            'active' => $this->faker->boolean(),
+        ];
+    }
+}
+EOM
+
 # Pivot table for memberships
 RUN cat > /example/database/migrations/2021_01_01_000002_create_group_user_table.php <<'EOM'
 <?php
@@ -191,8 +225,11 @@ class User extends Authenticatable
 
     protected $fillable = [
         'name',
+        'formatted',
         'email',
         'password',
+        'active',
+        
     ];
 
     protected $hidden = [
@@ -202,6 +239,8 @@ class User extends Authenticatable
 
     protected $casts = [
         'email_verified_at' => 'datetime',
+        'active' => 'boolean',
+        
     ];
 
     public function groups(): BelongsToMany
@@ -225,7 +264,10 @@ class DemoSeeder extends Seeder
 {
     public function run(): void
     {
+        // Create users via the UserFactory; the factory sets 'formatted'.
         $users = User::factory()->count(50)->create();
+
+        // Create groups and attach members
         $groups = Group::factory()->count(10)->create();
 
         foreach ($groups as $g) {
@@ -233,6 +275,53 @@ class DemoSeeder extends Seeder
         }
     }
 }
+EOM
+
+# Add migration to add SCIM fields to users table
+RUN cat > /example/database/migrations/2021_01_01_000003_add_scim_fields_to_users_table.php <<'EOM'
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration {
+    public function up(): void
+    {
+        Schema::table('users', function (Blueprint $table) {
+            if (!Schema::hasColumn('users', 'formatted')) {
+                $table->string('formatted')->nullable();
+            }
+            if (!Schema::hasColumn('users', 'displayName')) {
+                $table->string('displayName')->nullable();
+            }
+            if (!Schema::hasColumn('users', 'active')) {
+                $table->boolean('active')->default(false);
+            }
+            if (!Schema::hasColumn('users', 'roles')) {
+                $table->json('roles')->nullable();
+            }
+        });
+    }
+
+    public function down(): void
+    {
+        Schema::table('users', function (Blueprint $table) {
+            if (Schema::hasColumn('users', 'formatted')) {
+                $table->dropColumn('formatted');
+            }
+            if (Schema::hasColumn('users', 'displayName')) {
+                $table->dropColumn('displayName');
+            }
+            if (Schema::hasColumn('users', 'active')) {
+                $table->dropColumn('active');
+            }
+            if (Schema::hasColumn('users', 'roles')) {
+                $table->dropColumn('roles');
+            }
+        });
+    }
+};
 EOM
 
 # Run migrations and seed demo data

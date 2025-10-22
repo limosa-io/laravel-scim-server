@@ -121,7 +121,7 @@ class SCIMConfig
                                 return route(
                                     'scim.resource',
                                     [
-                                    'resourceType' => 'Group',
+                                    'resourceType' => 'Groups',
                                     'resourceObject' => $object->id ?? "not-saved"
                                     ]
                                 );

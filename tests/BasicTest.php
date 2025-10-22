@@ -557,4 +557,28 @@ class BasicTest extends TestCase
         $this->assertEquals('mariejo@example.com', $json['urn:ietf:params:scim:schemas:core:2.0:User']['emails'][0]['value']);
         $this->assertEquals('Dr. Marie Jo', $json['urn:ietf:params:scim:schemas:core:2.0:User']['userName']);
     }
+
+    public function testGroupReferencesHaveCorrectUri()
+    {
+        // Get a user with groups to check the $ref URIs
+        $response = $this->get('/scim/v2/Users?startIndex=1&count=1');
+        
+        $response->assertStatus(200);
+        $this->assertGreaterThan(0, count($response->json('Resources')));
+        
+        $user = $response->json('Resources.0.urn:ietf:params:scim:schemas:core:2.0:User');
+        
+        // Check if user has groups
+        if (isset($user['groups']) && count($user['groups']) > 0) {
+            foreach ($user['groups'] as $group) {
+                // Verify that the $ref field contains "Groups" (plural) not "Group" (singular)
+                if (isset($group['$ref'])) {
+                    $this->assertStringContainsString('/scim/v2/Groups/', $group['$ref'], 
+                        'Group reference should use "Groups" (plural) in URI, not "Group" (singular)');
+                    $this->assertStringNotContainsString('/scim/v2/Group/', $group['$ref'],
+                        'Group reference should not use "Group" (singular) in URI');
+                }
+            }
+        }
+    }
 }

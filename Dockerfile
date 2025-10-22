@@ -146,6 +146,35 @@ class GroupFactory extends Factory
 }
 EOM
 
+# User factory for example app (ensures 'formatted' is populated)
+RUN cat > /example/database/factories/UserFactory.php <<'EOM'
+<?php
+
+namespace Database\Factories;
+
+use App\Models\User;
+use Illuminate\Database\Eloquent\Factories\Factory;
+
+class UserFactory extends Factory
+{
+    protected $model = User::class;
+
+    public function definition(): array
+    {
+        $name = $this->faker->name();
+
+        return [
+            'name' => $name,
+            'formatted' => $name,
+            'email' => $this->faker->unique()->safeEmail(),
+            // store a simple known password (hashed)
+            'password' => bcrypt('test'),
+            'active' => $this->faker->boolean(),
+        ];
+    }
+}
+EOM
+
 # Pivot table for memberships
 RUN cat > /example/database/migrations/2021_01_01_000002_create_group_user_table.php <<'EOM'
 <?php
@@ -220,17 +249,20 @@ EOM
 RUN cat > /example/database/seeders/DemoSeeder.php <<'EOM'
 <?php
 
-namespace Database\Seeders;
+namespace Database\\Seeders;
 
-use Illuminate\Database\Seeder;
-use App\Models\User;
-use App\Models\Group;
+use Illuminate\\Database\\Seeder;
+use App\\Models\\User;
+use App\\Models\\Group;
 
 class DemoSeeder extends Seeder
 {
     public function run(): void
     {
+        // Create users via the UserFactory; the factory sets 'formatted'.
         $users = User::factory()->count(50)->create();
+
+        // Create groups and attach members
         $groups = Group::factory()->count(10)->create();
 
         foreach ($groups as $g) {

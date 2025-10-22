@@ -249,11 +249,11 @@ EOM
 RUN cat > /example/database/seeders/DemoSeeder.php <<'EOM'
 <?php
 
-namespace Database\\Seeders;
+namespace Database\Seeders;
 
-use Illuminate\\Database\\Seeder;
-use App\\Models\\User;
-use App\\Models\\Group;
+use Illuminate\Database\Seeder;
+use App\Models\User;
+use App\Models\Group;
 
 class DemoSeeder extends Seeder
 {

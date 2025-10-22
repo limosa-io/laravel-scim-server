@@ -146,7 +146,7 @@ class GroupFactory extends Factory
 }
 EOM
 
-# User factory for example app (ensures 'formatted' is populated)
+# User factory for example app (related username/email/formatted)
 RUN cat > /example/database/factories/UserFactory.php <<'EOM'
 <?php
 
@@ -161,13 +161,18 @@ class UserFactory extends Factory
 
     public function definition(): array
     {
-        $name = $this->faker->name();
+        $first = $this->faker->firstName();
+        $last  = $this->faker->lastName();
+
+        $formatted = "{$first} {$last}";
+        $base = strtolower(substr($first, 0, 1) . preg_replace('/[^a-z0-9]/i', '', $last));
+        $suffix = $this->faker->unique()->numberBetween(100, 999999);
+        $username = $base . $suffix;
 
         return [
-            'name' => $name,
-            'formatted' => $name,
-            'email' => $this->faker->unique()->safeEmail(),
-            // store a simple known password (hashed)
+            'name' => $username,                 // login username
+            'formatted' => $formatted,           // full name
+            'email' => "{$username}@example.test",
             'password' => bcrypt('test'),
             'active' => $this->faker->boolean(),
         ];

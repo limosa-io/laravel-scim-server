@@ -108,4 +108,32 @@ class FilterQueryTest extends TestCase
             'User matching only the userName condition should be excluded.'
         );
     }
+
+    public function testExtensionAttributeFilterMatchesEmployeeNumber(): void
+    {
+        $matchingUser = factory(User::class)->create([
+            'employeeNumber' => '1234',
+        ]);
+
+        $nonMatchingUser = factory(User::class)->create([
+            'employeeNumber' => '5678',
+        ]);
+
+        $filter = rawurlencode('urn:ietf:params:scim:schemas:extension:enterprise:2.0:User:employeeNumber eq "1234"');
+
+        $response = $this->get("/scim/v2/Users?filter={$filter}&count=200");
+        $response->assertStatus(200);
+
+        $ids = collect($response->json('Resources'))->pluck('id');
+
+        $this->assertTrue(
+            $ids->contains((string)$matchingUser->id),
+            'Expected filter to return the user matching the enterprise extension employeeNumber.'
+        );
+
+        $this->assertFalse(
+            $ids->contains((string)$nonMatchingUser->id),
+            'Filter should exclude users whose enterprise extension employeeNumber does not match.'
+        );
+    }
 }

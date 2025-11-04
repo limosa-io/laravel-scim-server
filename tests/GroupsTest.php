@@ -12,10 +12,6 @@ class GroupsTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-
-        Schema::table('users', function (Blueprint $table) {
-            $table->string('employeeNumber')->nullable();
-        });
     }
 
     protected function getEnvironmentSetUp($app)

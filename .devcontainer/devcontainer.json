@@ -17,7 +17,6 @@
 				"mikestead.dotenv",
 				"mehedidracula.php-namespace-resolver",
 				"recca0120.vscode-phpunit",
-				"formulahendry.terminal",
 				"junstyle.php-cs-fixer"
 			],
 			"settings": {

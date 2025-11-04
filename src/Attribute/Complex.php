@@ -361,7 +361,20 @@ class Complex extends AbstractComplex
             $attributeNames = $path->getValuePathAttributes();
 
             if (!empty($attributeNames)) {
-                // TODO: search for schema node
+                $schemaIdentifier = $path->getValuePath()?->getAttributePath()?->path?->schema ?? null;
+
+                if ($schemaIdentifier !== null && $this->parent === null) {
+                    $schemaNode = $this->getSubNode($schemaIdentifier);
+
+                    if ($schemaNode instanceof Schema) {
+                        $schemaNode->applyComparison($query, $path);
+
+                        return;
+                    }
+
+                    throw new SCIMException('Unknown path: ' . (string)$path . ", in object: " . $this->getFullKey());
+                }
+
                 $attribute = $this->getSubNode($attributeNames[0]);
                 if ($attribute != null) {
                     // ($operation, $value, $object, $path->shiftValuePathAttributes());
@@ -379,6 +392,20 @@ class Complex extends AbstractComplex
                 $attributeNames = $path?->getAttributePath()?->getAttributeNames() ?? [];
 
                 if (!empty($attributeNames)) {
+                    $schemaIdentifier = $path->getAttributePath()?->path?->schema ?? null;
+
+                    if ($schemaIdentifier !== null && $this->parent === null) {
+                        $schemaNode = $this->getSubNode($schemaIdentifier);
+
+                        if ($schemaNode instanceof Schema) {
+                            $schemaNode->applyComparison($query, $path);
+
+                            return;
+                        }
+
+                        throw new SCIMException('Unknown path: ' . (string)$path . ", in object: " . $this->getFullKey());
+                    }
+
                     $attribute = $this->getSubNode($attributeNames[0]);
                     if ($attribute != null) {
                         $attribute->applyComparison($query, $path->shiftAttributePathAttributes());

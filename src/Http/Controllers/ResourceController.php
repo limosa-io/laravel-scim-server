@@ -103,7 +103,16 @@ class ResourceController extends Controller
     {
         $resourceObject = $this->createObject($request, $pdp, $resourceType, $isMe);
 
-        return $this->respondWithResource($request, $resourceType, $resourceObject, 201);
+        return $this->respondWithResource($request, $resourceType, $resourceObject, 201)->header(
+            'Location',
+            route(
+                'scim.resource',
+                [
+                    'resourceType' => $resourceType->getName(),
+                    'resourceObject' => $resourceObject->getKey(),
+                ]
+            )
+        );
     }
 
     public function show(Request $request, PolicyDecisionPoint $pdp, ResourceType $resourceType, Model $resourceObject)
@@ -260,33 +269,33 @@ class ResourceController extends Controller
             if (!$cursorPaginationEnabled) {
                 throw (new SCIMException('Cursor pagination is disabled.'))->setCode(400)->setScimType('invalidCursor');
             }
-            if($sortBy == null){
+            if ($sortBy == null) {
                 $resourceObjects = $resourceObjects->orderBy('id');
             }
 
-            if($request->input('cursor')){
+            if ($request->input('cursor')) {
                 $cursor = @Cursor::fromEncoded($request->input('cursor'));
 
-                if($cursor == null){
+                if ($cursor == null) {
                     throw (new SCIMException('Invalid Cursor'))->setCode(400)->setScimType('invalidCursor');
                 }
             }
 
             $countRaw = $request->input('count');
 
-            if($countRaw < 1 || $countRaw > config('scim.pagination.maxPageSize')){
+            if ($countRaw < 1 || $countRaw > config('scim.pagination.maxPageSize')) {
                 throw (new SCIMException(
                     sprintf('Count value is invalid. Count value must be between 1 - and maxPageSize (%s) (when using cursor pagination)', config('scim.pagination.maxPageSize'))
                 ))->setCode(400)->setScimType('invalidCount');
             }
-            
+
             $resourceObjects = $resourceObjects->cursorPaginate(
                 $count,
                 cursor: $request->input('cursor')
             );
             $resources = collect($resourceObjects->items());
 
-            
+
         } else {
             // The 1-based index of the first query result. A value less than 1 SHALL be interpreted as 1.
             $startIndex = max(1, intVal($request->input('startIndex', 0)));
@@ -327,7 +336,8 @@ class ResourceController extends Controller
         return $this->runCrossResourceQuery($request, $config);
     }
 
-    public function search(Request $request, PolicyDecisionPoint $pdp, ResourceType $resourceType){
+    public function search(Request $request, PolicyDecisionPoint $pdp, ResourceType $resourceType)
+    {
 
         $input = $request->json()->all();
 
@@ -466,8 +476,12 @@ class ResourceController extends Controller
     {
         [$attributes, $excludedAttributes] = $this->resolveAttributeParameters($request);
 
-        return Helper::objectToSCIMResponse($resourceObject, $resourceType, $attributes, $excludedAttributes)
-            ->setStatusCode($status);
+        return Helper::objectToSCIMResponse(
+            $resourceObject,
+            $resourceType,
+            $attributes,
+            $excludedAttributes
+        )->setStatusCode($status);
     }
 
     protected function resolveAttributeParameters(Request $request): array
@@ -520,7 +534,7 @@ class ResourceController extends Controller
         if (is_string($value)) {
             $parts = preg_split('/\s*,\s*/', $value);
 
-            $normalized = array_filter(array_map('trim', $parts), fn ($item) => $item !== '');
+            $normalized = array_filter(array_map('trim', $parts), fn($item) => $item !== '');
 
             return array_values(array_unique($normalized));
         }

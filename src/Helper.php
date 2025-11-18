@@ -59,7 +59,7 @@ class Helper
 
     public static function objectToSCIMArray($object, ResourceType $resourceType = null, array $attributes = [], array $excludedAttributes = [])
     {
-        if($resourceType == null){
+        if ($resourceType == null) {
             $result = $object instanceof Arrayable ? $object->toArray() : $object;
 
             if (is_array($result) && !empty($excludedAttributes)) {
@@ -81,7 +81,7 @@ class Helper
 
             // Move main schema to the top. It may not be defined, for example when only specific attributes are requested.
             $main = $result[$defaultSchema] ?? [];
-            
+
             unset($result[$defaultSchema]);
 
             $result = array_merge($result, $main);
@@ -106,41 +106,13 @@ class Helper
     }
 
     /**
-     *
-     * @param unknown      $object
+     * @param Model        $object
      * @param ResourceType $resourceType
      */
     public static function objectToSCIMResponse(Model $object, ResourceType $resourceType = null, array $attributes = [], array $excludedAttributes = [])
     {
         $response = response(self::objectToSCIMArray($object, $resourceType, $attributes, $excludedAttributes))
             ->header('ETag', self::getResourceObjectVersion($object));
-
-        if ($resourceType !== null) {
-            $resourceTypeName = $resourceType->getName();
-
-            if ($resourceTypeName === null) {
-                $routeResourceType = request()?->route('resourceType');
-
-                if ($routeResourceType instanceof ResourceType) {
-                    $resourceTypeName = $routeResourceType->getName();
-                } elseif (is_string($routeResourceType)) {
-                    $resourceTypeName = $routeResourceType;
-                }
-            }
-
-            if ($resourceTypeName !== null) {
-                $response->header(
-                    'Location',
-                    route(
-                        'scim.resource',
-                        [
-                            'resourceType' => $resourceTypeName,
-                            'resourceObject' => $object->getKey(),
-                        ]
-                    )
-                );
-            }
-        }
 
         return $response;
     }

@@ -277,52 +277,8 @@ class DemoSeeder extends Seeder
 }
 EOM
 
-# Add migration to add SCIM fields to users table
-RUN cat > /example/database/migrations/2021_01_01_000003_add_scim_fields_to_users_table.php <<'EOM'
-<?php
-
-use Illuminate\Database\Migrations\Migration;
-use Illuminate\Database\Schema\Blueprint;
-use Illuminate\Support\Facades\Schema;
-
-return new class extends Migration {
-    public function up(): void
-    {
-        Schema::table('users', function (Blueprint $table) {
-            if (!Schema::hasColumn('users', 'formatted')) {
-                $table->string('formatted')->nullable();
-            }
-            if (!Schema::hasColumn('users', 'displayName')) {
-                $table->string('displayName')->nullable();
-            }
-            if (!Schema::hasColumn('users', 'active')) {
-                $table->boolean('active')->default(false);
-            }
-            if (!Schema::hasColumn('users', 'roles')) {
-                $table->json('roles')->nullable();
-            }
-        });
-    }
-
-    public function down(): void
-    {
-        Schema::table('users', function (Blueprint $table) {
-            if (Schema::hasColumn('users', 'formatted')) {
-                $table->dropColumn('formatted');
-            }
-            if (Schema::hasColumn('users', 'displayName')) {
-                $table->dropColumn('displayName');
-            }
-            if (Schema::hasColumn('users', 'active')) {
-                $table->dropColumn('active');
-            }
-            if (Schema::hasColumn('users', 'roles')) {
-                $table->dropColumn('roles');
-            }
-        });
-    }
-};
-EOM
+# Publish SCIM migrations from the package
+RUN php artisan vendor:publish --tag=laravel-scim-migrations
 
 # Run migrations and seed demo data
 RUN php artisan migrate && php artisan db:seed --class=Database\\Seeders\\DemoSeeder

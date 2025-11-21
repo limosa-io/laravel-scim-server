@@ -15,6 +15,9 @@ return new class extends Migration {
                 if (!Schema::hasColumn('users', 'active')) {
                     $table->boolean('active')->default(false);
                 }
+                if (!Schema::hasColumn('users', 'roles')) {
+                    $table->json('roles')->nullable();
+                }
             });
         }
     }
@@ -28,6 +31,9 @@ return new class extends Migration {
                 }
                 if (Schema::hasColumn('users', 'active')) {
                     $table->dropColumn('active');
+                }
+                if (Schema::hasColumn('users', 'roles')) {
+                    $table->dropColumn('roles');
                 }
             });
         }

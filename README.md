@@ -45,7 +45,7 @@ Optionally publish the config for fine-grained control:
 php artisan vendor:publish --tag=laravel-scim
 ```
 
-If you need to add the `formatted` and `active` columns to your users table, publish the migrations:
+If you need to add SCIM-specific columns (`formatted`, `active`, `roles`) to your users table, publish the migrations:
 
 ```bash
 php artisan vendor:publish --tag=laravel-scim-migrations

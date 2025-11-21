@@ -29,7 +29,13 @@ class JSONCollection extends MutableCollection
 
     public function doRead(&$object, $attributes = [])
     {
-        return $object->{$this->attribute}?->values()->all();
+        $value = $object->{$this->attribute};
+
+        if ($value === null) {
+            return null;
+        }
+
+        return collect($value)->values()->all();
     }
 
     public function remove($value, Model &$object, Path $path = null)

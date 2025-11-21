@@ -169,12 +169,32 @@ class UserFactory extends Factory
         $suffix = $this->faker->unique()->numberBetween(100, 999999);
         $username = $base . $suffix;
 
+        $roleTemplates = [
+            ['value' => 'admin', 'display' => 'Admin', 'type' => 'system'],
+            ['value' => 'developer', 'display' => 'Developer', 'type' => 'system'],
+            ['value' => 'manager', 'display' => 'Manager', 'type' => 'business'],
+            ['value' => 'support', 'display' => 'Support', 'type' => 'business'],
+            ['value' => 'auditor', 'display' => 'Auditor', 'type' => 'governance'],
+        ];
+
+        $selectedRoles = $this->faker->randomElements(
+            $roleTemplates,
+            $this->faker->numberBetween(1, count($roleTemplates))
+        );
+        $selectedRoles = array_values($selectedRoles);
+        $primaryIndex = array_rand($selectedRoles);
+        foreach ($selectedRoles as $index => &$role) {
+            $role['primary'] = $index === $primaryIndex;
+        }
+        unset($role);
+
         return [
             'name' => $username,                 // login username
             'formatted' => $formatted,           // full name
             'email' => "{$username}@example.test",
             'password' => bcrypt('test'),
             'active' => $this->faker->boolean(),
+            'roles' => $selectedRoles,
         ];
     }
 }
@@ -229,6 +249,7 @@ class User extends Authenticatable
         'email',
         'password',
         'active',
+        'roles',
         
     ];
 
@@ -240,6 +261,7 @@ class User extends Authenticatable
     protected $casts = [
         'email_verified_at' => 'datetime',
         'active' => 'boolean',
+        'roles' => 'array',
         
     ];
 
@@ -284,4 +306,3 @@ RUN php artisan vendor:publish --tag=laravel-scim-migrations
 RUN php artisan migrate && php artisan db:seed --class=Database\\Seeders\\DemoSeeder
 
 CMD ["php","artisan","serve","--host=0.0.0.0","--port=8000"]
-

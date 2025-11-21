@@ -12,6 +12,9 @@ return new class extends Migration {
                 if (!Schema::hasColumn('users', 'formatted')) {
                     $table->string('formatted')->nullable();
                 }
+                if (!Schema::hasColumn('users', 'displayName')) {
+                    $table->string('displayName')->nullable();
+                }
                 if (!Schema::hasColumn('users', 'active')) {
                     $table->boolean('active')->default(false);
                 }
@@ -28,6 +31,9 @@ return new class extends Migration {
             Schema::table('users', function (Blueprint $table) {
                 if (Schema::hasColumn('users', 'formatted')) {
                     $table->dropColumn('formatted');
+                }
+                if (Schema::hasColumn('users', 'displayName')) {
+                    $table->dropColumn('displayName');
                 }
                 if (Schema::hasColumn('users', 'active')) {
                     $table->dropColumn('active');

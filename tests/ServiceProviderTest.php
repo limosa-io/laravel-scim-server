@@ -19,7 +19,7 @@ class ServiceProviderTest extends BaseTestCase
         $result = Artisan::call('vendor:publish', [
             '--tag' => 'laravel-scim-migrations',
             '--provider' => ServiceProvider::class,
-            '--dry-run' => true,
+            '--force' => true,
         ]);
 
         // The command should succeed (return 0)
@@ -32,7 +32,7 @@ class ServiceProviderTest extends BaseTestCase
         $result = Artisan::call('vendor:publish', [
             '--tag' => 'laravel-scim',
             '--provider' => ServiceProvider::class,
-            '--dry-run' => true,
+            '--force' => true,
         ]);
 
         // The command should succeed (return 0)

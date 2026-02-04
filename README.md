@@ -128,11 +128,20 @@ return [
 ];
 ```
 
-Environment variables:
+Set these in your `.env` file:
 
 ```
 SCIM_OMIT_MAIN_SCHEMA_IN_RETURN=true
 SCIM_OMIT_NULL_VALUES=false
+```
+
+Or pass as Docker environment variables:
+
+```bash
+docker run -e SCIM_OMIT_MAIN_SCHEMA_IN_RETURN=true \
+           -e SCIM_OMIT_NULL_VALUES=false \
+           -p 8000:8000 \
+           ghcr.io/limosa-io/laravel-scim-server:latest
 ```
 
 If you need more control, you can disable route auto-publishing and register the routes manually:

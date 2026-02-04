@@ -114,6 +114,27 @@ SCIM_MIDDLEWARE=api,auth:sanctum
 SCIM_PUBLIC_MIDDLEWARE=api
 ```
 
+### Response Configuration
+
+Control SCIM response formatting using environment variables or the config file:
+
+```php
+return [
+    // Omit the main schema namespace from resource responses
+    'omit_main_schema_in_return' => env('SCIM_OMIT_MAIN_SCHEMA_IN_RETURN', false),
+    
+    // Omit attributes with null values from responses
+    'omit_null_values' => env('SCIM_OMIT_NULL_VALUES', true),
+];
+```
+
+Environment variables:
+
+```
+SCIM_OMIT_MAIN_SCHEMA_IN_RETURN=true
+SCIM_OMIT_NULL_VALUES=false
+```
+
 If you need more control, you can disable route auto-publishing and register the routes manually:
 
 ```php

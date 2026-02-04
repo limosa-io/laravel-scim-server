@@ -86,9 +86,7 @@ Optional "Me" routes can be enabled separately:
 
 ## Configuration
 
-### Route Configuration
-
-The SCIM server routes can be customized using the following configuration options in `config/scim.php`:
+The SCIM server can be customized using configuration options in `config/scim.php`:
 
 ```php
 return [
@@ -103,6 +101,12 @@ return [
 
     // Middleware for public routes (ServiceProviderConfig, Schemas, ResourceTypes)
     'public_middleware' => env('SCIM_PUBLIC_MIDDLEWARE', []),
+
+    // Omit the main schema namespace from resource responses
+    'omit_main_schema_in_return' => env('SCIM_OMIT_MAIN_SCHEMA_IN_RETURN', false),
+    
+    // Omit attributes with null values from responses
+    'omit_null_values' => env('SCIM_OMIT_NULL_VALUES', true),
 ];
 ```
 
@@ -112,6 +116,18 @@ You can override these in your `.env` file:
 SCIM_BASE_PATH=/scim/api
 SCIM_MIDDLEWARE=api,auth:sanctum
 SCIM_PUBLIC_MIDDLEWARE=api
+SCIM_OMIT_MAIN_SCHEMA_IN_RETURN=true
+SCIM_OMIT_NULL_VALUES=false
+```
+
+Or pass as Docker environment variables:
+
+```bash
+docker run -e SCIM_BASE_PATH=/scim/api \
+           -e SCIM_OMIT_MAIN_SCHEMA_IN_RETURN=true \
+           -e SCIM_OMIT_NULL_VALUES=false \
+           -p 8000:8000 \
+           ghcr.io/limosa-io/laravel-scim-server:latest
 ```
 
 If you need more control, you can disable route auto-publishing and register the routes manually:

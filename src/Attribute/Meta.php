@@ -42,7 +42,7 @@ class Meta extends Complex
         );
     }
 
-    public function remove($value, Model &$object, Path $path = null)
+    public function remove($value, Model &$object, ?Path $path = null)
     {
         // ignore
     }

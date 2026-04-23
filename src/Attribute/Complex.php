@@ -54,7 +54,7 @@ class Complex extends AbstractComplex
         return $result;
     }
 
-    public function patch($operation, $value, Model &$object, Path $path = null, $removeIfNotSet = false)
+    public function patch($operation, $value, Model &$object, ?Path $path = null, $removeIfNotSet = false)
     {
         $this->dirty = true;
 
@@ -206,7 +206,7 @@ class Complex extends AbstractComplex
         * @param $value
         * @param Model $object
     */
-    public function replace($value, Model &$object, Path $path = null, $removeIfNotSet = false)
+    public function replace($value, Model &$object, ?Path $path = null, $removeIfNotSet = false)
     {
         $this->dirty = true;
 
@@ -335,7 +335,7 @@ class Complex extends AbstractComplex
     }
 
 
-    public function remove($value, Model &$object, Path $path = null)
+    public function remove($value, Model &$object, ?Path $path = null)
     {
         if ($this->mutability == 'readOnly') {
             // silently ignore

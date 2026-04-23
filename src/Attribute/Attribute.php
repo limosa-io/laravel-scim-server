@@ -313,7 +313,7 @@ class Attribute
         return $this;
     }
 
-    public function applyComparison(Builder &$query, Path $path, Path $parentAttribute = null)
+    public function applyComparison(Builder &$query, Path $path, ?Path $parentAttribute = null)
     {
         throw new SCIMException(sprintf('Comparison is not implemented for "%s"', $this->getFullKey()));
     }
@@ -323,17 +323,17 @@ class Attribute
         throw new SCIMException(sprintf('Write is not implemented for "%s"', $this->getFullKey()));
     }
 
-    public function replace($value, Model &$object, Path $path = null)
+    public function replace($value, Model &$object, ?Path $path = null)
     {
         throw new SCIMException(sprintf('Replace is not implemented for "%s"', $this->getFullKey()));
     }
 
-    public function patch($operation, $value, Model &$object, Path $path = null)
+    public function patch($operation, $value, Model &$object, ?Path $path = null)
     {
         throw new SCIMException(sprintf('Patch is not implemented for "%s"', $this->getFullKey()));
     }
 
-    public function remove($value, Model &$object, Path $path = null)
+    public function remove($value, Model &$object, ?Path $path = null)
     {
         throw new SCIMException(sprintf('Remove is not implemented for "%s"', $this->getFullKey()));
     }

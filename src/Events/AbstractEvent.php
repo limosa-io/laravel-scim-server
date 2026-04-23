@@ -38,7 +38,7 @@ abstract class AbstractEvent implements EventInterface
         return $this->resourceType;
     }
 
-    public function __construct(Model $model, ResourceType $resourceType, bool $me = null, $input, $odlObjectArray = [])
+    public function __construct(Model $model, ResourceType $resourceType, ?bool $me = null, $input, $odlObjectArray = [])
     {
         $this->model = $model;
         $this->resourceType = $resourceType;

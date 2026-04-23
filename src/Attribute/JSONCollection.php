@@ -38,7 +38,7 @@ class JSONCollection extends MutableCollection
         return collect($value)->values()->all();
     }
 
-    public function remove($value, Model &$object, Path $path = null)
+    public function remove($value, Model &$object, ?Path $path = null)
     {
         if ($path?->getValuePathFilter()?->getComparisonExpression() != null) {
             $attributes = $path?->getValuePathFilter()?->getComparisonExpression()?->attributePath?->attributeNames;
@@ -72,7 +72,7 @@ class JSONCollection extends MutableCollection
         }
     }
 
-    public function applyComparison(Builder &$query, Path $path, Path $parentAttribute = null)
+    public function applyComparison(Builder &$query, Path $path, ?Path $parentAttribute = null)
     {
         $fieldName = 'value';
 

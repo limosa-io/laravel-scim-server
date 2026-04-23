@@ -1,4 +1,4 @@
-FROM mcr.microsoft.com/devcontainers/php:8.2
+FROM mcr.microsoft.com/devcontainers/php:8.4
 
 # Create Laravel test project directory in vscode user home
 USER vscode

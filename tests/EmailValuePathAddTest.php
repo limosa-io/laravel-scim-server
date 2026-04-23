@@ -72,7 +72,7 @@ class EmailValuePathAddTest extends TestCase
                 return $object->{$this->name} ?? [];
             }
 
-            public function replace($value, Model &$object, Path $path = null, $removeIfNotSet = false)
+            public function replace($value, Model &$object, ?Path $path = null, $removeIfNotSet = false)
             {
                 $object->{$this->name} = $value;
                 $this->dirty = true;

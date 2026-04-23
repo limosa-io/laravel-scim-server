@@ -10,16 +10,16 @@
         }
     ],
     "require": {
-		"php": "^8.0",
-        "illuminate/database": "^10.0|^11.0|^12.0",
-        "illuminate/support": "^10.0|^11.0|^12.0",
-        "illuminate/console": "^10.0|^11.0|^12.0"
+        "php": "^8.1",
+        "illuminate/database": "^10.0|^11.0|^12.0|^13.0",
+        "illuminate/support": "^10.0|^11.0|^12.0|^13.0",
+        "illuminate/console": "^10.0|^11.0|^12.0|^13.0"
     },
-    "classmap": [
-        "database/migrations"
-    ],
     "autoload": {
-        "psr-4": {"ArieTimmerman\\Laravel\\SCIMServer\\": "src/"}
+        "psr-4": {"ArieTimmerman\\Laravel\\SCIMServer\\": "src/"},
+        "classmap": [
+            "database/migrations"
+        ]
     },
     "autoload-dev": {
         "psr-4": {
@@ -27,8 +27,8 @@
         }
     },
     "require-dev": {
-        "orchestra/testbench": "^6.0|^7.0|^8.0|^9.0|^10.0",
-        "laravel/legacy-factories": "*",
+        "orchestra/testbench": "^6.0|^7.0|^8.0|^9.0|^10.0|^11.0",
+        "laravel/legacy-factories": "^1.4.2",
         "friendsofphp/php-cs-fixer": "^3.66"
     },
 

@@ -255,3 +255,4 @@ Browse to `http://localhost:18123/scim/v2/Users` to explore the API and run the 
 ## Contributing & support
 - Issues and pull requests are welcome on [GitHub](https://github.com/arietimmerman/laravel-scim-server)
 - Found this package helpful? [Give it a star on GitHub](https://github.com/arietimmerman/laravel-scim-server) so others can discover it faster
+- If you would like to support this module, please buy a Pro subscription on [SCIM Playground](https://scim.dev)

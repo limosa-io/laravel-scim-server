@@ -31,7 +31,7 @@ class Helper
      *
      * @param unknown $object
      */
-    public static function prepareReturn(Arrayable $object, ResourceType $resourceType = null, array $attributes = [], array $excludedAttributes = [])
+    public static function prepareReturn(Arrayable $object, ?ResourceType $resourceType = null, array $attributes = [], array $excludedAttributes = [])
     {
         $result = null;
 
@@ -57,7 +57,7 @@ class Helper
         return $result;
     }
 
-    public static function objectToSCIMArray($object, ResourceType $resourceType = null, array $attributes = [], array $excludedAttributes = [])
+    public static function objectToSCIMArray($object, ?ResourceType $resourceType = null, array $attributes = [], array $excludedAttributes = [])
     {
         if ($resourceType == null) {
             $result = $object instanceof Arrayable ? $object->toArray() : $object;
@@ -109,7 +109,7 @@ class Helper
      * @param Model        $object
      * @param ResourceType $resourceType
      */
-    public static function objectToSCIMResponse(Model $object, ResourceType $resourceType = null, array $attributes = [], array $excludedAttributes = [])
+    public static function objectToSCIMResponse(Model $object, ?ResourceType $resourceType = null, array $attributes = [], array $excludedAttributes = [])
     {
         $response = response(self::objectToSCIMArray($object, $resourceType, $attributes, $excludedAttributes))
             ->header('ETag', self::getResourceObjectVersion($object));

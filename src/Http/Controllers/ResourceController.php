@@ -50,7 +50,7 @@ class ResourceController extends Controller
         return $validator->validate();
     }
 
-    public static function createFromSCIM($resourceType, $input, PolicyDecisionPoint $pdp = null, Request $request = null, $allowAlways = false, $isMe = false)
+    public static function createFromSCIM($resourceType, $input, ?PolicyDecisionPoint $pdp = null, ?Request $request = null, $allowAlways = false, $isMe = false)
     {
         if (!isset($input['schemas']) || !is_array($input['schemas'])) {
             throw (new SCIMException('Missing a valid schemas-attribute.'))->setCode(400);

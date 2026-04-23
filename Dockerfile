@@ -1,10 +1,10 @@
-FROM php:8.1-alpine
+FROM php:8.4-alpine
 
 # Base tools and PHP extensions
 RUN apk add --no-cache git jq moreutils \
     && apk add --no-cache $PHPIZE_DEPS postgresql-dev sqlite-dev \
     && docker-php-ext-install pdo_pgsql pdo_sqlite \
-    && pecl install xdebug-3.1.5 \
+    && pecl install xdebug \
     && docker-php-ext-enable xdebug \
     && echo "xdebug.mode=debug" >> /usr/local/etc/php/conf.d/docker-php-ext-xdebug.ini \
     && echo "xdebug.client_host = 172.19.0.1" >> /usr/local/etc/php/conf.d/docker-php-ext-xdebug.ini
@@ -19,9 +19,8 @@ WORKDIR /example
 COPY . /laravel-scim-server
 RUN jq '.repositories=[{"type": "path","url": "/laravel-scim-server"}]' ./composer.json | sponge ./composer.json
 
-# Install package and dev helpers
-RUN composer require arietimmerman/laravel-scim-server @dev && \
-    composer require laravel/tinker
+# Install package
+RUN composer require arietimmerman/laravel-scim-server @dev
 
 # SQLite config
 RUN touch /example/database.sqlite && \
@@ -236,12 +235,11 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
-use Laravel\Sanctum\HasApiTokens;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
 class User extends Authenticatable
 {
-    use HasApiTokens, HasFactory, Notifiable;
+    use HasFactory, Notifiable;
 
     protected $fillable = [
         'name',

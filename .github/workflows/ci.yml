@@ -9,7 +9,6 @@ permissions:
 jobs:
   tests:
     runs-on: ubuntu-latest
-    continue-on-error: true
     strategy:
       matrix:
         php: [8.0, 8.1, 8.2]
@@ -46,7 +45,7 @@ jobs:
     - name: Install dependencies
       run: |
         composer require "illuminate/console:${{ matrix.laravel }}" "illuminate/database:${{ matrix.laravel }}" "illuminate/support:${{ matrix.laravel }}" --no-interaction --no-update
-        composer update
+        composer update --no-security-blocking
     - name: Run tests
       run: vendor/bin/phpunit
 

@@ -15,9 +15,8 @@ class CustomSCIMConfig extends SCIMConfig
     {
         $config = parent::getUserConfig();
 
-        // Navigate to the enterprise schema node using getSubNode() (name is protected)
-        // and add a mapped 'manager' Complex attribute so the test exercises the actual
-        // schema-URN + complex-attribute code path that was fixed.
+        // Add a mapped manager.value attribute while leaving the other manager
+        // sub-attributes unmapped.
         $enterpriseSchema = $config['map']->getSubNode('urn:ietf:params:scim:schemas:extension:enterprise:2.0:User');
 
         $managerAttr = (new Complex('manager'))->withSubAttributes(
@@ -138,19 +137,14 @@ class CustomSchemaTest extends TestCase
      * Regression test for https://github.com/limosa-io/laravel-scim-server/issues/168
      *
      * POST /scim/v2/Users must return 201 (not 500) when the SCIM payload contains
-     * sub-attributes inside an extension schema that are not defined in the resource
-     * mapping (e.g. Entra ID sends manager.displayName / manager.$ref even when the
-     * mapping only covers employeeNumber).
+     * an extension schema before the schemas property and includes unmapped
+     * sub-attributes such as manager.displayName and manager.$ref.
      */
     public function testPostWithUnmappedEnterpriseSubAttributesReturns201()
     {
         $response = $this->postJson('/scim/v2/Users', [
-            "schemas" => [
-                "urn:ietf:params:scim:schemas:core:2.0:User",
-                "urn:ietf:params:scim:schemas:extension:enterprise:2.0:User",
-            ],
             "urn:ietf:params:scim:schemas:extension:enterprise:2.0:User" => [
-                // employeeNumber IS mapped; manager and all its sub-attributes are NOT
+                // employeeNumber and manager.value are mapped; the other fields are not.
                 "employeeNumber" => "EMP-001",
                 "manager" => [
                     "value"       => "1234",
@@ -163,6 +157,7 @@ class CustomSchemaTest extends TestCase
             ],
             "urn:ietf:params:scim:schemas:core:2.0:User" => [
                 "userName" => "jane.doe@example.com",
+                "password" => "Password123",
                 "emails"   => [
                     [
                         "value"   => "jane.doe@example.com",
@@ -170,6 +165,12 @@ class CustomSchemaTest extends TestCase
                         "primary" => true,
                     ],
                 ],
+            ],
+            // Keep schemas last so the extension schema is processed while the
+            // mapping path is still null, reproducing issue #168.
+            "schemas" => [
+                "urn:ietf:params:scim:schemas:core:2.0:User",
+                "urn:ietf:params:scim:schemas:extension:enterprise:2.0:User",
             ],
         ]);
 

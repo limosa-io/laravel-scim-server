@@ -100,7 +100,7 @@ class ServiceProvider extends \Illuminate\Support\ServiceProvider
         // Using scoped() ensures the same instance is returned for all injections
         // within a single request.
         $this->app->scoped(ResourceType::class, function ($app) {
-            $route = $app->make('request')->route();
+            $route = $app->bound('request') ? $app->make('request')->route() : null;
 
             if ($route) {
                 $resourceType = $route->parameter('resourceType');
@@ -121,8 +121,8 @@ class ServiceProvider extends \Illuminate\Support\ServiceProvider
             }
 
             throw new BindingResolutionException(
-                'Cannot resolve ' . ResourceType::class . ': no "resourceType" route parameter found on the current request. ' .
-                'Ensure your route defines a {resourceType} parameter (e.g. Route::get("{resourceType}", ...)).'
+                'Cannot resolve ' . ResourceType::class . ': no "resourceType" route parameter found. '
+                . 'Ensure your route defines a {resourceType} parameter (e.g. Route::get("{resourceType}", ...)).'
             );
         });
     }

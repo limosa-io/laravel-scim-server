@@ -2,7 +2,8 @@
 
 namespace ArieTimmerman\Laravel\SCIMServer\Tests;
 
-use ArieTimmerman\Laravel\SCIMServer\Attribute\Attribute;
+use ArieTimmerman\Laravel\SCIMServer\Attribute\Complex;
+use ArieTimmerman\Laravel\SCIMServer\Attribute\Eloquent;
 use ArieTimmerman\Laravel\SCIMServer\SCIMConfig;
 use ArieTimmerman\Laravel\SCIMServer\Tests\Model\User;
 use Illuminate\Database\Schema\Blueprint;
@@ -14,12 +15,19 @@ class CustomSCIMConfig extends SCIMConfig
     {
         $config = parent::getUserConfig();
 
-        $config['schemas'][] = 'urn:ietf:params:scim:schemas:extension:enterprise:2.0:User';
-        $config['validations']['urn:ietf:params:scim:schemas:extension:enterprise:2\.0:User:employeeNumber'] = 'nullable';
+        // Find the enterprise schema node nested inside the core User schema and add
+        // a mapped 'manager' Complex attribute so the test exercises the real fix.
+        $coreSchema = collect($config['map']->subAttributes)
+            ->first(fn($a) => $a->name === 'urn:ietf:params:scim:schemas:core:2.0:User');
 
-        $config['mapping']['urn:ietf:params:scim:schemas:extension:enterprise:2.0:User'] = [
-            'employeeNumber' => new Attribute("employeeNumber")
-        ];
+        $enterpriseSchema = collect($coreSchema->subAttributes)
+            ->first(fn($a) => $a->name === 'urn:ietf:params:scim:schemas:extension:enterprise:2.0:User');
+
+        $managerAttr = (new Complex('manager'))->withSubAttributes(
+            new Eloquent('value', 'manager')
+        );
+        $managerAttr->setParent($enterpriseSchema);
+        $enterpriseSchema->subAttributes[] = $managerAttr;
 
         return $config;
     }
@@ -30,6 +38,10 @@ class CustomSchemaTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
+
+        Schema::table('users', function (Blueprint $table) {
+            $table->string('manager')->nullable();
+        });
     }
 
     protected function getEnvironmentSetUp($app)
@@ -188,11 +200,21 @@ class CustomSchemaTest extends TestCase
             $json['urn:ietf:params:scim:schemas:core:2.0:User']['emails'][0]['value']
         );
 
-        // Unmapped sub-attributes (manager and its children) must not appear in the response
+        // manager.value IS mapped and must be echoed back; unmapped sub-attributes must be absent
+        $this->assertEquals(
+            '1234',
+            $json['urn:ietf:params:scim:schemas:extension:enterprise:2.0:User']['manager']['value'],
+            'Mapped manager.value should be present in the SCIM response'
+        );
         $this->assertArrayNotHasKey(
-            'manager',
-            $json['urn:ietf:params:scim:schemas:extension:enterprise:2.0:User'],
-            'Unmapped "manager" attribute should not be present in the SCIM response'
+            'displayName',
+            $json['urn:ietf:params:scim:schemas:extension:enterprise:2.0:User']['manager'],
+            'Unmapped manager.displayName should not be present in the SCIM response'
+        );
+        $this->assertArrayNotHasKey(
+            '$ref',
+            $json['urn:ietf:params:scim:schemas:extension:enterprise:2.0:User']['manager'],
+            'Unmapped manager.$ref should not be present in the SCIM response'
         );
     }
 }

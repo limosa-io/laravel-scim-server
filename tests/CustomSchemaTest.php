@@ -177,5 +177,22 @@ class CustomSchemaTest extends TestCase
             'EMP-001',
             $json['urn:ietf:params:scim:schemas:extension:enterprise:2.0:User']['employeeNumber']
         );
+
+        // Core User attributes should be reflected back
+        $this->assertEquals(
+            'jane.doe@example.com',
+            $json['urn:ietf:params:scim:schemas:core:2.0:User']['userName']
+        );
+        $this->assertEquals(
+            'jane.doe@example.com',
+            $json['urn:ietf:params:scim:schemas:core:2.0:User']['emails'][0]['value']
+        );
+
+        // Unmapped sub-attributes (manager and its children) must not appear in the response
+        $this->assertArrayNotHasKey(
+            'manager',
+            $json['urn:ietf:params:scim:schemas:extension:enterprise:2.0:User'],
+            'Unmapped "manager" attribute should not be present in the SCIM response'
+        );
     }
 }

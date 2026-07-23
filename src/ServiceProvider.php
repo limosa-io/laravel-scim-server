@@ -100,7 +100,8 @@ class ServiceProvider extends \Illuminate\Support\ServiceProvider
         // Using scoped() ensures the same instance is returned for all injections
         // within a single request.
         $this->app->scoped(ResourceType::class, function ($app) {
-            $route = $app->bound('request') ? $app->make('request')->route() : null;
+            $request = $app->bound('request') ? $app->make('request') : null;
+            $route = $request instanceof \Illuminate\Http\Request ? $request->route() : null;
 
             if ($route) {
                 $resourceType = $route->parameter('resourceType');
@@ -109,6 +110,7 @@ class ServiceProvider extends \Illuminate\Support\ServiceProvider
                     return $resourceType;
                 }
 
+                // Only reached in HTTP context (route is non-null), so SCIMException is appropriate.
                 if (is_string($resourceType)) {
                     $config = $app->make(SCIMConfig::class)->getConfigForResource($resourceType);
 

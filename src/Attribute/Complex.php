@@ -244,7 +244,7 @@ class Complex extends AbstractComplex
 
             if ($subNode != null) {
                 $newValue = $v;
-                if ($path->isNotEmpty()) {
+                if ($path !== null && $path->isNotEmpty()) {
                     $newValue = [
                         implode('.', $path->getAttributePathAttributes()) => $v
                     ];

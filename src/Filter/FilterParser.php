@@ -333,7 +333,7 @@ class FilterParser
     private function assertValidAttributeNames(array $names, int $position): void
     {
         foreach ($names as $name) {
-            if (!preg_match('/^[A-Za-z][A-Za-z0-9_-]*$/', $name)) {
+            if (!preg_match('/^[$A-Za-z][A-Za-z0-9$_-]*$/', $name)) {
                 throw FilterException::syntaxError(
                     sprintf('Invalid attribute name "%s"', $name),
                     $this->getInput(),

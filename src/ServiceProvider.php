@@ -94,10 +94,12 @@ class ServiceProvider extends \Illuminate\Support\ServiceProvider
             'scim'
         );
 
-        // Register a container binding for ResourceType so it can be resolved
+        // Register a scoped binding for ResourceType so it can be resolved
         // from the current route parameter even when SubstituteBindings middleware
         // is not applied to the route (e.g. in custom user-defined routes).
-        $this->app->bind(ResourceType::class, function ($app) {
+        // Using scoped() ensures the same instance is returned for all injections
+        // within a single request.
+        $this->app->scoped(ResourceType::class, function ($app) {
             $route = $app->make('request')->route();
 
             if ($route) {
@@ -120,8 +122,7 @@ class ServiceProvider extends \Illuminate\Support\ServiceProvider
 
             throw new BindingResolutionException(
                 'Cannot resolve ' . ResourceType::class . ': no "resourceType" route parameter found on the current request. ' .
-                'Ensure your route defines a {resourceType} parameter (e.g. Route::get("{resourceType}", ...)) ' .
-                'and that the route model binding or SubstituteBindings middleware is applied.'
+                'Ensure your route defines a {resourceType} parameter (e.g. Route::get("{resourceType}", ...)).'
             );
         });
     }

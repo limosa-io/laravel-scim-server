@@ -119,7 +119,9 @@ class ServiceProvider extends \Illuminate\Support\ServiceProvider
             }
 
             throw new BindingResolutionException(
-                'Cannot resolve ' . ResourceType::class . ': no "resourceType" route parameter found on the current request.'
+                'Cannot resolve ' . ResourceType::class . ': no "resourceType" route parameter found on the current request. ' .
+                'Ensure your route defines a {resourceType} parameter (e.g. Route::get("{resourceType}", ...)) ' .
+                'and that the route model binding or SubstituteBindings middleware is applied.'
             );
         });
     }

@@ -7,6 +7,7 @@
 namespace ArieTimmerman\Laravel\SCIMServer;
 
 use ArieTimmerman\Laravel\SCIMServer\Exceptions\SCIMException;
+use Illuminate\Contracts\Container\BindingResolutionException;
 
 class ServiceProvider extends \Illuminate\Support\ServiceProvider
 {
@@ -92,5 +93,34 @@ class ServiceProvider extends \Illuminate\Support\ServiceProvider
             __DIR__ . '/../config/scim.php',
             'scim'
         );
+
+        // Register a container binding for ResourceType so it can be resolved
+        // from the current route parameter even when SubstituteBindings middleware
+        // is not applied to the route (e.g. in custom user-defined routes).
+        $this->app->bind(ResourceType::class, function ($app) {
+            $route = $app->make('request')->route();
+
+            if ($route) {
+                $resourceType = $route->parameter('resourceType');
+
+                if ($resourceType instanceof ResourceType) {
+                    return $resourceType;
+                }
+
+                if (is_string($resourceType)) {
+                    $config = $app->make(SCIMConfig::class)->getConfigForResource($resourceType);
+
+                    if ($config !== null) {
+                        return new ResourceType($resourceType, $config);
+                    }
+
+                    throw (new SCIMException(sprintf('No resource "%s" found.', $resourceType)))->setCode(404);
+                }
+            }
+
+            throw new BindingResolutionException(
+                'Cannot resolve ' . ResourceType::class . ': no "resourceType" route parameter found on the current request.'
+            );
+        });
     }
 }

@@ -15,13 +15,10 @@ class CustomSCIMConfig extends SCIMConfig
     {
         $config = parent::getUserConfig();
 
-        // Find the enterprise schema node nested inside the core User schema and add
-        // a mapped 'manager' Complex attribute so the test exercises the real fix.
-        $coreSchema = collect($config['map']->subAttributes)
-            ->first(fn($a) => $a->name === 'urn:ietf:params:scim:schemas:core:2.0:User');
-
-        $enterpriseSchema = collect($coreSchema->subAttributes)
-            ->first(fn($a) => $a->name === 'urn:ietf:params:scim:schemas:extension:enterprise:2.0:User');
+        // Navigate to the enterprise schema node using getSubNode() (name is protected)
+        // and add a mapped 'manager' Complex attribute so the test exercises the actual
+        // schema-URN + complex-attribute code path that was fixed.
+        $enterpriseSchema = $config['map']->getSubNode('urn:ietf:params:scim:schemas:extension:enterprise:2.0:User');
 
         $managerAttr = (new Complex('manager'))->withSubAttributes(
             new Eloquent('value', 'manager_id')

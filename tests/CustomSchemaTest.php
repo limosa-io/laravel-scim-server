@@ -24,7 +24,7 @@ class CustomSCIMConfig extends SCIMConfig
             ->first(fn($a) => $a->name === 'urn:ietf:params:scim:schemas:extension:enterprise:2.0:User');
 
         $managerAttr = (new Complex('manager'))->withSubAttributes(
-            new Eloquent('value', 'manager')
+            new Eloquent('value', 'manager_id')
         );
         $managerAttr->setParent($enterpriseSchema);
         $enterpriseSchema->subAttributes[] = $managerAttr;
@@ -40,7 +40,7 @@ class CustomSchemaTest extends TestCase
         parent::setUp();
 
         Schema::table('users', function (Blueprint $table) {
-            $table->string('manager')->nullable();
+            $table->string('manager_id')->nullable();
         });
     }
 

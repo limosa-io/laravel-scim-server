@@ -13,7 +13,10 @@ use ArieTimmerman\Laravel\SCIMServer\Attribute\JSONCollection;
 use ArieTimmerman\Laravel\SCIMServer\Attribute\Meta;
 use ArieTimmerman\Laravel\SCIMServer\Attribute\MutableCollection;
 use ArieTimmerman\Laravel\SCIMServer\Attribute\Schema as AttributeSchema;
+use ArieTimmerman\Laravel\SCIMServer\Exceptions\SCIMException;
+use ArieTimmerman\Laravel\SCIMServer\Parser\Path;
 use ArieTimmerman\Laravel\SCIMServer\Tests\Model\Group;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 
 function a($name = null): Attribute
@@ -126,6 +129,12 @@ class SCIMConfig
                                     ]
                                 );
                             }
+                            public function applyComparison(Builder &$query, Path $path, $parentAttribute = null)
+                            {
+                                throw (new SCIMException('Filtering by the computed "$ref" attribute is not supported'))
+                                    ->setCode(400)
+                                    ->setScimType('invalidFilter');
+                            }
                         }),
                         eloquent('display', 'name')
                     ),
@@ -198,6 +207,12 @@ class SCIMConfig
                                     'resourceObject' => $object->id ?? "not-saved"
                                     ]
                                 );
+                            }
+                            public function applyComparison(Builder &$query, Path $path, $parentAttribute = null)
+                            {
+                                throw (new SCIMException('Filtering by the computed "$ref" attribute is not supported'))
+                                    ->setCode(400)
+                                    ->setScimType('invalidFilter');
                             }
                         }),
                         eloquent('display', 'name')

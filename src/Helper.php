@@ -146,13 +146,21 @@ class Helper
                 );
             }
         } elseif ($node instanceof Disjunction) {
-            foreach ($node->getTerms() as $term) {
-                $query->orWhere(
-                    function ($query) use ($term, $resourceType) {
-                        Helper::scimFilterToLaravelQuery($resourceType, $query, new ParserPath($term, $term->dump()));
+            // Group the OR terms so they cannot bypass constraints already
+            // present on the builder, e.g. scoping applied by the resource
+            // type's base query.
+            $query->where(
+                function (Builder $nested) use ($node, $resourceType) {
+                    foreach ($node->getTerms() as $index => $term) {
+                        $method = $index === 0 ? 'where' : 'orWhere';
+                        $nested->{$method}(
+                            function ($query) use ($term, $resourceType) {
+                                Helper::scimFilterToLaravelQuery($resourceType, $query, new ParserPath($term, $term->dump()));
+                            }
+                        );
                     }
-                );
-            }
+                }
+            );
         } elseif ($node instanceof ValuePath) {
             $attribute = static::resolveAttributeChain($resourceType->getMapping(), $path->getValuePathAttributes());
 

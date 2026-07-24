@@ -2,6 +2,9 @@
 
 namespace ArieTimmerman\Laravel\SCIMServer\Tests;
 
+use ArieTimmerman\Laravel\SCIMServer\Helper;
+use ArieTimmerman\Laravel\SCIMServer\Parser\Parser;
+use ArieTimmerman\Laravel\SCIMServer\ResourceType;
 use ArieTimmerman\Laravel\SCIMServer\Tests\Model\Group;
 use ArieTimmerman\Laravel\SCIMServer\Tests\Model\User;
 
@@ -122,6 +125,36 @@ class FilterQueryTest extends TestCase
         $this->assertFalse(
             $ids->contains((string)$userNameOnlyUser->id),
             'User matching only the userName condition should be excluded.'
+        );
+    }
+
+    public function testOrFilterDoesNotBypassScopedBaseQuery(): void
+    {
+        $inScopeUser = factory(User::class)->create([
+            'name' => 'in-scope-user',
+            'active' => true,
+        ]);
+
+        $outOfScopeUser = factory(User::class)->create([
+            'name' => 'out-of-scope-user',
+            'active' => false,
+        ]);
+
+        $query = User::where('active', true);
+
+        $filter = sprintf('userName eq "%s" or userName eq "%s"', $inScopeUser->name, $outOfScopeUser->name);
+
+        Helper::scimFilterToLaravelQuery(ResourceType::user(), $query, Parser::parseFilter($filter));
+
+        $ids = $query->pluck('id');
+
+        $this->assertTrue(
+            $ids->contains($inScopeUser->id),
+            'User matching the filter and the base query scope should be returned.'
+        );
+        $this->assertFalse(
+            $ids->contains($outOfScopeUser->id),
+            'OR terms in the filter must not bypass constraints on the base query.'
         );
     }
 

@@ -18,7 +18,7 @@ class FilterParserTest extends TestCase
     public function testRejectsUnknownDollarPrefixedAttribute(): void
     {
         $this->expectException(FilterException::class);
-        $this->expectExceptionMessage('Invalid attribute name "$invalid"');
+        $this->expectExceptionMessageMatches('/Invalid attribute name "\$invalid"/');
 
         (new FilterParser())->parsePath('$invalid');
     }

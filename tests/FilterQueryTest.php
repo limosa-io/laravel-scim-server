@@ -25,6 +25,22 @@ class FilterQueryTest extends TestCase
         );
     }
 
+    public function testValuePathFilterRejectsComputedRefAttributes(): void
+    {
+        $filtersByResource = [
+            'Groups' => 'members[$ref eq "http://localhost/scim/v2/Users/1"]',
+            'Users' => 'groups[$ref eq "http://localhost/scim/v2/Groups/1"]',
+        ];
+
+        foreach ($filtersByResource as $resourceType => $filter) {
+            $filter = rawurlencode($filter);
+            $response = $this->get("/scim/v2/{$resourceType}?filter={$filter}&count=200");
+
+            $response->assertStatus(400);
+            $response->assertJsonPath('scimType', 'invalidFilter');
+        }
+    }
+
     public function testNegationFilterExcludesActiveUser()
     {
         $activeUser = User::firstOrFail();

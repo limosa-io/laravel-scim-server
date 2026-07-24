@@ -2,7 +2,8 @@
 
 namespace ArieTimmerman\Laravel\SCIMServer\Tests;
 
-use ArieTimmerman\Laravel\SCIMServer\Attribute\Attribute;
+use ArieTimmerman\Laravel\SCIMServer\Attribute\Complex;
+use ArieTimmerman\Laravel\SCIMServer\Attribute\Eloquent;
 use ArieTimmerman\Laravel\SCIMServer\SCIMConfig;
 use ArieTimmerman\Laravel\SCIMServer\Tests\Model\User;
 use Illuminate\Database\Schema\Blueprint;
@@ -14,12 +15,15 @@ class CustomSCIMConfig extends SCIMConfig
     {
         $config = parent::getUserConfig();
 
-        $config['schemas'][] = 'urn:ietf:params:scim:schemas:extension:enterprise:2.0:User';
-        $config['validations']['urn:ietf:params:scim:schemas:extension:enterprise:2\.0:User:employeeNumber'] = 'nullable';
+        // Add a mapped manager.value attribute while leaving the other manager
+        // sub-attributes unmapped.
+        $enterpriseSchema = $config['map']->getSubNode('urn:ietf:params:scim:schemas:extension:enterprise:2.0:User');
 
-        $config['mapping']['urn:ietf:params:scim:schemas:extension:enterprise:2.0:User'] = [
-            'employeeNumber' => new Attribute("employeeNumber")
-        ];
+        $managerAttr = (new Complex('manager'))->withSubAttributes(
+            new Eloquent('value', 'manager_id')
+        );
+        $managerAttr->setParent($enterpriseSchema);
+        $enterpriseSchema->subAttributes[] = $managerAttr;
 
         return $config;
     }
@@ -30,6 +34,10 @@ class CustomSchemaTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
+
+        Schema::table('users', function (Blueprint $table) {
+            $table->string('manager_id')->nullable();
+        });
     }
 
     protected function getEnvironmentSetUp($app)
@@ -123,5 +131,88 @@ class CustomSchemaTest extends TestCase
 
         $this->assertEquals('12345', $json['urn:ietf:params:scim:schemas:extension:enterprise:2.0:User']['employeeNumber']);
         $this->assertEquals('12345', User::find(2)->employeeNumber);
+    }
+
+    /**
+     * Regression test for https://github.com/limosa-io/laravel-scim-server/issues/168
+     *
+     * POST /scim/v2/Users must return 201 (not 500) when the SCIM payload contains
+     * an extension schema before the schemas property and includes unmapped
+     * sub-attributes such as manager.displayName and manager.$ref.
+     */
+    public function testPostWithUnmappedEnterpriseSubAttributesReturns201()
+    {
+        $response = $this->postJson('/scim/v2/Users', [
+            "urn:ietf:params:scim:schemas:extension:enterprise:2.0:User" => [
+                // employeeNumber and manager.value are mapped; the other fields are not.
+                "employeeNumber" => "EMP-001",
+                "manager" => [
+                    "value"       => "1234",
+                    "displayName" => "Some Manager",
+                    '$ref'        => "https://example.com/scim/v2/Users/1234",
+                ],
+                "costCenter"   => "CC-42",
+                "organization" => "ACME Corp",
+                "division"     => "Engineering",
+            ],
+            "urn:ietf:params:scim:schemas:core:2.0:User" => [
+                "userName" => "jane.doe@example.com",
+                "password" => "Password123",
+                "emails"   => [
+                    [
+                        "value"   => "jane.doe@example.com",
+                        "type"    => "other",
+                        "primary" => true,
+                    ],
+                ],
+            ],
+            // Keep schemas last so the extension schema is processed while the
+            // mapping path is still null, reproducing issue #168.
+            "schemas" => [
+                "urn:ietf:params:scim:schemas:core:2.0:User",
+                "urn:ietf:params:scim:schemas:extension:enterprise:2.0:User",
+            ],
+        ]);
+
+        $this->assertEquals(
+            201,
+            $response->baseResponse->getStatusCode(),
+            'Expected 201 but got ' . $response->baseResponse->getStatusCode() . ': ' . $response->baseResponse->content()
+        );
+
+        $json = $response->json();
+
+        // The mapped attribute should be persisted
+        $this->assertEquals(
+            'EMP-001',
+            $json['urn:ietf:params:scim:schemas:extension:enterprise:2.0:User']['employeeNumber']
+        );
+
+        // Core User attributes should be reflected back
+        $this->assertEquals(
+            'jane.doe@example.com',
+            $json['urn:ietf:params:scim:schemas:core:2.0:User']['userName']
+        );
+        $this->assertEquals(
+            'jane.doe@example.com',
+            $json['urn:ietf:params:scim:schemas:core:2.0:User']['emails'][0]['value']
+        );
+
+        // manager.value IS mapped and must be echoed back; unmapped sub-attributes must be absent
+        $this->assertEquals(
+            '1234',
+            $json['urn:ietf:params:scim:schemas:extension:enterprise:2.0:User']['manager']['value'],
+            'Mapped manager.value should be present in the SCIM response'
+        );
+        $this->assertArrayNotHasKey(
+            'displayName',
+            $json['urn:ietf:params:scim:schemas:extension:enterprise:2.0:User']['manager'],
+            'Unmapped manager.displayName should not be present in the SCIM response'
+        );
+        $this->assertArrayNotHasKey(
+            '$ref',
+            $json['urn:ietf:params:scim:schemas:extension:enterprise:2.0:User']['manager'],
+            'Unmapped manager.$ref should not be present in the SCIM response'
+        );
     }
 }

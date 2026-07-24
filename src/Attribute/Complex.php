@@ -227,30 +227,30 @@ class Complex extends AbstractComplex
             }
 
             $subNode = null;
+            $parsedPath = null;
 
             // if path contains : it is a schema node
             if (strpos($key, ':') !== false) {
                 $subNode = $this->getSubNode($key);
             } else {
-                $path = Parser::parse($key);
+                $parsedPath = Parser::parse($key);
 
-                if ($path->isNotEmpty()) {
-                    $attributeNames = $path->getAttributePathAttributes();
-                    $path = $path->shiftAttributePathAttributes();
-                    $sub = $attributeNames[0] ?? $path->getAttributePath()?->path?->schema;
-                    $subNode = $this->getSubNode($attributeNames[0] ?? $path->getAttributePath()?->path?->schema);
+                if ($parsedPath->isNotEmpty()) {
+                    $attributeNames = $parsedPath->getAttributePathAttributes();
+                    $parsedPath = $parsedPath->shiftAttributePathAttributes();
+                    $subNode = $this->getSubNode($attributeNames[0] ?? $parsedPath->getAttributePath()?->path?->schema);
                 }
             }
 
             if ($subNode != null) {
                 $newValue = $v;
-                if ($path !== null && $path->isNotEmpty()) {
+                if ($parsedPath !== null && $parsedPath->isNotEmpty()) {
                     $newValue = [
-                        implode('.', $path->getAttributePathAttributes()) => $v
+                        implode('.', $parsedPath->getAttributePathAttributes()) => $v
                     ];
                 }
 
-                $subNode->replace($newValue, $object, $path);
+                $subNode->replace($newValue, $object, $parsedPath);
             }
         }
 

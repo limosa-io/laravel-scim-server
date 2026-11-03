@@ -7,6 +7,7 @@
 namespace ArieTimmerman\Laravel\SCIMServer;
 
 use ArieTimmerman\Laravel\SCIMServer\Exceptions\SCIMException;
+use Illuminate\Contracts\Container\BindingResolutionException;
 
 class ServiceProvider extends \Illuminate\Support\ServiceProvider
 {
@@ -92,5 +93,39 @@ class ServiceProvider extends \Illuminate\Support\ServiceProvider
             __DIR__ . '/../config/scim.php',
             'scim'
         );
+
+        // Register a scoped binding for ResourceType so it can be resolved
+        // from the current route parameter even when SubstituteBindings middleware
+        // is not applied to the route (e.g. in custom user-defined routes).
+        // Using scoped() ensures the same instance is returned for all injections
+        // within a single request.
+        $this->app->scoped(ResourceType::class, function ($app) {
+            $request = $app->bound('request') ? $app->make('request') : null;
+            $route = $request instanceof \Illuminate\Http\Request ? $request->route() : null;
+
+            if ($route) {
+                $resourceType = $route->parameter('resourceType');
+
+                if ($resourceType instanceof ResourceType) {
+                    return $resourceType;
+                }
+
+                // Only reached in HTTP context (route is non-null), so SCIMException is appropriate.
+                if (is_string($resourceType)) {
+                    $config = $app->make(SCIMConfig::class)->getConfigForResource($resourceType);
+
+                    if ($config !== null) {
+                        return new ResourceType($resourceType, $config);
+                    }
+
+                    throw (new SCIMException(sprintf('No resource "%s" found.', $resourceType)))->setCode(404);
+                }
+            }
+
+            throw new BindingResolutionException(
+                'Cannot resolve ' . ResourceType::class . ': no "resourceType" route parameter found. '
+                . 'Ensure your route defines a {resourceType} parameter (e.g. Route::get("{resourceType}", ...)).'
+            );
+        });
     }
 }
